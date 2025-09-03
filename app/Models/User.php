@@ -18,6 +18,19 @@ class User extends Authenticatable
   public function roles(){ return $this->belongsToMany(Role::class); }
   public function hasRole($name){ return $this->roles()->where('name',$name)->exists(); }
 
+  public function assignRole($roleName)
+    {
+        $role = Role::where('name', $roleName)->firstOrFail();
+        $this->roles()->syncWithoutDetaching([$role->id]);
+    }
+    public function removeRole($roleName)
+    {
+        $role = Role::where('name', $roleName)->first();
+        if ($role) {
+            $this->roles()->detach($role->id);
+        }
+    }
+
   public function profile(){ return $this->hasOne(Profile::class); }
   public function business(){ return $this->hasOne(Business::class); }
   public function education(){ return $this->hasOne(Education::class); }

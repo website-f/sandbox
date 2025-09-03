@@ -14,7 +14,7 @@ return new class extends Migration
        Schema::create('profiles', function (Blueprint $t) {
          $t->id();
          $t->foreignId('user_id')->unique()->constrained()->cascadeOnDelete();
-         $t->string('full_name');
+         $t->string('full_name')->nullable();
          $t->string('nric')->nullable();
          $t->date('dob')->nullable();
          $t->text('home_address')->nullable();
@@ -50,7 +50,7 @@ return new class extends Migration
        Schema::create('courses', function (Blueprint $t) {
          $t->id();
          $t->foreignId('user_id')->constrained()->cascadeOnDelete();
-         $t->string('title');           // e.g. INSKEN Basic Entrepreneurship
+         $t->string('title')->nullable();           // e.g. INSKEN Basic Entrepreneurship
          $t->string('provider')->nullable(); // INSKEN/SME Corp/etc.
          $t->string('year')->nullable();
          $t->timestamps();
@@ -59,8 +59,8 @@ return new class extends Migration
        Schema::create('next_of_kins', function (Blueprint $t) {
          $t->id();
          $t->foreignId('user_id')->constrained()->cascadeOnDelete();
-         $t->string('name');
-         $t->string('relationship');
+         $t->string('name')->nullable();
+         $t->string('relationship')->nullable();
          $t->string('phone')->nullable();
          $t->text('address')->nullable();
          $t->timestamps();
@@ -69,7 +69,7 @@ return new class extends Migration
        Schema::create('affiliations', function (Blueprint $t) {
          $t->id();
          $t->foreignId('user_id')->constrained()->cascadeOnDelete();
-         $t->string('organization');
+         $t->string('organization')->nullable();
          $t->string('position')->nullable();
          $t->timestamps();
        });

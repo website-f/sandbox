@@ -4,12 +4,14 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReferralController;
+use App\Http\Controllers\UserRoleController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ToyyibPayController;
-use App\Http\Controllers\UserImportController;
 
+use App\Http\Controllers\UserImportController;
 use App\Http\Controllers\Auth\RegisterPlusController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\PasswordController;
 
 // Login routes
 Route::get('/login', [AuthenticatedSessionController::class, 'create'])
@@ -34,6 +36,9 @@ Route::middleware('auth')->group(function(){
     Route::get('/dashboard', [DashboardController::class,'index'])->name('dashboard');
     Route::get('/referrals/tree', [ReferralController::class,'tree'])->name('referrals.tree'); // JSON for visualization
     Route::get('/referrals/qr', [ReferralController::class,'qr'])->name('referrals.qr');
+
+    Route::get('/admin/users', [UserRoleController::class, 'index'])->name('admin.users.index');
+    Route::post('/admin/users/{user}/toggle-admin', [UserRoleController::class, 'toggleAdmin'])->name('admin.users.toggleAdmin');
     // Subscription actions
     Route::post('/subscribe/{plan}', [ToyyibPayController::class,'subscribe'])->name('subscribe.plan'); // plan: rizqmall|sandbox
 });
@@ -43,10 +48,18 @@ Route::get('/login', function () {
 })->name('login');
 
 Route::middleware('auth')->group(function () {
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::get('/profile', [ProfileController::class, 'index'])->name('profile.index');
+    Route::post('/profile/update', [ProfileController::class, 'updateProfile'])->name('profile.update');
+    Route::post('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password');
+
+    Route::post('/profile/business', [ProfileController::class, 'updateBusiness'])->name('profile.business');
+    Route::post('/profile/education', [ProfileController::class, 'updateEducation'])->name('profile.education');
+    Route::post('/profile/course', [ProfileController::class, 'updateCourse'])->name('profile.course');
+    Route::post('/profile/nextofkin', [ProfileController::class, 'updateNextOfKin'])->name('profile.nextofkin');
+    Route::post('/profile/affiliation', [ProfileController::class, 'updateAffiliation'])->name('profile.affiliation');
 });
+
+
 
 // ToyyibPay redirects
 Route::get('/payments/toyyib/return', [ToyyibPayController::class,'return'])->name('toyyib.return');

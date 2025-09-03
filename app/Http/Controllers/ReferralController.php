@@ -8,39 +8,44 @@ use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class ReferralController extends Controller
 {
-  public function tree(Request $req){
-    $user = $req->user();
-    $rootId = $user->referral?->root_id ?? $user->id; // use self as root if missing
+  // app/Http/Controllers/ReferralController.php
+    public function tree(Request $request)
+    {
+        $user = $request->user();
+        $rootReferral = $user->referral->root_id 
+            ? Referral::where('user_id', $user->referral->root_id)->first() 
+            : $user->referral;
 
-    // BFS build
-    $nodes = [];
-    $edges = [];
-    $queue = [$rootId];
-    $seen = [];
-
-    while ($queue) {
-        $uid = array_shift($queue);
-        if (isset($seen[$uid])) continue;
-        $seen[$uid] = true;
-
-        $ref = Referral::where('user_id', $uid)->first();
-        if (!$ref) continue;
-
-        $nodes[] = [
-            'id' => $uid,
-            'name' => $ref->user->name,
-            'level' => $ref->level
-        ];
-
-        $children = Referral::where('parent_id', $uid)->get();
-        foreach ($children as $c){
-            $edges[] = ['from' => $uid, 'to' => $c->user_id];
-            $queue[] = $c->user_id;
+        if (!$rootReferral) {
+            return response()->json(['nodes' => []]);
         }
+
+        $nodes = [];
+        $queue = [$rootReferral];
+
+        while (!empty($queue)) {
+            $ref = array_shift($queue);
+
+            $nodes[] = [
+    'id' => $ref->user->id,
+    'name' => $ref->user->name,
+    'level' => $ref->level,
+    'parent_id' => $ref->parent_id,  // <-- add this
+];
+
+
+            // Fetch children based on parent_id = user_id
+            $children = Referral::where('parent_id', $ref->user_id)->get();
+
+            foreach ($children as $child) {
+                $queue[] = $child;
+            }
+        }
+
+        return response()->json(['nodes' => $nodes]);
     }
 
-    return response()->json(['nodes' => $nodes, 'edges' => $edges]);
-}
+
 
 
   public function qr(Request $req){

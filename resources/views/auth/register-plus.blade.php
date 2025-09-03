@@ -11,10 +11,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-        }
-        /* Custom gradient for the button */
+        body { font-family: 'Inter', sans-serif; }
         .gradient-button {
             background-image: linear-gradient(to right, #4F46E5, #8B5CF6);
             transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
@@ -23,7 +20,6 @@
             transform: translateY(-2px);
             box-shadow: 0 4px 10px rgba(139, 92, 246, 0.4);
         }
-        /* Custom focus styles for inputs */
         input:focus {
             outline: none;
             box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.5);
@@ -32,32 +28,51 @@
     </style>
 </head>
 <body class="bg-gray-950 text-gray-200 antialiased flex items-center justify-center min-h-screen p-4">
+
     <div class="w-full max-w-lg mx-auto bg-gray-900 rounded-2xl shadow-2xl overflow-hidden p-8 sm:p-12 border border-gray-800">
-        <!-- Logo Placeholder -->
+        <!-- Logo -->
         <div class="flex flex-col items-center justify-center mb-8">
-            <img src="{{asset('sandboxlogo.png')}}" alt="">
+            <img src="{{ asset('sandboxlogo.png') }}" alt="Logo" class="w-24 h-24">
             <h2 class="mt-4 text-3xl font-bold tracking-tight text-white">Join the future.</h2>
             <p class="text-sm text-gray-400 mt-2">Create your account to get started.</p>
         </div>
 
+        <!-- Display all errors at the top -->
+        @if ($errors->any())
+            <div class="mb-6 p-4 rounded-xl bg-red-900 text-red-200">
+                <ul class="list-disc list-inside">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
         <!-- Registration Form -->
         <form method="POST" action="{{ route('register.store') }}">
-            <!-- Name Input -->
             @csrf
+
+            <!-- Name -->
             <div class="mb-5">
                 <label for="name" class="block text-sm font-medium text-gray-400 mb-1.5">Name</label>
-                <input type="text" id="name" name="name" required autofocus
+                <input type="text" id="name" name="name" value="{{ old('name') }}" required autofocus
                        class="block w-full px-4 py-3 bg-gray-800 text-gray-200 border border-gray-700 rounded-xl transition duration-300 placeholder-gray-500">
+                @error('name')
+                    <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
+                @enderror
             </div>
 
-            <!-- Email Input -->
+            <!-- Email -->
             <div class="mb-5">
                 <label for="email" class="block text-sm font-medium text-gray-400 mb-1.5">Email</label>
-                <input type="email" id="email" name="email" required
+                <input type="email" id="email" name="email" value="{{ old('email') }}" required
                        class="block w-full px-4 py-3 bg-gray-800 text-gray-200 border border-gray-700 rounded-xl transition duration-300 placeholder-gray-500">
+                @error('email')
+                    <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
+                @enderror
             </div>
 
-            <!-- Password Input with view toggle -->
+            <!-- Password -->
             <div class="mb-5 relative">
                 <label for="password" class="block text-sm font-medium text-gray-400 mb-1.5">Password</label>
                 <input type="password" id="password" name="password" required
@@ -71,9 +86,12 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                     </svg>
                 </button>
+                @error('password')
+                    <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
+                @enderror
             </div>
 
-            <!-- Confirm Password Input with view toggle -->
+            <!-- Confirm Password -->
             <div class="mb-5 relative">
                 <label for="password_confirmation" class="block text-sm font-medium text-gray-400 mb-1.5">Confirm Password</label>
                 <input type="password" id="password_confirmation" name="password_confirmation" required
@@ -87,15 +105,17 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                     </svg>
                 </button>
+                @error('password_confirmation')
+                    <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
+                @enderror
             </div>
 
-            <!-- Referral Code Input (optional) -->
-           
+            <!-- Hidden referral code -->
+            <input type="hidden" name="ref" value="{{ request('ref') }}">
 
-            <!-- Register Button -->
+            <!-- Submit -->
             <div>
-                <button type="submit"
-                        class="w-full py-3.5 px-6 rounded-xl font-semibold text-white gradient-button shadow-lg">
+                <button type="submit" class="w-full py-3.5 px-6 rounded-xl font-semibold text-white gradient-button shadow-lg">
                     Register
                 </button>
             </div>
@@ -104,17 +124,17 @@
         <!-- Login Link -->
         <p class="mt-8 text-center text-sm text-gray-500">
             Already have an account?
-            <a href="#" class="font-medium text-indigo-400 hover:text-indigo-300 transition-colors duration-200">
+            <a href="{{ route('login') }}" class="font-medium text-indigo-400 hover:text-indigo-300 transition-colors duration-200">
                 Log In
             </a>
         </p>
     </div>
+
     <script>
         function togglePasswordVisibility(fieldId) {
             const field = document.getElementById(fieldId);
             const showIcon = document.getElementById(fieldId + '-show-icon');
             const hideIcon = document.getElementById(fieldId + '-hide-icon');
-
             if (field.type === 'password') {
                 field.type = 'text';
                 showIcon.classList.remove('hidden');

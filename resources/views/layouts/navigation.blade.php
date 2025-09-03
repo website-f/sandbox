@@ -92,9 +92,9 @@
                     {{ __('Profile') }}
                 </x-responsive-nav-link>
                 @if(auth()->user()->hasRole('Admin'))
-                    <x-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.index')">
+                    <x-responsive-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.index')">
                         Assign Role
-                    </x-nav-link>
+                    </x-responsive-nav-link>
                     @endif
                 <!-- Authentication -->
                 <form method="POST" action="{{ route('logout') }}">

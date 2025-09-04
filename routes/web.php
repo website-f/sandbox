@@ -61,11 +61,12 @@ Route::middleware('auth')->group(function () {
     Route::post('/profile/nextofkin', [ProfileController::class, 'updateNextOfKin'])->name('profile.nextofkin');
     Route::post('/profile/affiliation', [ProfileController::class, 'updateAffiliation'])->name('profile.affiliation');
 
-    Route::post('/subscribe/{plan}', [SubscriptionController::class, 'subscribe'])->name('subscribe.plan');
-    Route::post('/payment/callback', [SubscriptionController::class, 'paymentCallback'])->name('payment.callback');
-    Route::get('/payment/return', [SubscriptionController::class, 'paymentReturn'])->name('payment.return');
-    Route::get('/subscriptions/history', [SubscriptionController::class, 'history'])->name('subscriptions.history');
+    
 
 });
 
+Route::post('/subscribe/{plan}', [SubscriptionController::class, 'subscribe'])->name('subscribe.plan');
+    Route::post('/payment/callback', [SubscriptionController::class, 'paymentCallback'])->name('payment.callback');
+    Route::get('/payment/return', [SubscriptionController::class, 'paymentReturn'])->name('payment.return');
+    Route::get('/subscriptions/history', [SubscriptionController::class, 'history'])->name('subscriptions.history');
 

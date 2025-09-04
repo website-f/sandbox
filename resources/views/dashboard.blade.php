@@ -44,6 +44,7 @@
         $indicatorColor = 'bg-red-500';
         $indicatorText = 'inactive';
         $buttonText = 'Subscribe';
+        $expiryText = '';
 
         if($account) {
             $expires = $account->expires_at ? \Carbon\Carbon::parse($account->expires_at) : null;
@@ -51,7 +52,8 @@
             if ($expires && $expires->isFuture()) {
                 $indicatorColor = 'bg-green-500';
                 $indicatorText = 'active';
-                $buttonText = 'Valid until ' . $expires->toFormattedDateString();
+                $expiryText = 'Valid until ' . $expires->toFormattedDateString();
+                $buttonText = 'Renew'; // optional: change button text if already active
             }
         }
     @endphp
@@ -63,15 +65,16 @@
                 <span class="inline-block w-3 h-3 rounded-full {{ $indicatorColor }}"></span>
                 {{ ucfirst($indicatorText) }}
             </span>
+            @if($expiryText)
+                <span class="text-xs text-gray-500 mt-1">{{ $expiryText }}</span>
+            @endif
         </div>
 
         <div>
             <form method="POST" action="{{ route('subscribe.plan', $k) }}">
                 @csrf
                 <button class="px-4 py-2 text-sm font-semibold text-white rounded-full shadow
-                               {{ $account && $expires && $expires->isFuture() 
-                                    ? 'bg-indigo-600 hover:bg-indigo-700' 
-                                    : 'bg-indigo-600 hover:bg-indigo-700' }}">
+                               bg-indigo-600 hover:bg-indigo-700">
                     {{ $buttonText }}
                 </button>
             </form>

@@ -15,15 +15,7 @@ use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\Auth\RegisterPlusController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 
-Route::any('/payment/callback-test', function (Request $request) {
-    Log::info('ToyyibPay callback received', [
-        'method' => $request->method(),
-        'input'  => $request->all(),
-        'headers'=> $request->headers->all(),
-    ]);
-
-    return response('OK');
-});
+Route::post('/payment/callback-test', [SubscriptionController::class, 'callbackTest']);
 // Login routes
 Route::get('/login', [AuthenticatedSessionController::class, 'create'])
     ->middleware('guest')
@@ -51,7 +43,7 @@ Route::middleware('auth')->group(function(){
     Route::get('/admin/users', [UserRoleController::class, 'index'])->name('admin.users.index');
     Route::post('/admin/users/{user}/toggle-admin', [UserRoleController::class, 'toggleAdmin'])->name('admin.users.toggleAdmin');
     // Subscription actions
-    Route::post('/subscribe/{plan}', [ToyyibPayController::class,'subscribe'])->name('subscribe.plan'); // plan: rizqmall|sandbox
+
 });
 
 Route::get('/login', function () {

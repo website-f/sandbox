@@ -144,5 +144,16 @@ return redirect("{$cfg['url']}/{$data['BillCode']}");
         $subscriptions = Subscription::with('payments')->where('user_id', $user->id)->latest()->get();
         return view('subscriptions.history', compact('subscriptions'));
     }
+
+    public function callbackTest(Request $request)
+    {
+        // Log incoming data for debugging
+        \Log::info('Callback received:', $request->all());
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $request->all(),
+        ]);
+    }
 }
 

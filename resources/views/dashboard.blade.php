@@ -47,15 +47,20 @@
         $showButton = true;
 
         if($account) {
-            $expires = $account->expires_at ? \Carbon\Carbon::parse($account->expires_at) : null;
+    $expires = $account->expires_at ? \Carbon\Carbon::parse($account->expires_at) : null;
 
-            if ($expires && $expires->isFuture()) {
-                $indicatorColor = 'bg-green-500';
-                $indicatorText = 'active';
-                $expiryText = 'Valid until ' . $expires->toFormattedDateString();
-                $showButton = false; // hide button if active
-            }
+    // Active check
+    if($account->active) {
+        $indicatorColor = 'bg-green-500';
+        $indicatorText = 'active';
+        $showButton = false;
+
+        if($expires) {
+            $expiryText = 'Valid until ' . $expires->toFormattedDateString();
         }
+    }
+}
+
     @endphp
 
     <li class="flex justify-between items-center p-4 rounded-xl bg-gray-50 shadow-sm hover:shadow-md transition-shadow duration-200">

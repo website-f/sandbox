@@ -35,4 +35,18 @@ return [
         ],
     ],
 
+    'toyyibpay' => [
+        'rizqmall' => [
+            'secret' => env('TOYYIBPAY_RIZQMALL_SECRET'),
+            'category' => env('TOYYIBPAY_RIZQMALL_CATEGORY'),
+            'url' => env('TOYYIBPAY_RIZQMALL_URL', 'https://dev.toyyibpay.com'),
+        ],
+        'sandbox' => [
+            'secret' => env('TOYYIBPAY_SANDBOX_SECRET'),
+            'category' => env('TOYYIBPAY_SANDBOX_CATEGORY'),
+            'url' => env('TOYYIBPAY_SANDBOX_URL', 'https://toyyibpay.com'),
+        ],
+    ],
+
+
 ];

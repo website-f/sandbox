@@ -3,15 +3,16 @@
 // routes/web.php
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\PasswordController;
 use App\Http\Controllers\ReferralController;
 use App\Http\Controllers\UserRoleController;
 use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\ToyyibPayController;
 
+use App\Http\Controllers\ToyyibPayController;
 use App\Http\Controllers\UserImportController;
+use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\Auth\RegisterPlusController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
-use App\Http\Controllers\PasswordController;
 
 // Login routes
 Route::get('/login', [AuthenticatedSessionController::class, 'create'])
@@ -57,6 +58,12 @@ Route::middleware('auth')->group(function () {
     Route::post('/profile/course', [ProfileController::class, 'updateCourse'])->name('profile.course');
     Route::post('/profile/nextofkin', [ProfileController::class, 'updateNextOfKin'])->name('profile.nextofkin');
     Route::post('/profile/affiliation', [ProfileController::class, 'updateAffiliation'])->name('profile.affiliation');
+
+    Route::post('/subscribe/{plan}', [SubscriptionController::class, 'subscribe'])->name('subscribe.plan');
+    Route::post('/payment/callback', [SubscriptionController::class, 'paymentCallback'])->name('payment.callback');
+    Route::get('/payment/return', [SubscriptionController::class, 'paymentReturn'])->name('payment.return');
+    Route::get('/subscriptions/history', [SubscriptionController::class, 'history'])->name('subscriptions.history');
+
 });
 
 

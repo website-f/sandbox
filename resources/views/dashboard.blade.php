@@ -27,63 +27,58 @@
 
         <div class="bg-white rounded-2xl shadow-lg p-6 hover:shadow-2xl transition-shadow duration-300">
             <h3 class="text-xl font-semibold text-gray-800 mb-4">Account Status</h3>
+            @if(session('error'))
+    <div class="bg-red-100 text-red-600 px-4 py-2 rounded mb-4">
+        {{ session('error') }}
+    </div>
+@endif
+
             <ul class="space-y-4">
                 @php
                     $today = now();
                 @endphp
         
                 @foreach (['rizqmall'=>'RizqMall','sandbox'=>'Sandbox'] as $k => $label)
-                    @php
-                        $account = $accounts[$k] ?? null;
-                        $isActive = false;
-                        $indicatorColor = 'bg-red-500';
-                        $indicatorText = 'inactive';
-                        $buttonText = 'Subscribe';
-        
-                        if($account) {
-                            $expires = $account->expires_at ? \Carbon\Carbon::parse($account->expires_at) : null;
-        
-                            if ($expires && $expires->isFuture()) {
-                                $isActive = true;
-                                $indicatorColor = 'bg-green-500';
-                                 $indicatorText = 'active';
-                                $buttonText = 'Valid until ' . $expires->toFormattedDateString();
-        
-                                // Check if it's reached 1 year from account creation
-                                $maxValidity = \Carbon\Carbon::parse($account->created_at)->addYear();
-                                if ($expires >= $maxValidity) {
-                                    $buttonText = 'Renew';
-                                }
-                            }
-                        }
-                    @endphp
-        
-                    <li class="flex justify-between items-center p-4 rounded-xl bg-gray-50 shadow-sm hover:shadow-md transition-shadow duration-200">
-                        <div class="flex flex-col">
-                            <span class="font-medium text-gray-700">{{ $label }}</span>
-                            <span class="flex items-center gap-2 text-sm text-gray-500">
-                                <span class="inline-block w-3 h-3 rounded-full {{ $indicatorColor }}"></span>
-                                {{ ucfirst($indicatorText) }}
-                            </span>
-                        </div>
-                    
-                        <div>
-                            @if($isActive)
-                                <button disabled class="px-4 py-2 text-sm font-semibold text-white bg-gray-400 rounded-full shadow cursor-default">
-                                    {{ $buttonText }}
-                                </button>
-                            @else
-                                <form method="POST" action="{{ route('subscribe.plan', $k) }}">
-                                    @csrf
-                                    <button class="px-4 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-full shadow">
-                                        {{ $buttonText }}
-                                    </button>
-                                </form>
-                            @endif
-                        </div>
-                    </li>
+    @php
+        $account = $accounts[$k] ?? null;
+        $indicatorColor = 'bg-red-500';
+        $indicatorText = 'inactive';
+        $buttonText = 'Subscribe';
 
-                @endforeach
+        if($account) {
+            $expires = $account->expires_at ? \Carbon\Carbon::parse($account->expires_at) : null;
+
+            if ($expires && $expires->isFuture()) {
+                $indicatorColor = 'bg-green-500';
+                $indicatorText = 'active';
+                $buttonText = 'Valid until ' . $expires->toFormattedDateString();
+            }
+        }
+    @endphp
+
+    <li class="flex justify-between items-center p-4 rounded-xl bg-gray-50 shadow-sm hover:shadow-md transition-shadow duration-200">
+        <div class="flex flex-col">
+            <span class="font-medium text-gray-700">{{ $label }}</span>
+            <span class="flex items-center gap-2 text-sm text-gray-500">
+                <span class="inline-block w-3 h-3 rounded-full {{ $indicatorColor }}"></span>
+                {{ ucfirst($indicatorText) }}
+            </span>
+        </div>
+
+        <div>
+            <form method="POST" action="{{ route('subscribe.plan', $k) }}">
+                @csrf
+                <button class="px-4 py-2 text-sm font-semibold text-white rounded-full shadow
+                               {{ $account && $expires && $expires->isFuture() 
+                                    ? 'bg-indigo-600 hover:bg-indigo-700' 
+                                    : 'bg-indigo-600 hover:bg-indigo-700' }}">
+                    {{ $buttonText }}
+                </button>
+            </form>
+        </div>
+    </li>
+@endforeach
+
             </ul>
         </div>
 

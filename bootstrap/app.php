@@ -13,6 +13,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         // Exclude payment callback routes from CSRF verification
         $middleware->validateCsrfTokens(except: [
+             'payment/callback',
              'payment/callback-test',
          ]);
 

@@ -1,19 +1,29 @@
 <?php
 
 // routes/web.php
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PasswordController;
 use App\Http\Controllers\ReferralController;
 use App\Http\Controllers\UserRoleController;
-use App\Http\Controllers\DashboardController;
 
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ToyyibPayController;
 use App\Http\Controllers\UserImportController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\Auth\RegisterPlusController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 
+Route::any('/payment/callback-test', function (Request $request) {
+    Log::info('ToyyibPay callback received', [
+        'method' => $request->method(),
+        'input'  => $request->all(),
+        'headers'=> $request->headers->all(),
+    ]);
+
+    return response('OK');
+});
 // Login routes
 Route::get('/login', [AuthenticatedSessionController::class, 'create'])
     ->middleware('guest')
@@ -66,9 +76,4 @@ Route::middleware('auth')->group(function () {
 
 });
 
-
-
-// ToyyibPay redirects
-Route::get('/payments/toyyib/return', [ToyyibPayController::class,'return'])->name('toyyib.return');
-Route::post('/payments/toyyib/callback', [ToyyibPayController::class,'callback'])->name('toyyib.callback');
 

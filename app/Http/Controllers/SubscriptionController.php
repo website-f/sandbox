@@ -41,6 +41,8 @@ class SubscriptionController extends Controller
     $billAmount = $price / 100; // ToyyibPay uses RM not cents
     $phone = preg_replace('/\D/', '', $user->phone ?? '0123456789');
 
+    dd(route('payment.callback'));
+
     $response = Http::asForm()->post("{$cfg['url']}/index.php/api/createBill", [
     'userSecretKey' => $cfg['secret'],
     'categoryCode' => $cfg['category'],
@@ -49,7 +51,7 @@ class SubscriptionController extends Controller
     'billPriceSetting' => 1,
     'billAmount' => $price, // already in cents
     'billReturnUrl' => route('payment.return'),
-    'billCallbackUrl' => route('payment.callback'),
+    'billCallbackUrl' => 'https://rm.sandboxmalaysia.com/payment/callback-test',
     'billExternalReferenceNo' => $subscription->id,
     'billTo' => $user->name,
     'billEmail' => $user->email,

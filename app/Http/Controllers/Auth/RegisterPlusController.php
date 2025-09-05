@@ -3,15 +3,16 @@
 // app/Http/Controllers/Auth/RegisterPlusController.php
 namespace App\Http\Controllers\Auth;
 
-use App\Http\Controllers\Controller;
-use App\Models\User;
 use App\Models\Role;
+use App\Models\User;
 use App\Models\Account;
+use App\Models\Profile;
 use App\Models\Referral;
-use App\Services\ReferralTreeService;
 use Illuminate\Http\Request;
+use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use App\Services\ReferralTreeService;
 
 class RegisterPlusController extends Controller
 {
@@ -32,6 +33,15 @@ class RegisterPlusController extends Controller
             'email'=>$data['email'],
             'password'=>Hash::make($data['password']),
         ]);
+
+        Profile::create([
+            'user_id' => $user->id,
+            'phone'   => $request->input('phone'),
+            'country' => $request->input('country'),
+            'state'   => $request->input('state'),
+            'city'    => $request->input('city'),
+        ]);
+
 
         // default role: Entrepreneur
         $role = Role::where('name','Entrepreneur')->first();

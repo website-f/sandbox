@@ -1,0 +1,9 @@
+{
+  "Malaysia": {
+    "Sabah": ["Kota Kinabalu", "Sandakan", "Tawau"],
+    "Selangor": ["Shah Alam", "Petaling Jaya", "Puchong"],
+    "Johor": ["Johor Bahru", "Batu Pahat", "Muar"]
+  },
+  "Singapore": {},
+  "Thailand": {}
+}

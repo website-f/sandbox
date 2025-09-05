@@ -72,6 +72,44 @@
                 @enderror
             </div>
 
+            <!-- Phone -->
+            <div class="mb-5">
+                <label for="phone" class="block text-sm font-medium text-gray-400 mb-1.5">Phone</label>
+                <input type="text" id="phone" name="phone" value="{{ old('phone') }}"
+                       class="block w-full px-4 py-3 bg-gray-800 text-gray-200 border border-gray-700 rounded-xl">
+                @error('phone')
+                    <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
+                @enderror
+            </div>
+            
+            <!-- Country -->
+            <div class="mb-5">
+                <label for="country" class="block text-sm font-medium text-gray-400 mb-1.5">Country</label>
+                <select id="country" name="country"
+                        class="block w-full px-4 py-3 bg-gray-800 text-gray-200 border border-gray-700 rounded-xl">
+                    <option value="">-- Select Country --</option>
+                </select>
+            </div>
+            
+            <!-- State -->
+            <div id="state-wrapper" class="mb-5 hidden">
+                <label for="state" class="block text-sm font-medium text-gray-400 mb-1.5">State</label>
+                <select id="state" name="state"
+                        class="block w-full px-4 py-3 bg-gray-800 text-gray-200 border border-gray-700 rounded-xl">
+                    <option value="">-- Select State --</option>
+                </select>
+            </div>
+            
+            <!-- City -->
+            <div id="city-wrapper" class="mb-5 hidden">
+                <label for="city" class="block text-sm font-medium text-gray-400 mb-1.5">City</label>
+                <select id="city" name="city"
+                        class="block w-full px-4 py-3 bg-gray-800 text-gray-200 border border-gray-700 rounded-xl">
+                    <option value="">-- Select City --</option>
+                </select>
+            </div>
+
+
             <!-- Password -->
             <div class="mb-5 relative">
                 <label for="password" class="block text-sm font-medium text-gray-400 mb-1.5">Password</label>
@@ -146,5 +184,53 @@
             }
         }
     </script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    let data = {};
+
+    $.getJSON("{{ asset('select.json') }}", function(response) {
+        data = response;
+        $.each(data, function(country) {
+            $("#country").append(new Option(country, country));
+        });
+    });
+
+    $("#country").on("change", function() {
+        let country = $(this).val();
+        let states = data[country] || {};
+
+        $("#state").empty().append(new Option("-- Select State --", ""));
+        $("#city").empty().append(new Option("-- Select City --", ""));
+        $("#city-wrapper").addClass("hidden");
+
+        if (country === "Malaysia") {
+            $("#state-wrapper").removeClass("hidden");
+            $.each(states, function(state) {
+                $("#state").append(new Option(state, state));
+            });
+        } else {
+            $("#state-wrapper").addClass("hidden");
+            $("#city-wrapper").addClass("hidden");
+        }
+    });
+
+    $("#state").on("change", function() {
+        let country = $("#country").val();
+        let state = $(this).val();
+        let cities = data[country][state] || [];
+
+        $("#city").empty().append(new Option("-- Select City --", ""));
+
+        if (cities.length > 0) {
+            $("#city-wrapper").removeClass("hidden");
+            $.each(cities, function(i, city) {
+                $("#city").append(new Option(city, city));
+            });
+        } else {
+            $("#city-wrapper").addClass("hidden");
+        }
+    });
+</script>
+
 </body>
 </html>

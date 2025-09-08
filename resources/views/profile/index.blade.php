@@ -90,6 +90,28 @@
                                 <label class="block text-sm font-medium text-gray-700">Alternative Email</label>
                                 <input type="email" name="email_alt" value="{{ $profile->email_alt ?? '' }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                             </div>
+                    
+                            <div>
+                                <label for="country" class="block text-sm font-medium text-gray-700">Country</label>
+                                <select id="country" name="country" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                    <option value="">-- Select Country --</option>
+                                </select>
+                            </div>
+                    
+                            <div id="state-wrapper" class="hidden">
+                                <label for="state" class="block text-sm font-medium text-gray-700">State</label>
+                                <select id="state" name="state" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                    <option value="">-- Select State --</option>
+                                </select>
+                            </div>
+                    
+                            <div id="city-wrapper" class="hidden">
+                                <label for="city" class="block text-sm font-medium text-gray-700">City</label>
+                                <select id="city" name="city" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                    <option value="">-- Select City --</option>
+                                </select>
+                            </div>
+                    
                             <div class="col-span-1 md:col-span-2">
                                 <label class="block text-sm font-medium text-gray-700">Home Address</label>
                                 <textarea name="home_address" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">{{ $profile->home_address ?? '' }}</textarea>
@@ -278,4 +300,78 @@
             </div>
         </div>
     </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    let data = {};
+    const profileCountry = "{{ $profile->country ?? '' }}";
+    const profileState = "{{ $profile->state ?? '' }}";
+    const profileCity = "{{ $profile->city ?? '' }}";
+
+    function populateCountries() {
+        const countrySelect = $("#country");
+        countrySelect.empty().append(new Option("-- Select Country --", ""));
+        $.each(data, function(country) {
+            countrySelect.append(new Option(country, country));
+        });
+        if (profileCountry) {
+            countrySelect.val(profileCountry).change();
+        }
+    }
+
+    function populateStates(country) {
+        const stateSelect = $("#state");
+        const stateWrapper = $("#state-wrapper");
+        stateSelect.empty().append(new Option("-- Select State --", ""));
+
+        if (country === "Malaysia" && data[country]) {
+            const states = data[country];
+            stateWrapper.removeClass("hidden");
+            $.each(states, function(state) {
+                stateSelect.append(new Option(state, state));
+            });
+            if (profileState) {
+                stateSelect.val(profileState).change();
+            }
+        } else {
+            stateWrapper.addClass("hidden");
+            $("#city-wrapper").addClass("hidden");
+        }
+    }
+
+    function populateCities(country, state) {
+        const citySelect = $("#city");
+        const cityWrapper = $("#city-wrapper");
+        citySelect.empty().append(new Option("-- Select City --", ""));
+
+        if (data[country] && data[country][state] && data[country][state].length > 0) {
+            const cities = data[country][state];
+            cityWrapper.removeClass("hidden");
+            $.each(cities, function(i, city) {
+                citySelect.append(new Option(city, city));
+            });
+            if (profileCity) {
+                citySelect.val(profileCity);
+            }
+        } else {
+            cityWrapper.addClass("hidden");
+        }
+    }
+
+    $.getJSON("{{ asset('select.json') }}", function(response) {
+        data = response;
+        populateCountries();
+    });
+
+    $("#country").on("change", function() {
+        let country = $(this).val();
+        populateStates(country);
+    });
+
+    $("#state").on("change", function() {
+        let country = $("#country").val();
+        let state = $(this).val();
+        populateCities(country, state);
+    });
+</script>
 </x-app-layout>

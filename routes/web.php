@@ -3,11 +3,12 @@
 // routes/web.php
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\WalletController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PasswordController;
 use App\Http\Controllers\ReferralController;
-use App\Http\Controllers\UserRoleController;
 
+use App\Http\Controllers\UserRoleController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ToyyibPayController;
 use App\Http\Controllers\UserImportController;
@@ -43,6 +44,8 @@ Route::middleware('auth')->group(function(){
     Route::get('/admin/users', [UserRoleController::class, 'index'])->name('admin.users.index');
     Route::post('/admin/users/{user}/toggle-admin', [UserRoleController::class, 'toggleAdmin'])->name('admin.users.toggleAdmin');
     // Subscription actions
+
+    Route::get('/wallet', [WalletController::class, 'index'])->name('wallet.users.index');
 
 });
 

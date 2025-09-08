@@ -31,6 +31,12 @@ class User extends Authenticatable
         }
     }
 
+    public function wallet()
+{
+    return $this->hasOne(Wallet::class);
+}
+
+
   public function profile(){ return $this->hasOne(Profile::class); }
   public function business(){ return $this->hasOne(Business::class); }
   public function education(){ return $this->hasOne(Education::class); }

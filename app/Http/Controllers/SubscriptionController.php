@@ -2,12 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use Carbon\Carbon;
+use App\Models\Wallet;
 use App\Models\Account;
-use App\Models\Subscription;
 use App\Models\Payment;
+use App\Models\Subscription;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
-use Carbon\Carbon;
 
 class SubscriptionController extends Controller
 {
@@ -39,7 +40,7 @@ class SubscriptionController extends Controller
     $billName = ucfirst($plan) . " Subscription";
     $billDescription = "Payment for {$billName}";
     $billAmount = $price / 100; // ToyyibPay uses RM not cents
-    $phone = preg_replace('/\D/', '', $user->phone ?? '0123456789');
+    $phone = preg_replace('/\D/', '', $user->profile->phone ?? '0123456789');
 
     $response = Http::asForm()->post("{$cfg['url']}/index.php/api/createBill", [
     'userSecretKey' => $cfg['secret'],
@@ -47,7 +48,7 @@ class SubscriptionController extends Controller
     'billName' => $billName,
     'billDescription' => $billDescription,
     'billPriceSetting' => 1,
-    'billAmount' => $price, // already in cents
+    'billAmount' => 100, // already in cents
     'billReturnUrl' => route('payment.return'),
     'billCallbackUrl' => route('payment.callback'),
     'billExternalReferenceNo' => $subscription->id,
@@ -106,32 +107,71 @@ return redirect("{$cfg['url']}/{$data['BillCode']}");
         $subscription = $payment->subscription;
 
         if ($status == 1) {
-            $subscription->update([
-                'status' => 'paid',
-                'starts_at' => now(),
-                'ends_at' => $subscription->plan === 'rizqmall'
-                    ? now()->addYear()
-                    : null,
-            ]);
-        
-            $account = Account::firstOrCreate([
-                'user_id' => $subscription->user_id,
-                'type' => $subscription->plan,
-            ]);
-        
-            $account->update([
-                'active' => true,
-                'expires_at' => $subscription->plan === 'rizqmall'
-                    ? $subscription->ends_at
-                    : null,
-            ]);
-        }
+    $subscription->update([
+        'status' => 'paid',
+        'starts_at' => now(),
+        'ends_at' => $subscription->plan === 'rizqmall'
+            ? now()->addYear()
+            : null,
+    ]);
+
+    $account = Account::firstOrCreate([
+        'user_id' => $subscription->user_id,
+        'type' => $subscription->plan,
+    ]);
+
+    $account->update([
+        'active' => true,
+        'expires_at' => $subscription->plan === 'rizqmall'
+            ? $subscription->ends_at
+            : null,
+    ]);
+
+    \Log::info('Distribute commission for subscription', [
+    'user_id' => $subscription->user_id,
+    'plan' => $subscription->plan,
+    'referrer' => $subscription->user->referrer?->id,
+]);
+
+
+    // ✅ Only give commission for RizqMall
+    if ($subscription->plan === 'rizqmall') {
+        $this->distributeCommission($subscription);
+    }
+}
+
          else {
             $subscription->update(['status' => 'failed']);
         }
 
         return response('OK');
     }
+
+    private function distributeCommission(Subscription $subscription)
+{
+    $user = $subscription->user;
+    $amounts = [300, 100, 100]; // RM3 for direct, RM1 for 2nd and 3rd upline
+
+    $referral = $user->referral;
+    $level = 0;
+
+    while ($referral && $level < 3) {
+        $referrer = $referral->parent;
+        if (!$referrer) break;
+
+        $wallet = Wallet::firstOrCreate(['user_id' => $referrer->id]);
+
+        $wallet->credit(
+            $amounts[$level],
+            "Referral commission from {$user->name} subscription",
+            $subscription->id
+        );
+
+        $referral = $referrer->referral;
+        $level++;
+    }
+}
+
 
     public function paymentReturn(Request $request)
     {

@@ -18,6 +18,9 @@
                     <x-nav-link :href="route('profile.index')" :active="request()->routeIs('profile.index')">
                         Profile
                     </x-nav-link>
+                    <x-nav-link :href="route('wallet.users.index')" :active="request()->routeIs('wallet.users.index')">
+                        E-Wallet
+                    </x-nav-link>
                     @if(auth()->user()->hasRole('Admin'))
                     <x-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.index')">
                         Assign Role

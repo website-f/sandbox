@@ -36,6 +36,7 @@ class RegisterPlusController extends Controller
 
         Profile::create([
             'user_id' => $user->id,
+            'full_name' => $user->name,
             'phone'   => $request->input('phone'),
             'country' => $request->input('country'),
             'state'   => $request->input('state'),

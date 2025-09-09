@@ -36,6 +36,19 @@ class User extends Authenticatable
     return $this->hasOne(Wallet::class);
 }
 
+public function referrer()
+{
+    return $this->hasOneThrough(
+        User::class,      
+        Referral::class,   
+        'user_id',        
+        'id',              
+        'id',              
+        'parent_id'       
+    );
+}
+
+
 
   public function profile(){ return $this->hasOne(Profile::class); }
   public function business(){ return $this->hasOne(Business::class); }

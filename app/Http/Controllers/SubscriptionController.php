@@ -152,25 +152,45 @@ return redirect("{$cfg['url']}/{$data['BillCode']}");
     $user = $subscription->user;
     $amounts = [300, 100, 100]; // RM3 for direct, RM1 for 2nd and 3rd upline
 
+    // Start from this user's referral record
     $referral = $user->referral;
     $level = 0;
 
     while ($referral && $level < 3) {
-        $referrer = $referral->parent;
-        if (!$referrer) break;
+        $referrer = $referral->parent; // now returns User (after you fix the model)
 
+        if (!$referrer) {
+            \Log::info("No referrer found at level {$level} for user {$user->id}");
+            break;
+        }
+
+        // Ensure wallet exists
         $wallet = Wallet::firstOrCreate(['user_id' => $referrer->id]);
 
+        // Amount to credit
+        $amount = $amounts[$level];
+
+        // Credit the wallet
         $wallet->credit(
-            $amounts[$level],
-            "Referral commission from {$user->name} subscription",
+            $amount,
+            "Referral commission (Level " . ($level + 1) . ") from {$user->name} subscription",
             $subscription->id
         );
 
+        // Log the commission step
+        \Log::info("Commission credited", [
+            'from_user'   => $user->id,
+            'to_referrer' => $referrer->id,
+            'level'       => $level + 1,
+            'amount'      => $amount,
+        ]);
+
+        // Move up to the next referrer
         $referral = $referrer->referral;
         $level++;
     }
 }
+
 
 
     public function paymentReturn(Request $request)

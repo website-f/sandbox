@@ -11,12 +11,14 @@ class Referral extends Model
     return $this->hasMany(Referral::class, 'parent_id', 'user_id');
 }
 
-public function parent() {
-    return $this->belongsTo(Referral::class, 'parent_id', 'user_id');
+public function parent()
+{
+    return $this->belongsTo(User::class, 'parent_id', 'id');
 }
 
+
 public function root() {
-    return $this->belongsTo(Referral::class, 'root_id', 'user_id');
+    return $this->belongsTo(User::class, 'root_id', 'user_id');
 }
 
 

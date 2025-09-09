@@ -48,7 +48,7 @@ class SubscriptionController extends Controller
     'billName' => $billName,
     'billDescription' => $billDescription,
     'billPriceSetting' => 1,
-    'billAmount' => $price,
+    'billAmount' => $price + 100,
     'billReturnUrl' => route('payment.return'),
     'billCallbackUrl' => route('payment.callback'),
     'billExternalReferenceNo' => $subscription->id,

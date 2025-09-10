@@ -28,66 +28,112 @@
         <div class="bg-white rounded-2xl shadow-lg p-6 hover:shadow-2xl transition-shadow duration-300">
             <h3 class="text-xl font-semibold text-gray-800 mb-4">Account Status</h3>
             @if(session('error'))
-    <div class="bg-red-100 text-red-600 px-4 py-2 rounded mb-4">
-        {{ session('error') }}
-    </div>
-@endif
-
-            <ul class="space-y-4">
+                <div class="bg-red-100 text-red-600 px-4 py-2 rounded mb-4">
+                    {{ session('error') }}
+                </div>
+            @endif
+            
+                        <ul class="space-y-4">
+                            @php
+                                $today = now();
+                            @endphp
+                    
+            @foreach (['rizqmall'=>'RizqMall','sandbox'=>'Sandbox'] as $k => $label)
                 @php
-                    $today = now();
+                    $account = $accounts[$k] ?? null;
+                    $indicatorColor = 'bg-red-500';
+                    $indicatorText = 'inactive';
+                    $expiryText = '';
+                    $serialText = '';
+                    $showButton = true;
+            
+                    if($account) {
+                        $expires = $account->expires_at ? \Carbon\Carbon::parse($account->expires_at) : null;
+            
+                        if($account->active) {
+                            $indicatorColor = 'bg-green-500';
+                            $indicatorText = 'active';
+                            $showButton = false;
+            
+                            if($expires) {
+                                $expiryText = 'Valid until ' . $expires->toFormattedDateString();
+                            }
+
+                             if($account->serial_number) {
+                                $serialText = "Serial: {$account->serial_number}";
+                            }
+                        }
+                    }
+            
+                    // Pricing logic
+                    $basePrice = $k === 'sandbox' ? 300 : 20; // RM
+                    $tax = round($basePrice * 0.08, 2);
+                    $fpx = 1.00;
+                    $final = $basePrice + $tax + $fpx;
                 @endphp
-        
-                @foreach (['rizqmall'=>'RizqMall','sandbox'=>'Sandbox'] as $k => $label)
-    @php
-        $account = $accounts[$k] ?? null;
-        $indicatorColor = 'bg-red-500';
-        $indicatorText = 'inactive';
-        $expiryText = '';
-        $showButton = true;
+            
+                <li class="flex justify-between items-center p-4 rounded-xl bg-gray-50 shadow-sm hover:shadow-md transition-shadow duration-200">
+                    <div class="flex flex-col">
+                        <span class="font-medium text-gray-700">{{ $label }}</span>
+                        <span class="flex items-center gap-2 text-sm text-gray-500">
+                            <span class="inline-block w-3 h-3 rounded-full {{ $indicatorColor }}"></span>
+                            {{ ucfirst($indicatorText) }}
+                        </span>
+                        @if($expiryText)
+                            <span class="text-xs text-gray-500 mt-1">{{ $expiryText }}</span>
+                        @endif
+                        @if($serialText)
+                            <span class="text-xs font-semibold text-indigo-600 mt-1">{{ $serialText }}</span>
+                        @endif
+                    </div>
+            
+                    <div>
+                        @if($showButton)
+                            <button 
+                                x-data 
+                                @click="$dispatch('open-modal', {plan: '{{ $k }}', label: '{{ $label }}', base: '{{ $basePrice }}', tax: '{{ $tax }}', fpx: '{{ $fpx }}', final: '{{ $final }}'})"
+                                class="px-4 py-2 text-sm font-semibold text-white rounded-full shadow bg-indigo-600 hover:bg-indigo-700">
+                                Subscribe
+                            </button>
+                        @endif
+                    </div>
+                </li>
+            @endforeach
+            
+            {{-- Modal --}}
+            <div 
+                x-data="{ open: false, plan: '', label: '', base: 0, tax: 0, fpx: 0, final: 0 }"
+                x-on:open-modal.window="open = true; plan = $event.detail.plan; label = $event.detail.label; base = $event.detail.base; tax = $event.detail.tax; fpx = $event.detail.fpx; final = $event.detail.final"
+                x-show="open"
+                style="display: none"
+                class="fixed inset-0 z-50 flex items-center justify-center 
+           bg-white backdrop-blur-sm transition-opacity">
+                
+                <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 space-y-6">
+                    <h2 class="text-lg font-bold text-gray-800" x-text="label + ' Subscription'"></h2>
+            
+                    <div class="space-y-2 text-sm text-gray-600">
+                        <div class="flex justify-between"><span>Base Price</span> <span>RM <span x-text="base"></span></span></div>
+                        <div class="flex justify-between"><span>Tax (8%)</span> <span>RM <span x-text="tax"></span></span></div>
+                        <div class="flex justify-between"><span>FPX Charge</span> <span>RM <span x-text="fpx"></span></span></div>
+                        <div class="border-t pt-2 flex justify-between font-semibold text-gray-800">
+                            <span>Total</span> <span>RM <span x-text="final"></span></span>
+                        </div>
+                    </div>
+            
+                    <div class="flex justify-end gap-3">
+                        <button @click="open = false" class="px-4 py-2 rounded-lg text-gray-600 hover:bg-gray-100">Cancel</button>
+                        
+                        <form method="POST" :action="'/subscribe/' + plan">
+                            @csrf
+                            <button type="submit" class="px-4 py-2 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700">
+                                Confirm & Pay
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
 
-        if($account) {
-    $expires = $account->expires_at ? \Carbon\Carbon::parse($account->expires_at) : null;
-
-    // Active check
-    if($account->active) {
-        $indicatorColor = 'bg-green-500';
-        $indicatorText = 'active';
-        $showButton = false;
-
-        if($expires) {
-            $expiryText = 'Valid until ' . $expires->toFormattedDateString();
-        }
-    }
-}
-
-    @endphp
-
-    <li class="flex justify-between items-center p-4 rounded-xl bg-gray-50 shadow-sm hover:shadow-md transition-shadow duration-200">
-        <div class="flex flex-col">
-            <span class="font-medium text-gray-700">{{ $label }}</span>
-            <span class="flex items-center gap-2 text-sm text-gray-500">
-                <span class="inline-block w-3 h-3 rounded-full {{ $indicatorColor }}"></span>
-                {{ ucfirst($indicatorText) }}
-            </span>
-            @if($expiryText)
-                <span class="text-xs text-gray-500 mt-1">{{ $expiryText }}</span>
-            @endif
-        </div>
-
-        <div>
-            @if($showButton)
-                <form method="POST" action="{{ route('subscribe.plan', $k) }}">
-                    @csrf
-                    <button class="px-4 py-2 text-sm font-semibold text-white rounded-full shadow
-                                   bg-indigo-600 hover:bg-indigo-700">
-                        Subscribe
-                    </button>
-                </form>
-            @endif
-        </div>
-    </li>
-@endforeach
 
 
             </ul>

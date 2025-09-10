@@ -37,4 +37,11 @@ class UserRoleController extends Controller
 
         return back()->with('status', $msg);
     }
+
+    public function details($id)
+    {
+        $user = User::with(['accounts', 'profile', 'referral.parent'])->findOrFail($id);
+
+        return view('partial.user-details', compact('user'));
+    }
 }

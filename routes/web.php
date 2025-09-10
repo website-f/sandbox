@@ -44,6 +44,8 @@ Route::middleware('auth')->group(function(){
 
     Route::get('/admin/users', [UserRoleController::class, 'index'])->name('admin.users.index');
     Route::post('/admin/users/{user}/toggle-admin', [UserRoleController::class, 'toggleAdmin'])->name('admin.users.toggleAdmin');
+    Route::get('/admin/user/{id}/details', [UserRoleController::class, 'details'])
+        ->name('admin.user.details');
     // Subscription actions
 
     Route::get('/wallet', [WalletController::class, 'index'])->name('wallet.users.index');

@@ -142,134 +142,156 @@
 
 
         @if(auth()->user()->hasRole('Admin'))
-    <div class="lg:col-span-3 bg-white rounded-2xl shadow-lg p-6 hover:shadow-2xl transition-shadow duration-300">
-        <h3 class="text-xl font-semibold text-gray-800 mb-4">All Users</h3>
-        {{-- Search form --}}
-        <form method="GET" action="{{ route('dashboard') }}" class="mb-6 flex">
-            <input type="text" name="search" value="{{ request('search') }}"
-                   placeholder="Search by name, email, or serial number..."
-                   class="w-full px-4 py-2 border rounded-l-lg focus:ring-indigo-500 focus:border-indigo-500">
-            <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-r-lg hover:bg-indigo-700">
-                Search
-            </button>
-        </form>
-
-        <table class="w-full border border-gray-200 rounded-xl overflow-hidden">
-            <thead class="bg-gray-50 text-left text-sm font-semibold text-gray-600">
-                <tr>
-                    <th class="px-4 py-3">RM No</th>
-                    <th class="px-4 py-3">SB No</th>
-                    <th class="px-4 py-3">Name</th>
-                    <th class="px-4 py-3">Email</th>
-                    <th class="px-4 py-3">Phone</th>
-                    <th class="px-4 py-3">Referrer</th>
-                    <th class="px-4 py-3">Action</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-100">
-                @foreach($users as $u)
-                    @php
-                        $rizqmall = $u->accounts->firstWhere('type', 'rizqmall');
-                        $sandbox  = $u->accounts->firstWhere('type', 'sandbox');
-                    @endphp
-                    <tr>
-                        <td class="px-4 py-3 text-sm">{{ $rizqmall->serial_number ?? 'inactive' }}</td>
-                        <td class="px-4 py-3 text-sm">{{ $sandbox->serial_number ?? 'inactive' }}</td>
-                        <td class="px-4 py-3">{{ $u->name }}</td>
-                        <td class="px-4 py-3">{{ $u->email }}</td>
-                        <td class="px-4 py-3">{{ $u->profile->phone ?? '-' }}</td>
-                        <td class="px-4 py-3">{{ $u->referral?->parent?->name ?? '-' }}</td>
-                        <td class="px-4 py-3">
-                            <!-- View Details Button -->
-                            <button 
-                                data-user="{{ $u->id }}"
-                                class="view-details px-3 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold">
-                                View Details
-                            </button>
-                        </td>
-                    </tr>
-                @endforeach
-            </tbody>
-        </table>
-        {{-- Pagination --}}
-        <div class="mt-6">
-            {{ $users->links() }}
-        </div>
-    </div>
-
-    <!-- Details Modal -->
-    <div id="detailsModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-white rounded-2xl shadow-lg w-full max-w-2xl p-6">
-            <h3 class="text-lg font-semibold mb-4">User Details</h3>
-            <div id="modalContent" class="text-sm text-gray-700">
-                Loading...
+            <div class="lg:col-span-3 bg-white rounded-2xl shadow-lg p-6 hover:shadow-2xl transition-shadow duration-300">
+                <h3 class="text-xl font-semibold text-gray-800 mb-4">All Users</h3>
+                {{-- Search form --}}
+                <form method="GET" action="{{ route('dashboard') }}" class="mb-6 flex">
+                    <input type="text" name="search" value="{{ request('search') }}"
+                           placeholder="Search by name, email, or serial number..."
+                           class="w-full px-4 py-2 border rounded-l-lg focus:ring-indigo-500 focus:border-indigo-500">
+                    <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-r-lg hover:bg-indigo-700">
+                        Search
+                    </button>
+                </form>
+        
+                <table class="w-full border border-gray-200 rounded-xl overflow-hidden">
+                    <thead class="bg-gray-50 text-left text-sm font-semibold text-gray-600">
+                        <tr>
+                            <th class="px-4 py-3">RM No</th>
+                            <th class="px-4 py-3">SB No</th>
+                            <th class="px-4 py-3">Name</th>
+                            <th class="px-4 py-3">Email</th>
+                            <th class="px-4 py-3">Phone</th>
+                            <th class="px-4 py-3">Referrer</th>
+                            <th class="px-4 py-3">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        @foreach($users as $u)
+                            @php
+                                $rizqmall = $u->accounts->firstWhere('type', 'rizqmall');
+                                $sandbox  = $u->accounts->firstWhere('type', 'sandbox');
+                            @endphp
+                            <tr>
+                                <td class="px-4 py-3 text-sm {{ $rizqmall->serial_number ? '' : 'text-red-600 font-semibold' }}">
+                                    {{ $rizqmall->serial_number ?? 'inactive' }}
+                                </td>
+                                <td class="px-4 py-3 text-sm {{ $sandbox->serial_number ? '' : 'text-red-600 font-semibold' }}">
+                                    {{ $sandbox->serial_number ?? 'inactive' }}
+                                </td>
+                                <td class="px-4 py-3">{{ $u->name }}</td>
+                                <td class="px-4 py-3">{{ $u->email }}</td>
+                                <td class="px-4 py-3">{{ $u->profile->phone ?? '-' }}</td>
+                                <td class="px-4 py-3">{{ $u->referral?->parent?->name ?? '-' }}</td>
+                                <td class="px-4 py-3">
+                                    <!-- View Details Button -->
+                                    <button 
+                                        data-user="{{ $u->id }}"
+                                        class="view-details px-3 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold">
+                                        View Details
+                                    </button>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+                {{-- Pagination --}}
+                <div class="mt-6">
+                    {{ $users->links() }}
+                </div>
             </div>
-            <div class="mt-4 text-right">
-                <button onclick="document.getElementById('detailsModal').classList.add('hidden')" class="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg">Close</button>
+        
+            <!-- Details Modal -->
+            <div id="detailsModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div class="bg-white rounded-2xl shadow-lg w-full max-w-2xl p-6 relative">
+                    <!-- X button -->
+                    <button 
+                        onclick="document.getElementById('detailsModal').classList.add('hidden')" 
+                        class="absolute top-3 right-3 text-black hover:text-gray-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+            
+                    <h3 class="text-lg font-semibold mb-4">User Details</h3>
+                    <div id="modalContent" class="text-sm text-gray-700">
+                        Loading...
+                    </div>
+                    <div class="mt-4 text-right">
+                        <button onclick="document.getElementById('detailsModal').classList.add('hidden')" 
+                                class="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg">
+                            Close
+                        </button>
+                    </div>
+                </div>
             </div>
-        </div>
-    </div>
 
-    <script>
-        document.querySelectorAll('.view-details').forEach(btn => {
-            btn.addEventListener('click', async () => {
-                const id = btn.getAttribute('data-user');
-                const res = await fetch(`/admin/user/${id}/details`);
-                const html = await res.text();
-                document.getElementById('modalContent').innerHTML = html;
-                document.getElementById('detailsModal').classList.remove('hidden');
-            });
-        });
-    </script>
-@else
-    <div class="lg:col-span-3 bg-white rounded-2xl shadow-lg p-6 hover:shadow-2xl transition-shadow duration-300">
-        <h3 class="text-xl font-semibold text-gray-800 mb-4">Your Referrals</h3>
-        {{-- Search form --}}
-        <form method="GET" action="{{ route('dashboard') }}" class="mb-6 flex">
-            <input type="text" name="search" value="{{ request('search') }}"
-                   placeholder="Search by name, email, or serial number..."
-                   class="w-full px-4 py-2 border rounded-l-lg focus:ring-indigo-500 focus:border-indigo-500">
-            <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-r-lg hover:bg-indigo-700">
-                Search
-            </button>
-        </form>
-        <table class="w-full border border-gray-200 rounded-xl overflow-hidden">
-            <thead class="bg-gray-50 text-left text-sm font-semibold text-gray-600">
-                <tr>
-                    <th class="px-4 py-3">RM No</th>
-                    <th class="px-4 py-3">SB No</th>
-                    <th class="px-4 py-3">Name</th>
-                    <th class="px-4 py-3">Email</th>
-                    <th class="px-4 py-3">Phone</th>
-                    <th class="px-4 py-3">Referrer</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-100">
-                @foreach($users as $u)
-                    @php
-                        $rizqmall = $u->accounts->firstWhere('type', 'rizqmall');
-                        $sandbox  = $u->accounts->firstWhere('type', 'sandbox');
-                    @endphp
-                    <tr>
-                        <td class="px-4 py-3 text-sm">{{ $rizqmall->serial_number ?? 'inactive' }}</td>
-                        <td class="px-4 py-3 text-sm">{{ $sandbox->serial_number ?? 'inactive' }}</td>
-                        <td class="px-4 py-3">{{ $u->name }}</td>
-                        <td class="px-4 py-3">{{ $u->email }}</td>
-                        <td class="px-4 py-3">{{ $u->profile->phone ?? '-' }}</td>
-                        <td class="px-4 py-3">
-                            {{ $u->referral?->parent_id === auth()->id() ? 'YOU' : $u->referral?->parent?->name }}
-                        </td>
-                    </tr>
-                @endforeach
-            </tbody>
-        </table>
-
-        {{-- Pagination --}}
-        <div class="mt-6">
-            {{ $users->links() }}
-        </div>
-    </div>
-@endif
+        
+            <script>
+                document.querySelectorAll('.view-details').forEach(btn => {
+                    btn.addEventListener('click', async () => {
+                        const id = btn.getAttribute('data-user');
+                        const res = await fetch(`/admin/user/${id}/details`);
+                        const html = await res.text();
+                        document.getElementById('modalContent').innerHTML = html;
+                        document.getElementById('detailsModal').classList.remove('hidden');
+                    });
+                });
+            </script>
+        @else
+            <div class="lg:col-span-3 bg-white rounded-2xl shadow-lg p-6 hover:shadow-2xl transition-shadow duration-300">
+                <h3 class="text-xl font-semibold text-gray-800 mb-4">Your Referrals</h3>
+                {{-- Search form --}}
+                <form method="GET" action="{{ route('dashboard') }}" class="mb-6 flex">
+                    <input type="text" name="search" value="{{ request('search') }}"
+                           placeholder="Search by name, email, or serial number..."
+                           class="w-full px-4 py-2 border rounded-l-lg focus:ring-indigo-500 focus:border-indigo-500">
+                    <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-r-lg hover:bg-indigo-700">
+                        Search
+                    </button>
+                </form>
+                <table class="w-full border border-gray-200 rounded-xl overflow-hidden">
+                    <thead class="bg-gray-50 text-left text-sm font-semibold text-gray-600">
+                        <tr>
+                            <th class="px-4 py-3">RM No</th>
+                            <th class="px-4 py-3">SB No</th>
+                            <th class="px-4 py-3">Name</th>
+                            <th class="px-4 py-3">Email</th>
+                            <th class="px-4 py-3">Phone</th>
+                            <th class="px-4 py-3">Referrer</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        @foreach($users as $u)
+                            @php
+                                $rizqmall = $u->accounts->firstWhere('type', 'rizqmall');
+                                $sandbox  = $u->accounts->firstWhere('type', 'sandbox');
+                            @endphp
+                            <tr>
+                                <td class="px-4 py-3 text-sm {{ $rizqmall->serial_number ? '' : 'text-red-600 font-semibold' }}">
+                                    {{ $rizqmall->serial_number ?? 'inactive' }}
+                                </td>
+                                <td class="px-4 py-3 text-sm {{ $sandbox->serial_number ? '' : 'text-red-600 font-semibold' }}">
+                                    {{ $sandbox->serial_number ?? 'inactive' }}
+                                </td>
+        
+                                <td class="px-4 py-3">{{ $u->name }}</td>
+                                <td class="px-4 py-3">{{ $u->email }}</td>
+                                <td class="px-4 py-3">{{ $u->profile->phone ?? '-' }}</td>
+                                <td class="px-4 py-3">
+                                    {{ $u->referral?->parent_id === auth()->id() ? 'YOU' : $u->referral?->parent?->name }}
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+        
+                {{-- Pagination --}}
+                <div class="mt-6">
+                    {{ $users->links() }}
+                </div>
+            </div>
+        @endif
 
 
 

@@ -142,175 +142,140 @@
 
 
         @if(auth()->user()->hasRole('Admin'))
-        <div class="lg:col-span-3 bg-white rounded-2xl shadow-lg p-6 hover:shadow-2xl transition-shadow duration-300">
-            <h3 class="text-xl font-semibold text-gray-800 mb-4">Your Network Tree</h3>
-            <div id="tree" class="bg-gray-50 border border-gray-200 rounded-2xl p-6 min-h-[500px] shadow-inner overflow-auto relative">
-                <p class="text-center text-gray-400">Loading network tree...</p>
+    <div class="lg:col-span-3 bg-white rounded-2xl shadow-lg p-6 hover:shadow-2xl transition-shadow duration-300">
+        <h3 class="text-xl font-semibold text-gray-800 mb-4">All Users</h3>
+        {{-- Search form --}}
+        <form method="GET" action="{{ route('dashboard') }}" class="mb-6 flex">
+            <input type="text" name="search" value="{{ request('search') }}"
+                   placeholder="Search by name, email, or serial number..."
+                   class="w-full px-4 py-2 border rounded-l-lg focus:ring-indigo-500 focus:border-indigo-500">
+            <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-r-lg hover:bg-indigo-700">
+                Search
+            </button>
+        </form>
+
+        <table class="w-full border border-gray-200 rounded-xl overflow-hidden">
+            <thead class="bg-gray-50 text-left text-sm font-semibold text-gray-600">
+                <tr>
+                    <th class="px-4 py-3">RM No</th>
+                    <th class="px-4 py-3">SB No</th>
+                    <th class="px-4 py-3">Name</th>
+                    <th class="px-4 py-3">Email</th>
+                    <th class="px-4 py-3">Phone</th>
+                    <th class="px-4 py-3">Referrer</th>
+                    <th class="px-4 py-3">Action</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                @foreach($users as $u)
+                    @php
+                        $rizqmall = $u->accounts->firstWhere('type', 'rizqmall');
+                        $sandbox  = $u->accounts->firstWhere('type', 'sandbox');
+                    @endphp
+                    <tr>
+                        <td class="px-4 py-3 text-sm">{{ $rizqmall->serial_number ?? 'inactive' }}</td>
+                        <td class="px-4 py-3 text-sm">{{ $sandbox->serial_number ?? 'inactive' }}</td>
+                        <td class="px-4 py-3">{{ $u->name }}</td>
+                        <td class="px-4 py-3">{{ $u->email }}</td>
+                        <td class="px-4 py-3">{{ $u->profile->phone ?? '-' }}</td>
+                        <td class="px-4 py-3">{{ $u->referral?->parent?->name ?? '-' }}</td>
+                        <td class="px-4 py-3">
+                            <!-- View Details Button -->
+                            <button 
+                                data-user="{{ $u->id }}"
+                                class="view-details px-3 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold">
+                                View Details
+                            </button>
+                        </td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+        {{-- Pagination --}}
+        <div class="mt-6">
+            {{ $users->links() }}
+        </div>
+    </div>
+
+    <!-- Details Modal -->
+    <div id="detailsModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-2xl shadow-lg w-full max-w-2xl p-6">
+            <h3 class="text-lg font-semibold mb-4">User Details</h3>
+            <div id="modalContent" class="text-sm text-gray-700">
+                Loading...
+            </div>
+            <div class="mt-4 text-right">
+                <button onclick="document.getElementById('detailsModal').classList.add('hidden')" class="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg">Close</button>
             </div>
         </div>
-        @endif
+    </div>
+
+    <script>
+        document.querySelectorAll('.view-details').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const id = btn.getAttribute('data-user');
+                const res = await fetch(`/admin/user/${id}/details`);
+                const html = await res.text();
+                document.getElementById('modalContent').innerHTML = html;
+                document.getElementById('detailsModal').classList.remove('hidden');
+            });
+        });
+    </script>
+@else
+    <div class="lg:col-span-3 bg-white rounded-2xl shadow-lg p-6 hover:shadow-2xl transition-shadow duration-300">
+        <h3 class="text-xl font-semibold text-gray-800 mb-4">Your Referrals</h3>
+        {{-- Search form --}}
+        <form method="GET" action="{{ route('dashboard') }}" class="mb-6 flex">
+            <input type="text" name="search" value="{{ request('search') }}"
+                   placeholder="Search by name, email, or serial number..."
+                   class="w-full px-4 py-2 border rounded-l-lg focus:ring-indigo-500 focus:border-indigo-500">
+            <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-r-lg hover:bg-indigo-700">
+                Search
+            </button>
+        </form>
+        <table class="w-full border border-gray-200 rounded-xl overflow-hidden">
+            <thead class="bg-gray-50 text-left text-sm font-semibold text-gray-600">
+                <tr>
+                    <th class="px-4 py-3">RM No</th>
+                    <th class="px-4 py-3">SB No</th>
+                    <th class="px-4 py-3">Name</th>
+                    <th class="px-4 py-3">Email</th>
+                    <th class="px-4 py-3">Phone</th>
+                    <th class="px-4 py-3">Referrer</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                @foreach($users as $u)
+                    @php
+                        $rizqmall = $u->accounts->firstWhere('type', 'rizqmall');
+                        $sandbox  = $u->accounts->firstWhere('type', 'sandbox');
+                    @endphp
+                    <tr>
+                        <td class="px-4 py-3 text-sm">{{ $rizqmall->serial_number ?? 'inactive' }}</td>
+                        <td class="px-4 py-3 text-sm">{{ $sandbox->serial_number ?? 'inactive' }}</td>
+                        <td class="px-4 py-3">{{ $u->name }}</td>
+                        <td class="px-4 py-3">{{ $u->email }}</td>
+                        <td class="px-4 py-3">{{ $u->profile->phone ?? '-' }}</td>
+                        <td class="px-4 py-3">
+                            {{ $u->referral?->parent_id === auth()->id() ? 'YOU' : $u->referral?->parent?->name }}
+                        </td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+
+        {{-- Pagination --}}
+        <div class="mt-6">
+            {{ $users->links() }}
+        </div>
+    </div>
+@endif
+
+
+
+
     </div>
 </div>
 
-<style>
-    .node circle {
-        fill: #999;
-        stroke: #555;
-        stroke-width: 1.5px;
-    }
-    .node text {
-        font: 12px sans-serif;
-        fill: #333;
-    }
-    .link {
-        fill: none;
-        stroke: #555;
-        stroke-opacity: 0.4;
-        stroke-width: 1.5px;
-    }
-    .current-user-node {
-        fill: #4F46E5 !important;
-        stroke: #312E81 !important;
-    }
-    .current-user-text {
-        fill: #4F46E5 !important;
-        font-weight: bold;
-    }
-    .current-user-marker {
-        fill: gold;
-        stroke: #9C891C;
-    }
-</style>
 
-<script src="https://d3js.org/d3.v7.min.js"></script>
-<script>
-function copyToClipboard(button) {
-    const input = button.parentNode.querySelector('input');
-    input.select();
-    document.execCommand('copy');
-    const original = button.innerHTML;
-    button.innerHTML = '<span class="text-green-500 font-semibold">Copied!</span>';
-    setTimeout(() => button.innerHTML = original, 2000);
-}
-
-let svg, g, treeLayout, rootData;
-
-async function fetchAndDrawTree() {
-    const res = await fetch('{{ route('referrals.tree') }}');
-    const data = await res.json();
-    const container = document.getElementById('tree');
-    container.innerHTML = '';
-
-    if (!data.nodes || data.nodes.length === 0) {
-        container.innerHTML = '<p class="text-center text-gray-400">No referrals yet. Share your link to get started! 🚀</p>';
-        return;
-    }
-
-    // Identify the current user's node
-    const currentUserId = '{{ auth()->user()->id }}'; 
-    data.nodes.forEach(d => {
-        d.is_current_user = (d.id == currentUserId);
-    });
-
-    rootData = d3.stratify()
-        .id(d => d.id)
-        .parentId(d => d.parent_id)
-        (data.nodes);
-
-    svg = d3.select(container).append("svg")
-        .style("width", "100%")
-        .style("height", "100%")
-        .attr("viewBox", `0 0 ${container.clientWidth} ${container.clientHeight}`)
-        .attr("preserveAspectRatio", "xMidYMid meet");
-
-    g = svg.append("g");
-
-    const zoom = d3.zoom()
-        .scaleExtent([0.1, 4])
-        .on("zoom", (event) => {
-            g.attr("transform", event.transform);
-        });
-    svg.call(zoom);
-
-    function redraw() {
-        const containerWidth = container.clientWidth;
-        const containerHeight = container.clientHeight;
-        const margin = { top: 60, right: 20, bottom: 20, left: 20 };
-        const innerWidth = containerWidth - margin.left - margin.right;
-        const innerHeight = containerHeight - margin.top - margin.bottom;
-
-        const treeHeight = Math.max(innerHeight, rootData.height * 100);
-        const treeWidth = Math.max(innerWidth, (rootData.leaves().length * 60));
-
-        treeLayout = d3.tree().size([treeWidth, treeHeight]);
-        treeLayout(rootData);
-
-        let minX = Infinity, maxX = -Infinity;
-        rootData.descendants().forEach(d => {
-            minX = Math.min(minX, d.x);
-            maxX = Math.max(maxX, d.x);
-        });
-        const treeOccupiedWidth = maxX - minX;
-        const offsetX = (innerWidth - treeOccupiedWidth) / 2 - minX;
-        const offsetY = 0;
-
-        g.attr("transform", `translate(${margin.left + offsetX},${margin.top + offsetY})`);
-
-        // Update links
-        const link = g.selectAll('.link')
-            .data(rootData.links(), d => d.target.id);
-
-        link.enter().insert('path', 'g')
-            .attr('class', 'link')
-            .attr('d', d3.linkVertical()
-                .x(d => d.x)
-                .y(d => d.y));
-
-        link.transition().duration(500)
-            .attr('d', d3.linkVertical()
-                .x(d => d.x)
-                .y(d => d.y));
-
-        link.exit().remove();
-
-        // Update nodes
-        const node = g.selectAll('.node')
-            .data(rootData.descendants(), d => d.id);
-
-        const nodeEnter = node.enter().append('g')
-            .attr('class', 'node')
-            .attr('transform', d => `translate(${d.x},${d.y})`);
-
-        nodeEnter.append('circle')
-            .attr('r', 8)
-            .attr('class', d => d.data.is_current_user ? 'current-user-node' : 'default-node');
-
-        nodeEnter.append('text')
-            .attr('dy', '0.31em')
-            .attr('y', d => d.children ? -15 : 15)
-            .attr('text-anchor', 'middle')
-            .text(d => d.data.name)
-            .attr('class', d => d.data.is_current_user ? 'current-user-text' : 'default-text');
-
-        // Add a marker for the current user
-        nodeEnter.filter(d => d.data.is_current_user)
-            .append('path')
-            .attr('d', d3.symbol(d3.symbolStar, 80)) // A star marker
-            .attr('class', 'current-user-marker')
-            .attr('transform', `translate(0, -20)`); // Position above the node
-
-        node.transition().duration(500)
-            .attr('transform', d => `translate(${d.x},${d.y})`);
-
-        node.exit().remove();
-
-        svg.attr("viewBox", `0 0 ${containerWidth} ${containerHeight}`);
-    }
-
-    redraw();
-    window.addEventListener('resize', redraw);
-}
-
-document.addEventListener('DOMContentLoaded', fetchAndDrawTree);
-</script>
 </x-app-layout>

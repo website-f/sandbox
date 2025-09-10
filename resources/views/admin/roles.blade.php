@@ -25,45 +25,71 @@
                 </button>
             </form>
 
-            {{-- Users table --}}
             <table class="w-full border border-gray-200 rounded-xl overflow-hidden">
-                <thead class="bg-gray-50 text-left text-sm font-semibold text-gray-600">
-                    <tr>
-                        <th class="px-4 py-3">Name</th>
-                        <th class="px-4 py-3">Email</th>
-                        <th class="px-4 py-3">Role</th>
-                        <th class="px-4 py-3">Action</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-100">
-                    @forelse($users as $user)
-                        <tr>
-                            <td class="px-4 py-3">{{ $user->name }}</td>
-                            <td class="px-4 py-3">{{ $user->email }}</td>
-                            <td class="px-4 py-3">
-                                @if($user->hasRole('Admin'))
-                                    <span class="px-2 py-1 rounded-full bg-indigo-100 text-indigo-700 text-xs font-medium">Admin</span>
-                                @else
-                                    <span class="px-2 py-1 rounded-full bg-gray-100 text-gray-600 text-xs font-medium">User</span>
-                                @endif
-                            </td>
-                            <td class="px-4 py-3">
-                                <form method="POST" action="{{ route('admin.users.toggleAdmin', $user) }}">
-                                    @csrf
-                                    <button class="px-3 py-1 rounded-lg text-sm font-semibold text-white 
-                                        {{ $user->hasRole('Admin') ? 'bg-red-500 hover:bg-red-600' : 'bg-indigo-600 hover:bg-indigo-700' }}">
-                                        {{ $user->hasRole('Admin') ? 'Remove Admin' : 'Make Admin' }}
-                                    </button>
-                                </form>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="4" class="px-4 py-6 text-center text-gray-500">No users found.</td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
+    <thead class="bg-gray-50 text-left text-sm font-semibold text-gray-600">
+        <tr>
+            <th class="px-4 py-3">RM No</th>
+            <th class="px-4 py-3">SB No</th>
+            <th class="px-4 py-3">Name</th>
+            <th class="px-4 py-3">Email</th>
+            <th class="px-4 py-3">Phone</th>
+            <th class="px-4 py-3">Referrer</th>
+            <th class="px-4 py-3">Role</th>
+            <th class="px-4 py-3">Action</th>
+        </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100">
+        @forelse($users as $user)
+            @php
+                $rizqmall = $user->accounts->firstWhere('type', 'rizqmall');
+                $sandbox  = $user->accounts->firstWhere('type', 'sandbox');
+            @endphp
+            <tr>
+                <td class="px-4 py-3 text-sm">
+                    @if($rizqmall && $rizqmall->active)
+                        <span class="font-semibold text-gray-800">{{ $rizqmall->serial_number }}</span>
+                    @else
+                        <span class="text-gray-400 italic">Inactive</span>
+                    @endif
+                </td>
+                <td class="px-4 py-3 text-sm">
+                    @if($sandbox && $sandbox->active)
+                        <span class="font-semibold text-gray-800">{{ $sandbox->serial_number }}</span>
+                    @else
+                        <span class="text-gray-400 italic">Inactive</span>
+                    @endif
+                </td>
+                <td class="px-4 py-3">{{ $user->name }}</td>
+                <td class="px-4 py-3">{{ $user->email }}</td>
+                <td class="px-4 py-3">{{ $user->profile->phone ?? '-' }}</td>
+                <td class="px-4 py-3">
+                    {{ $user->referral?->parent?->name ?? '-' }}
+                </td>
+                <td class="px-4 py-3">
+                    @if($user->hasRole('Admin'))
+                        <span class="px-2 py-1 rounded-full bg-indigo-100 text-indigo-700 text-xs font-medium">Admin</span>
+                    @else
+                        <span class="px-2 py-1 rounded-full bg-gray-100 text-gray-600 text-xs font-medium">User</span>
+                    @endif
+                </td>
+                <td class="px-4 py-3">
+                    <form method="POST" action="{{ route('admin.users.toggleAdmin', $user) }}">
+                        @csrf
+                        <button class="px-3 py-1 rounded-lg text-sm font-semibold text-white 
+                            {{ $user->hasRole('Admin') ? 'bg-red-500 hover:bg-red-600' : 'bg-indigo-600 hover:bg-indigo-700' }}">
+                            {{ $user->hasRole('Admin') ? 'Remove Admin' : 'Make Admin' }}
+                        </button>
+                    </form>
+                </td>
+            </tr>
+        @empty
+            <tr>
+                <td colspan="8" class="px-4 py-6 text-center text-gray-500">No users found.</td>
+            </tr>
+        @endforelse
+    </tbody>
+</table>
+
 
             {{-- Pagination --}}
             <div class="mt-6">

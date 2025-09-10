@@ -9,8 +9,8 @@ class UserRoleController extends Controller
 {
     public function index(Request $request)
     {
-        $query = User::with('roles');
-
+        $query = User::with(['roles', 'accounts', 'profile', 'referral.parent']);
+    
         // Search by name or email
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {
@@ -18,11 +18,12 @@ class UserRoleController extends Controller
                   ->orWhere('email', 'like', "%{$search}%");
             });
         }
-
+    
         $users = $query->orderBy('name')->paginate(10)->withQueryString();
-
+    
         return view('admin.roles', compact('users'));
     }
+
 
     public function toggleAdmin(User $user)
     {

@@ -18,6 +18,17 @@ class SubscriptionController extends Controller
     public function subscribe(Request $request, $plan)
     {
         $user = $request->user();
+
+        if ($plan === 'sandbox') {
+        $rizqmallAccount = Account::where('user_id', $user->id)
+                ->where('type', 'rizqmall')
+                ->where('active', true)
+                ->first();
+    
+            if (!$rizqmallAccount) {
+                return redirect()->back()->with('error', 'You must subscribe to RizqMall first before subscribing to Sandbox.');
+            }
+        }
     
         // pricing
         $basePrice = match ($plan) {

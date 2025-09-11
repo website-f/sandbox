@@ -63,13 +63,27 @@
                             <td class="px-4 py-3">{{ $user->email }}</td>
                             <td class="px-4 py-3">{{ $user->profile->phone ?? '-' }}</td>
                             <td class="px-4 py-3">
-                                <button 
-                                    type="button" 
-                                    class="px-2 py-1 rounded-md {{ $user->referral?->parent ? 'bg-green-500 hover:bg-green-600' : 'bg-indigo-600 hover:bg-indigo-700' }} text-sm text-white font-medium"
-                                    onclick="openReferralModal({{ $user->id }}, '{{ $user->name }}')">
-                                    {{ $user->referral?->parent?->name ?? 'Assign Referrer' }}
-                                </button>
-                            </td>
+    <div class="inline-flex rounded-md shadow-sm">
+        {{-- Main button (assign or show referrer) --}}
+        <button 
+            type="button" 
+            class="px-2 py-1 rounded-l-md {{ $user->referral?->parent ? 'bg-green-500 hover:bg-green-600' : 'bg-indigo-600 hover:bg-indigo-700' }} text-sm text-white font-medium"
+            onclick="openReferralModal({{ $user->id }}, '{{ $user->name }}')">
+            {{ $user->referral?->parent?->name ?? 'Assign Referrer' }}
+        </button>
+
+        {{-- X button (remove referrer) --}}
+        @if($user->referral?->parent)
+            <button 
+                type="button"
+                onclick="openRemoveReferralModal({{ $user->id }}, '{{ $user->name }}')"
+                class="px-2 py-1 rounded-r-md bg-red-500 hover:bg-red-600 text-sm text-white font-bold">
+                ×
+            </button>
+        @endif
+    </div>
+</td>
+
 
 
             
@@ -128,6 +142,48 @@
             </form>
         </div>
     </div>
+
+    <div id="removeReferralModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-800 bg-opacity-50">
+        <div class="bg-white rounded-xl shadow-lg w-full max-w-md p-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">Remove Referrer</h2>
+            <p class="text-gray-600 mb-6">
+                Are you sure you want to remove the referrer for 
+                <span id="removeReferralUserName" class="font-semibold text-gray-900"></span>?
+            </p>
+    
+            <div class="flex justify-end space-x-3">
+                <button onclick="closeRemoveReferralModal()"
+                    class="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium">
+                    Cancel
+                </button>
+                <form id="removeReferralForm" method="POST">
+                    @csrf
+                    <button type="submit" 
+                        class="px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white font-medium">
+                        Remove
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+<script>
+let removeReferralUserId = null;
+
+function openRemoveReferralModal(userId, userName) {
+    removeReferralUserId = userId;
+    document.getElementById("removeReferralUserName").innerText = userName;
+
+    const form = document.getElementById("removeReferralForm");
+    form.action = `/admin/users/${userId}/remove-referral`;
+
+    document.getElementById("removeReferralModal").classList.remove("hidden");
+}
+
+function closeRemoveReferralModal() {
+    document.getElementById("removeReferralModal").classList.add("hidden");
+}
+</script>
 
 
     <script>

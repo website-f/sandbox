@@ -50,6 +50,9 @@ Route::middleware('auth')->group(function(){
     ->name('admin.users.assignReferral');
     Route::get('/admin/users/referral-list', [UserRoleController::class, 'referralList'])
     ->name('admin.users.referralList');
+    Route::post('/admin/users/{user}/remove-referral', [UserRoleController::class, 'removeReferral'])
+    ->name('admin.users.removeReferral');
+
 
 
     // Subscription actions

@@ -116,6 +116,21 @@ class UserRoleController extends Controller
         return view('partial.referral-list', compact('users')); // 👈 always return partial
     }
 
+    public function removeReferral(User $user)
+    {
+        if (!$user->referral) {
+            return back()->with('error', "{$user->name} does not have a referrer.");
+        }
+    
+        $user->referral->update([
+            'parent_id' => null,
+            'root_id'   => null,
+        ]);
+    
+        return back()->with('status', "Referrer removed for {$user->name}.");
+    }
+
+
 
     
 }

@@ -59,34 +59,34 @@
                                     <span class="text-red-600 font-semibold italic">Inactive</span>
                                 @endif
                             </td>
-                            <td class="px-4 py-3">{{ $user->name }}</td>
+                            <td class="px-4 py-3">
+                                {{ $user->profile?->full_name ?? $user->name }}
+                            </td>
+
                             <td class="px-4 py-3">{{ $user->email }}</td>
                             <td class="px-4 py-3">{{ $user->profile->phone ?? '-' }}</td>
                             <td class="px-4 py-3">
-    <div class="inline-flex rounded-md shadow-sm">
-        {{-- Main button (assign or show referrer) --}}
-        <button 
-            type="button" 
-            class="px-2 py-1 rounded-l-md {{ $user->referral?->parent ? 'bg-green-500 hover:bg-green-600' : 'bg-indigo-600 hover:bg-indigo-700' }} text-sm text-white font-medium"
-            onclick="openReferralModal({{ $user->id }}, '{{ $user->name }}')">
-            {{ $user->referral?->parent?->name ?? 'Assign Referrer' }}
-        </button>
+                                <div class="inline-flex rounded-md shadow-sm">
+                                    {{-- Main button (assign or show referrer) --}}
+                                    <button 
+                                        type="button" 
+                                        class="px-2 py-1 rounded-l-md {{ $user->referral?->parent ? 'bg-green-500 hover:bg-green-600' : 'bg-indigo-600 hover:bg-indigo-700' }} text-sm text-white font-medium"
+                                        onclick="openReferralModal({{ $user->id }}, '{{ $user->name }}')">
+                                        {{ $user->referral?->parent?->name ?? 'Assign Referrer' }}
+                                    </button>
+                            
+                                    {{-- X button (remove referrer) --}}
+                                    @if($user->referral?->parent)
+                                        <button 
+                                            type="button"
+                                            onclick="openRemoveReferralModal({{ $user->id }}, '{{ $user->name }}')"
+                                            class="px-2 py-1 rounded-r-md bg-red-500 hover:bg-red-600 text-sm text-white font-bold">
+                                            ×
+                                        </button>
+                                    @endif
+                                </div>
+                            </td>
 
-        {{-- X button (remove referrer) --}}
-        @if($user->referral?->parent)
-            <button 
-                type="button"
-                onclick="openRemoveReferralModal({{ $user->id }}, '{{ $user->name }}')"
-                class="px-2 py-1 rounded-r-md bg-red-500 hover:bg-red-600 text-sm text-white font-bold">
-                ×
-            </button>
-        @endif
-    </div>
-</td>
-
-
-
-            
                             <td class="px-4 py-3">
                                 @if($user->hasRole('Admin'))
                                     <span class="px-2 py-1 rounded-full bg-indigo-100 text-indigo-700 text-xs font-medium">Admin</span>
@@ -167,68 +167,68 @@
         </div>
     </div>
 
-<script>
-let removeReferralUserId = null;
-
-function openRemoveReferralModal(userId, userName) {
-    removeReferralUserId = userId;
-    document.getElementById("removeReferralUserName").innerText = userName;
-
-    const form = document.getElementById("removeReferralForm");
-    form.action = `/admin/users/${userId}/remove-referral`;
-
-    document.getElementById("removeReferralModal").classList.remove("hidden");
-}
-
-function closeRemoveReferralModal() {
-    document.getElementById("removeReferralModal").classList.add("hidden");
-}
-</script>
-
-
     <script>
-function openReferralModal(userId, userName) {
-    selectedUserId = userId;
-    document.getElementById("modalUserName").innerText = userName;
-    document.getElementById("referralModal").classList.remove("hidden");
-
-    loadReferralList();
-}
-
-function loadReferralList(query = '', page = 1) {
-    fetch(`{{ route('admin.users.referralList') }}?search=${encodeURIComponent(query)}&page=${page}`)
-        .then(res => res.text())
-        .then(html => {
-            const container = document.getElementById("referralList");
-            container.innerHTML = html;
-
-            // Rebind pagination links so they load via AJAX
-            container.querySelectorAll(".pagination a").forEach(link => {
-                link.addEventListener("click", function (e) {
-                    e.preventDefault();
-                    const url = new URL(this.href);
-                    const page = url.searchParams.get("page") || 1;
-                    loadReferralList(document.getElementById("referralSearch").value, page);
+        let removeReferralUserId = null;
+        
+        function openRemoveReferralModal(userId, userName) {
+            removeReferralUserId = userId;
+            document.getElementById("removeReferralUserName").innerText = userName;
+        
+            const form = document.getElementById("removeReferralForm");
+            form.action = `/admin/users/${userId}/remove-referral`;
+        
+            document.getElementById("removeReferralModal").classList.remove("hidden");
+        }
+        
+        function closeRemoveReferralModal() {
+            document.getElementById("removeReferralModal").classList.add("hidden");
+        }
+    </script>
+    
+    
+    <script>
+        function openReferralModal(userId, userName) {
+            selectedUserId = userId;
+            document.getElementById("modalUserName").innerText = userName;
+            document.getElementById("referralModal").classList.remove("hidden");
+        
+            loadReferralList();
+        }
+        
+        function loadReferralList(query = '', page = 1) {
+            fetch(`{{ route('admin.users.referralList') }}?search=${encodeURIComponent(query)}&page=${page}`)
+                .then(res => res.text())
+                .then(html => {
+                    const container = document.getElementById("referralList");
+                    container.innerHTML = html;
+        
+                    // Rebind pagination links so they load via AJAX
+                    container.querySelectorAll(".pagination a").forEach(link => {
+                        link.addEventListener("click", function (e) {
+                            e.preventDefault();
+                            const url = new URL(this.href);
+                            const page = url.searchParams.get("page") || 1;
+                            loadReferralList(document.getElementById("referralSearch").value, page);
+                        });
+                    });
                 });
-            });
-        });
-}
-
-
-
-function filterReferralList() {
-    let q = document.getElementById("referralSearch").value;
-    loadReferralList(q);
-}
-
-function assignReferrer(referrerId) {
-    const form = document.getElementById("assignReferralForm");
-    form.action = `/admin/users/${selectedUserId}/assign-referral`;
-    document.getElementById("referrerId").value = referrerId;
-    form.submit();
-}
-</script>
-
-
+        }
+        
+        
+        
+        function filterReferralList() {
+            let q = document.getElementById("referralSearch").value;
+            loadReferralList(q);
+        }
+        
+        function assignReferrer(referrerId) {
+            const form = document.getElementById("assignReferralForm");
+            form.action = `/admin/users/${selectedUserId}/assign-referral`;
+            document.getElementById("referrerId").value = referrerId;
+            form.submit();
+        }
+    </script>
+    
+    
 
 </x-app-layout>

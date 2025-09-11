@@ -179,7 +179,9 @@
                                 <td class="px-4 py-3 text-sm {{ $sandbox->serial_number ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold' }}">
                                     {{ $sandbox->serial_number ?? 'inactive' }}
                                 </td>
-                                <td class="px-4 py-3">{{ $u->name }}</td>
+                                <td class="px-4 py-3">
+                                     {{ $u->profile?->full_name ?? $u->name }}
+                                 </td>
                                 <td class="px-4 py-3">{{ $u->email }}</td>
                                 <td class="px-4 py-3">{{ $u->profile->phone ?? '-' }}</td>
                                 <td class="px-4 py-3">{{ $u->referral?->parent?->name ?? '-' }}</td>
@@ -275,7 +277,9 @@
                                     {{ $sandbox->serial_number ?? 'inactive' }}
                                 </td>
         
-                                <td class="px-4 py-3">{{ $u->name }}</td>
+                                 <td class="px-4 py-3">
+                                     {{ $u->profile?->full_name ?? $u->name }}
+                                 </td>
                                 <td class="px-4 py-3">{{ $u->email }}</td>
                                 <td class="px-4 py-3">{{ $u->profile->phone ?? '-' }}</td>
                                 <td class="px-4 py-3">

@@ -58,6 +58,12 @@ public function referrer()
   public function affiliations(){ return $this->hasMany(Affiliation::class); }
 
   public function referral(){ return $this->hasOne(Referral::class); }
+  public function referrals()
+{
+    // all Referral records where this user is the parent/upline
+    return $this->hasMany(Referral::class, 'parent_id', 'id');
+}
+
   public function accounts(){ return $this->hasMany(Account::class); }
   public function subscriptions(){ return $this->hasMany(Subscription::class); }
 }

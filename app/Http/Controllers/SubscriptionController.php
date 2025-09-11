@@ -10,6 +10,8 @@ use App\Models\Collection;
 use App\Models\Subscription;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use App\Services\ReferralRewardService;
+
 
 class SubscriptionController extends Controller
 {
@@ -164,18 +166,16 @@ class SubscriptionController extends Controller
             }
 
             if ($subscription->plan === 'sandbox') {
-                $collection = Collection::firstOrCreate(['user_id' => $subscription->user_id]);
-                $collection->credit(
-                    $subscription->amount, // RM30000 (in cents)
-                    "Initial Sandbox subscription",
-                    $subscription->id
-                );
+                app(\App\Services\ReferralRewardService::class)
+                    ->processSandboxRewards($subscription->user);
             
-                \Log::info("Sandbox Tabung credited", [
+                \Log::info("Referral tree rewards processed for sandbox", [
                     'user_id' => $subscription->user_id,
-                    'amount'  => $subscription->amount,
+                    'plan'    => $subscription->plan,
                 ]);
             }
+
+
 
         }
 

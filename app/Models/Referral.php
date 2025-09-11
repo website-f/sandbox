@@ -26,4 +26,15 @@ public function root() {
 public function user() {
     return $this->belongsTo(User::class);
 }
+
+// in App\Models\Referral.php
+public function rootUser()
+{
+    $current = $this->user; // start from the current user
+    while ($current->referral && $current->referral->parent) {
+        $current = $current->referral->parent;
+    }
+    return $current;
+}
+
 }

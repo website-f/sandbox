@@ -2,8 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use Carbon\Carbon;
 use App\Models\User;
+use App\Models\Account;
+use App\Models\Referral;
+use Illuminate\Support\Str;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 
 class UserRoleController extends Controller
 {
@@ -130,7 +135,328 @@ class UserRoleController extends Controller
         return back()->with('status', "Referrer removed for {$user->name}.");
     }
 
+    public function create()
+    {
+        return view('admin.user-create');
+    }
+    
+    public function store(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users',
+            'password' => 'nullable|min:6',
+            'rizqmall_start' => 'nullable|date',
+    
+            // validate manual serials if provided
+            'rizqmall_serial' => 'nullable|string|unique:accounts,serial_number',
+            'sandbox_serial' => 'nullable|string|unique:accounts,serial_number',
+        ]);
+    
+        $user = User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => Hash::make($request->password ?? 'password123'),
+        ]);
+    
+        // Referral
+        $refCode = $this->generateUniqueRefCode();
+        Referral::create([
+            'user_id' => $user->id,
+            'ref_code' => $refCode,
+            'level' => 1,
+        ]);
+    
+        // Rizqmall
+        if ($request->rizqmall_active) {
+            $serial = $request->rizqmall_serial_mode === 'manual'
+                ? $request->rizqmall_serial
+                : $this->generateUniqueSerial('rizqmall');
+    
+            $start = Carbon::parse($request->rizqmall_start);
+            $expires = $start->copy()->addYear();
+    
+            Account::create([
+                'user_id' => $user->id,
+                'type' => 'rizqmall',
+                'active' => true,
+                'serial_number' => $serial,
+                'expires_at' => $expires,
+            ]);
+        }
+    
+        // Sandbox
+        if ($request->sandbox_active) {
+            $serial = $request->sandbox_serial_mode === 'manual'
+                ? $request->sandbox_serial
+                : $this->generateUniqueSerial('sandbox');
+    
+            Account::create([
+                'user_id' => $user->id,
+                'type' => 'sandbox',
+                'active' => true,
+                'serial_number' => $serial,
+            ]);
+        }
+    
+        return redirect()->route('admin.users.index')
+            ->with('status', "User {$user->name} created.");
+    }
 
+    
+    protected function generateUniqueRefCode()
+    {
+        do {
+            $code = strtoupper(Str::random(8));
+        } while (Referral::where('ref_code', $code)->exists());
+    
+        return $code;
+    }
+    
+    protected function generateUniqueSerial($type)
+    {
+        do {
+            $serial = Account::generateSerial($type);
+        } while (Account::where('serial_number', $serial)->exists());
+    
+        return $serial;
+    }
+
+    public function checkSerial(Request $request)
+{
+    $request->validate([
+        'serial' => 'required|string',
+    ]);
+
+    $exists = Account::where('serial_number', $request->serial)->exists();
+
+    return response()->json([
+        'exists' => $exists
+    ]);
+}
+
+// app/Http/Controllers/UserController.php
+public function checkEmail(Request $request)
+{
+    $exists = \App\Models\User::where('email', $request->email)->exists();
+
+    return response()->json(['exists' => $exists]);
+}
+
+/**
+ * Show full user detail page
+ */
+public function show(User $user)
+{
+    // eager load everything useful
+    $user->load([
+        'profile',
+        'business',
+        'education',
+        'courses',
+        'nextOfKin',
+        'affiliations',
+        'accounts',
+        'wallet',
+        'wallet.transactions',
+        'subscriptions.payment',
+        // referral relations
+        'referrals',
+    ]);
+
+    // build small summary for wallet and payments (latest 20 items)
+    $walletTransactions = $user->wallet?->transactions()->latest()->limit(50)->get() ?? collect();
+    $payments = \App\Models\Payment::whereHas('subscription', fn($q)=>$q->where('user_id', $user->id))->latest()->limit(50)->get();
+
+    return view('admin.user-show', compact('user', 'walletTransactions', 'payments'));
+}
+
+/**
+ * Toggle admin via AJAX (also still allow old toggleAdmin for form)
+ */
+public function toggleAdminAjax(Request $request, User $user)
+{
+    // authorize: allow only Admins to do this
+    if (!auth()->user()->can('manage users')) {
+        abort(403);
+    }
+
+    if ($user->hasRole('Admin')) {
+        $user->removeRole('Admin');
+        $status = 'removed';
+    } else {
+        $user->assignRole('Admin');
+        $status = 'assigned';
+    }
+
+    return response()->json(['ok' => true, 'status' => $status, 'is_admin' => $user->hasRole('Admin')]);
+}
+
+/**
+ * Toggle account active/inactive (account is route-model bound)
+ */
+public function toggleAccountActive(Request $request, User $user, Account $account)
+{
+    if ($account->user_id !== $user->id) abort(404);
+    if (!auth()->user()->can('manage users')) abort(403);
+
+    $account->active = ! $account->active;
+    $account->save();
+
+    return response()->json(['ok' => true, 'active' => $account->active]);
+}
+
+/**
+ * Update account serial (manual edit)
+ */
+public function updateAccountSerial(Request $request, User $user, Account $account)
+{
+    $request->validate([
+        'serial_number' => 'required|string|max:255|unique:accounts,serial_number,' . $account->id,
+    ]);
+
+    if ($account->user_id !== $user->id) abort(404);
+    if (!auth()->user()->can('manage users')) abort(403);
+
+    $account->serial_number = $request->serial_number;
+    $account->save();
+
+    return response()->json(['ok' => true, 'serial' => $account->serial_number]);
+}
+
+public function referralTree(User $user)
+{
+    $ref = $user->referral;
+    if (!$ref) {
+        return response()->json(['tree' => []]);
+    }
+
+    // build full tree first
+    $tree = $this->buildReferralTree($ref->id);
+
+    // limit top-level children to 10
+    if (isset($tree['children']) && is_array($tree['children'])) {
+        $tree['children'] = array_slice($tree['children'], 0, 10);
+    }
+
+    return response()->json(['tree' => $tree]);
+}
+
+
+/**
+ * For sandbox_referrals (separate table)
+ */
+public function sandboxReferralTree(User $user)
+{
+    // Try find sandbox referral row directly for this user
+    $root = \DB::table('sandbox_referrals')->where('user_id', $user->id)->first();
+
+    // If none, check if this user is a parent of any sandbox_referrals
+    if (!$root) {
+        $child = \DB::table('sandbox_referrals')->where('parent_id', $user->id)->first();
+        if ($child) {
+            // fake root node for this user
+            $root = (object)[
+                'id'      => "u{$user->id}", // avoid collision with real ids
+                'user_id' => $user->id,
+                'parent_id' => null,
+                'root_id' => null,
+            ];
+        }
+    }
+
+    if (!$root) {
+        return response()->json(['tree' => []]);
+    }
+
+    $all = \DB::table('sandbox_referrals')->get()->keyBy('id')->toArray();
+
+    $node = $this->buildSandboxTree($all, $root->id, $root->user_id);
+    return response()->json(['tree' => $node]);
+}
+
+/** helper: build referral tree from referrals table (Eloquent) */
+protected function buildReferralTree($referralId)
+{
+    $ref = \App\Models\Referral::with('user')->find($referralId);
+    if (!$ref) return null;
+
+    $node = [
+        'id'      => $ref->id,
+        'user_id' => $ref->user_id,
+        'name'    => $ref->user->name ?? $ref->user_id,
+        'children'=> []
+    ];
+
+    // FIX: children match parent_id (user_id of current node)
+    $children = \App\Models\Referral::where('parent_id', $ref->user_id)->get();
+
+    foreach ($children as $childRef) {
+        $node['children'][] = $this->buildReferralTree($childRef->id);
+    }
+
+    return $node;
+}
+
+
+/** helper for sandbox_referrals tree (array of objects keyed by id) */
+protected function buildSandboxTree($all, $referralId, $fallbackUserId = null)
+{
+    if (is_string($referralId) && str_starts_with($referralId, 'u')) {
+        // fake root case
+        $userId = $fallbackUserId;
+        $node = [
+            'id'      => $referralId,
+            'user_id' => $userId,
+            'name'    => \App\Models\User::find($userId)?->name ?? $userId,
+            'children'=> []
+        ];
+
+        // children = rows where parent_id == this user_id
+        $children = collect($all)->where('parent_id', $userId);
+        foreach ($children as $child) {
+            $node['children'][] = $this->buildSandboxTree($all, $child->id);
+        }
+
+        return $node;
+    }
+
+    $self = $all[$referralId] ?? null;
+    if (!$self) return null;
+
+    $node = [
+        'id'      => $self->id,
+        'user_id' => $self->user_id,
+        'name'    => \App\Models\User::find($self->user_id)?->name ?? $self->user_id,
+        'children'=> []
+    ];
+
+    $children = collect($all)->where('parent_id', $self->id);
+    foreach ($children as $child) {
+        $node['children'][] = $this->buildSandboxTree($all, $child->id);
+    }
+
+    return $node;
+}
+
+
+public function edit(User $user)
+{
+    $user->load(['profile', 'accounts', 'referrals']);
+    return view('admin.user-edit', compact('user'));
+}
+
+public function update(Request $request, User $user)
+{
+    $request->validate([
+        'name' => 'required|string|max:255',
+        'email' => 'required|email|unique:users,email,' . $user->id,
+    ]);
+
+    $user->update($request->only('name', 'email'));
+
+    return redirect()->route('admin.users.show', $user)->with('success', 'User updated.');
+}
 
     
 }

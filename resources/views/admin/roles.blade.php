@@ -25,7 +25,12 @@
                 </button>
             </form>
 
-            <table class="w-full border border-gray-200 rounded-xl overflow-hidden">
+            <a href="{{ route('admin.users.create') }}"
+               class="ml-4 px-4 text-white py-2 rounded-lg shadow" style="background-color: #0d6efd">
+               + Add User
+            </a>
+
+            <table class="w-full border border-gray-200 rounded-xl mt-4 overflow-hidden">
                 <thead class="bg-gray-50 text-left text-sm font-semibold text-gray-600">
                     <tr>
                         <th class="px-4 py-3">RM No</th>
@@ -95,6 +100,13 @@
                                 @endif
                             </td>
                             <td class="px-4 py-3">
+                                <a href="{{ route('admin.users.show', $user) }}"
+                                    class="px-3 py-1 rounded-lg text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700">
+                                    View
+                                </a>
+                            </td>
+                            
+                            {{-- <td class="px-4 py-3">
                                 <form method="POST" action="{{ route('admin.users.toggleAdmin', $user) }}">
                                     @csrf
                                     <button class="px-3 py-1 rounded-lg text-sm font-semibold text-white 
@@ -102,7 +114,7 @@
                                         {{ $user->hasRole('Admin') ? 'Remove Admin' : 'Make Admin' }}
                                     </button>
                                 </form>
-                            </td>
+                            </td> --}}
                         </tr>
                     @empty
                         <tr>

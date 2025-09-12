@@ -40,8 +40,8 @@
             
         </div>
 
-        <div class="2xl:flex-1">
-            <div class="w-full xl:flex xl:space-x-[24px]">
+        <div class="2xl">
+            <div class="w-full">
                 {{-- Overall Balance Chart --}}
                 <div class="mb-12 flex w-full flex-col justify-between rounded-lg bg-white px-8 py-7 xl:w-[613px]">
                     <div class="mb-2 flex items-center justify-between pb-2">

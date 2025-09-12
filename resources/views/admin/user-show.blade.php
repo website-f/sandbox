@@ -89,7 +89,7 @@
                                 <dl class="text-sm text-gray-700">
                                     <div><span class="font-medium">Full name:</span> {{ $user->profile?->full_name ?? '-' }}</div>
                                     <div><span class="font-medium">NRIC:</span> {{ $user->profile?->nric ?? '-' }}</div>
-                                    <div><span class="font-medium">DOB:</span> {{ $user->profile?->dob?->format('d M Y') ?? '-' }}</div>
+                                    <div><span class="font-medium">DOB:</span> {{ $user->profile?->dob ?? '-' }}</div>
                                     <div><span class="font-medium">Address:</span> {!! nl2br(e($user->profile?->home_address ?? '-')) !!}</div>
                                 </dl>
                             </div>

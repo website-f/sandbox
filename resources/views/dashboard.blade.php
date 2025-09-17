@@ -302,6 +302,19 @@
 
     </div>
 </div>
-
+<script>
+function copyToClipboard(button) {
+    const input = button.previousElementSibling; // get the <input>
+    input.select();
+    input.setSelectionRange(0, 99999); // for mobile
+    navigator.clipboard.writeText(input.value)
+        .then(() => {
+            // Optional: small feedback
+            button.classList.add("text-green-600");
+            setTimeout(() => button.classList.remove("text-green-600"), 1500);
+        })
+        .catch(err => console.error("Failed to copy:", err));
+}
+</script>
 
 </x-app-layout>

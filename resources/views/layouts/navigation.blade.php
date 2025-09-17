@@ -105,6 +105,12 @@
                 <x-responsive-nav-link :href="route('profile.index')">
                     {{ __('Profile') }}
                 </x-responsive-nav-link>
+                    <x-responsive-nav-link :href="route('wallet.users.index')" :active="request()->routeIs('wallet.users.index')">
+                        E-Wallet
+                    </x-responsive-nav-link>
+                    <x-responsive-nav-link :href="route('collection.index')" :active="request()->routeIs('collection.index')">
+                        Tabung
+                    </x-responsive-nav-link>
                 @if(auth()->user()->hasRole('Admin'))
                 <x-responsive-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.index')">
                     Assign Role

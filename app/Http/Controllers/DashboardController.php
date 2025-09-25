@@ -10,6 +10,12 @@ class DashboardController extends Controller {
         $user = $req->user();
         $accounts = $user->accounts->keyBy('type');
 
+        $subscriptions = $user->subscriptions()
+        ->with('payment')
+        ->latest()
+        ->get()
+        ->groupBy('plan');
+
         // Start query
         $query = User::with(['accounts', 'profile', 'referral.parent', 'referral']);
 
@@ -34,6 +40,6 @@ class DashboardController extends Controller {
         // ✅ Finalize query (same for admin + non-admin)
         $users = $query->orderBy('name')->paginate(10)->withQueryString();
 
-        return view('dashboard', compact('user','accounts','users'));
+        return view('dashboard', compact('user','accounts','users', 'subscriptions'));
     }
 }

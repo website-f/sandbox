@@ -46,22 +46,27 @@
                     $expiryText = '';
                     $serialText = '';
                     $showButton = true;
+
+                    // Check subscription progress for Sandbox
+                    $subscription = isset($subscriptions[$k]) ? $subscriptions[$k]->last() : null;
+                    $progressCount = ($subscription && $subscription->payment && $subscription->payment->status === 'success') ? 1 : 0;
+                    $totalInstallments = $subscription ? $subscription->installments_total : 0;
+
             
                     if($account) {
                         $expires = $account->expires_at ? \Carbon\Carbon::parse($account->expires_at) : null;
             
-                        if($account->active) {
+                        if ($account->active) {
                             $indicatorColor = 'bg-green-500';
                             $indicatorText = 'active';
                             $showButton = false;
             
-                            if($expires) {
-                                $expiryText = 'Valid until ' . $expires->toFormattedDateString();
-                            }
-
-                             if($account->serial_number) {
-                                $serialText = "Serial: {$account->serial_number}";
-                            }
+                            if ($expires) $expiryText = 'Valid until ' . $expires->toFormattedDateString();
+                            if ($account->serial_number) $serialText = "Serial: {$account->serial_number}";
+                        } elseif ($k === 'sandbox' && $subscription && $progressCount > 0) {
+                            // Sandbox pending installments
+                            $indicatorColor = 'bg-yellow-500';
+                            $indicatorText = "pending ({$progressCount}/{$totalInstallments})";
                         }
                     }
             
@@ -88,19 +93,156 @@
                     </div>
             
                     <div>
-                        @if($showButton)
-                            <button 
-                                x-data 
-                                @click="$dispatch('open-modal', {plan: '{{ $k }}', label: '{{ $label }}', base: '{{ $basePrice }}', tax: '{{ $tax }}', fpx: '{{ $fpx }}', final: '{{ $final }}'})"
-                                class="px-4 py-2 text-sm font-semibold text-white rounded-full shadow bg-indigo-600 hover:bg-indigo-700">
-                                Subscribe
-                            </button>
-                        @endif
+                        @php
+                            $nextAmount = 0;
+                            if ($subscription && $subscription->payment) {
+                                $paidCount = $subscription->installments_paid;
+                                $totalInstallments = $subscription->installments_total ?? 0;
+                        
+                                $basePrice = 300; // Sandbox base price
+                                $tax = round($basePrice * 0.08, 2);
+                                $fpx = 1.00;
+                                $installmentAmount = ($basePrice + $tax + $fpx) / $totalInstallments;
+                        
+                                if ($paidCount < $totalInstallments) {
+                                    $nextAmount = $installmentAmount;
+                                }
+                            }
+                        @endphp
+
+                       @if($showButton)
+                           @if($k === 'sandbox' && isset($subscriptions[$k]))
+                               @php $subscription = $subscriptions[$k]->last(); @endphp
+                       
+                               <p>
+                                   Progress: {{ $subscription->installments_paid }}
+                                   / {{ $subscription->installments_total }}
+                               </p>
+                       
+
+                               <button 
+                                  x-data
+                                  @click="$dispatch('open-pay-next-modal', {
+                                      subscriptionId: {{ json_encode($subscription->id) }},
+                                      amount: {{ json_encode($nextAmount) }}
+                                  })"
+                                  class="px-3 py-2 bg-indigo-600 text-white rounded-lg">
+                                  Pay Next Installment
+                              </button>
+
+
+                           @else
+                               {{-- 🔹 Sandbox → installment modal, RizqMall → simple modal --}}
+                               @if($k === 'sandbox')
+                                   <button 
+                                       x-data 
+                                       @click="$dispatch('open-installment-modal', {
+                                           plan: '{{ $k }}',
+                                           label: '{{ $label }}',
+                                           base: '{{ $basePrice }}',
+                                           tax: '{{ $tax }}',
+                                           fpx: '{{ $fpx }}',
+                                           final: '{{ $final }}'
+                                       })"
+                                       class="px-4 py-2 text-sm font-semibold text-white rounded-full shadow bg-indigo-600 hover:bg-indigo-700">
+                                       Subscribe
+                                   </button>
+                               @else
+                                   <button 
+                                       x-data 
+                                       @click="$dispatch('open-modal', {
+                                           plan: '{{ $k }}',
+                                           label: '{{ $label }}',
+                                           base: '{{ $basePrice }}',
+                                           tax: '{{ $tax }}',
+                                           fpx: '{{ $fpx }}',
+                                           final: '{{ $final }}'
+                                       })"
+                                       class="px-4 py-2 text-sm font-semibold text-white rounded-full shadow bg-indigo-600 hover:bg-indigo-700">
+                                       Subscribe
+                                   </button>
+                               @endif
+                           @endif
+                       @endif
+
+
                     </div>
                 </li>
             @endforeach
             
             {{-- Modal --}}
+
+            <div 
+    x-data="{ open: false, plan: '', label: '', base: 0, tax: 0, fpx: 0, final: 0, installments: 1 }"
+    x-on:open-installment-modal.window="open = true; plan = $event.detail.plan; label = $event.detail.label; base = $event.detail.base; tax = $event.detail.tax; fpx = $event.detail.fpx; final = $event.detail.final"
+    x-show="open"
+    style="display:none"
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+    
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 space-y-6">
+        <h2 class="text-lg font-bold text-gray-800" x-text="label + ' Subscription (Sandbox)'"></h2>
+
+        <p class="text-gray-600">Choose payment option:</p>
+        <div class="space-y-2">
+            <label class="flex items-center space-x-2">
+                <input type="radio" value="1" x-model="installments">
+                <span>Full Payment (RM <span x-text="final"></span>)</span>
+            </label>
+            <label class="flex items-center space-x-2">
+                <input type="radio" value="3" x-model="installments">
+                <span>3 Payments (RM <span x-text="(final/3).toFixed(2)"></span> each)</span>
+            </label>
+            <label class="flex items-center space-x-2">
+                <input type="radio" value="6" x-model="installments">
+                <span>6 Payments (RM <span x-text="(final/6).toFixed(2)"></span> each)</span>
+            </label>
+        </div>
+
+        <div class="flex justify-end gap-3">
+            <button @click="open = false" class="px-4 py-2 rounded-lg text-gray-600 hover:bg-gray-100">Cancel</button>
+            <form method="POST" :action="'/subscribe/' + plan">
+                @csrf
+                <input type="hidden" name="installments" x-model="installments">
+                <button type="submit" class="px-4 py-2 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700">
+                    Confirm & Pay
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Next Installment Modal -->
+<div 
+    x-data="{ open: false, subscriptionId: null, amount: 0 }"
+    x-on:open-pay-next-modal.window="open = true; subscriptionId = $event.detail.subscriptionId; amount = $event.detail.amount"
+    x-show="open"
+    style="display:none"
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 space-y-6">
+        <h2 class="text-lg font-bold text-gray-800">Pay Next Installment</h2>
+
+        <p class="text-gray-600">Are you sure you want to pay your next installment?</p>
+        <p class="font-semibold text-indigo-600">
+            Amount: RM <span x-text="amount.toFixed(2)"></span>
+        </p>
+
+        <div class="flex justify-end gap-3">
+            <button @click="open = false" class="px-4 py-2 rounded-lg text-gray-600 hover:bg-gray-100">Cancel</button>
+
+            <form method="POST" :action="'/subscribe/pay-next/' + subscriptionId">
+                @csrf
+                <button type="submit" class="px-4 py-2 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700">
+                    Confirm & Pay
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+
+
             <div 
                 x-data="{ open: false, plan: '', label: '', base: 0, tax: 0, fpx: 0, final: 0 }"
                 x-on:open-modal.window="open = true; plan = $event.detail.plan; label = $event.detail.label; base = $event.detail.base; tax = $event.detail.tax; fpx = $event.detail.fpx; final = $event.detail.final"

@@ -115,4 +115,7 @@ Route::post('/subscribe/{plan}', [SubscriptionController::class, 'subscribe'])->
 Route::post('/payment/callback', [SubscriptionController::class, 'paymentCallback'])->name('payment.callback');
 Route::get('/payment/return', [SubscriptionController::class, 'paymentReturn'])->name('payment.return');
 Route::get('/subscriptions/history', [SubscriptionController::class, 'history'])->name('subscriptions.history');
+Route::post('/subscribe/pay-next/{subscription}', [SubscriptionController::class, 'payNextInstallment'])
+    ->name('subscriptions.payNext');
+
 

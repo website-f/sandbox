@@ -16,94 +16,88 @@ use App\Services\ReferralRewardService;
 class SubscriptionController extends Controller
 {
     public function subscribe(Request $request, $plan)
-    {
-        $user = $request->user();
+{
+    $user = $request->user();
 
-        if ($plan === 'sandbox') {
+    $installments = (int) $request->input('installments', 1);
+
+    if ($plan === 'sandbox') {
         $rizqmallAccount = Account::where('user_id', $user->id)
-                ->where('type', 'rizqmall')
-                ->where('active', true)
-                ->first();
-    
-            if (!$rizqmallAccount) {
-                return redirect()->back()->with('error', 'You must subscribe to RizqMall first before subscribing to Sandbox.');
-            }
-        }
-    
-        // pricing
-        $basePrice = match ($plan) {
-            'sandbox' => 30000,   // RM300 one-time
-            'rizqmall' => 2000,   // RM20 yearly
-            default => throw new \Exception("Invalid plan"),
-        };
+            ->where('type', 'rizqmall')
+            ->where('active', true)
+            ->first();
 
-        $tax = (int) round($basePrice * 0.08); // 8% tax
-        $fpx = 100; // RM1 fixed
-        $finalPrice = $basePrice + $tax + $fpx;
-    
-    
-        // select ToyyibPay config based on plan
-        $cfg = config("services.toyyibpay.$plan");
-    
-        // create subscription
-        $subscription = Subscription::create([
-            'user_id'   => $user->id,
-            'plan'      => $plan,
-            'amount'    => $basePrice, // store base amount only
-            'status'    => 'pending',
-            'provider'  => 'toyyibpay',
-            'meta'      => [
-                'tax' => $tax,
-                'fpx' => $fpx,
-                'total' => $finalPrice,
-            ],
-        ]);
-    
-        // ToyyibPay API
-        $billName = ucfirst($plan) . " Subscription";
-        $billDescription = "Price: RM" . number_format($basePrice / 100, 2) .
-                   " + Tax (8%): RM" . number_format($tax / 100, 2) .
-                   " + FPX: RM" . number_format($fpx / 100, 2);
-
-        $phone = preg_replace('/\D/', '', $user->profile->phone ?? '0123456789');
-    
-        $response = Http::asForm()->post("{$cfg['url']}/index.php/api/createBill", [
-            'userSecretKey' => $cfg['secret'],
-            'categoryCode' => $cfg['category'],
-            'billName' => $billName,
-            'billDescription' => $billDescription,
-            'billPriceSetting' => 1,
-            'billAmount' => $finalPrice,
-            'billReturnUrl' => route('payment.return'),
-            'billCallbackUrl' => route('payment.callback'),
-            'billExternalReferenceNo' => $subscription->id,
-            'billTo' => $user->name,
-            'billEmail' => $user->email,
-            'billPhone' => $phone, 
-            'billPayorInfo' => 1,
-        ]);
-        
-        $data = $response->json()[0] ?? null;
-        
-        if (!$data || empty($data['BillCode'])) {
-            \Log::error('ToyyibPay failed response', ['resp' => $response->body()]);
-            return back()->with('error', $response->body());
+        if (!$rizqmallAccount) {
+            return redirect()->back()->with('error', 'You must subscribe to RizqMall first before subscribing to Sandbox.');
         }
-        
-        // save bill code
-        $subscription->update(['provider_ref' => $data['BillCode']]);
-        
-        Payment::create([
-            'subscription_id' => $subscription->id,
-            'bill_code' => $data['BillCode'],
-            'amount' => $finalPrice,
-            'status' => 'pending',
-        ]);
-        
-        // redirect correctly (dev/prod based on config)
-        return redirect("{$cfg['url']}/{$data['BillCode']}");
-    
     }
+
+    $basePrice = match ($plan) {
+        'sandbox' => 30000,
+        'rizqmall' => 2000,
+    };
+
+    $tax = (int) round($basePrice * 0.08);
+    $fpx = 100;
+    $finalPrice = $basePrice + $tax + $fpx;
+
+    $cfg = config("services.toyyibpay.$plan");
+
+    // installment amount
+    $installmentAmount = (int) round($finalPrice / $installments);
+
+    $subscription = Subscription::create([
+        'user_id' => $user->id,
+        'plan' => $plan,
+        'amount' => $installmentAmount,
+        'status' => 'pending',
+        'provider' => 'toyyibpay',
+        'installments_total' => $installments,
+        'installments_paid' => 0,
+        'meta' => [
+            'tax' => $tax,
+            'fpx' => $fpx,
+            'total' => $finalPrice,
+        ],
+    ]);
+
+    // create ToyyibPay bill (only for the installment amount, not full)
+    $billName = ucfirst($plan) . " Subscription";
+    $billDescription = "Installment " . ($subscription->installments_paid + 1) . "/" . $subscription->installments_total;
+
+    $response = Http::asForm()->post("{$cfg['url']}/index.php/api/createBill", [
+        'userSecretKey' => $cfg['secret'],
+        'categoryCode' => $cfg['category'],
+        'billName' => $billName,
+        'billDescription' => $billDescription,
+        'billPriceSetting' => 1,
+        'billAmount' => $installmentAmount,
+        'billReturnUrl' => route('payment.return'),
+        'billCallbackUrl' => route('payment.callback'),
+        'billExternalReferenceNo' => $subscription->id,
+        'billTo' => $user->name,
+        'billEmail' => $user->email,
+        'billPhone' => preg_replace('/\D/', '', $user->profile->phone ?? '0123456789'),
+        'billPayorInfo' => 1,
+    ]);
+
+    $data = $response->json()[0] ?? null;
+    if (!$data || empty($data['BillCode'])) {
+        return back()->with('error', 'Payment provider error.');
+    }
+
+    $subscription->update(['provider_ref' => $data['BillCode']]);
+
+    Payment::create([
+        'subscription_id' => $subscription->id,
+        'bill_code' => $data['BillCode'],
+        'amount' => $installmentAmount,
+        'status' => 'pending',
+    ]);
+
+    return redirect("{$cfg['url']}/{$data['BillCode']}");
+}
+
 
 
     public function paymentCallback(Request $request)
@@ -132,31 +126,45 @@ class SubscriptionController extends Controller
         $subscription = $payment->subscription;
 
         if ($status == 1) {
-            $subscription->update([
-                'status' => 'paid',
-                'starts_at' => now(),
-                'ends_at' => $subscription->plan === 'rizqmall'
-                    ? now()->addYear()
-                    : null,
-            ]);
-        
-            $account = Account::firstOrCreate([
-                'user_id' => $subscription->user_id,
-                'type' => $subscription->plan,
-            ]);
+            $subscription->increment('installments_paid');
 
-        
-            $account->update([
-                'active' => true,
-                'expires_at' => $subscription->plan === 'rizqmall'
-                    ? $subscription->ends_at
-                    : null,
-            ]);
+            if ($subscription->installments_paid >= $subscription->installments_total) {
+        // ✅ Final installment → activate
+        $subscription->update([
+            'status' => 'paid',
+            'starts_at' => now(),
+            'ends_at' => null,
+        ]);
 
-            if (!$account->serial_number) {
-                $account->serial_number = Account::generateSerial($subscription->plan);
-                $account->save();
-            }
+        $account = Account::firstOrCreate([
+            'user_id' => $subscription->user_id,
+            'type'    => $subscription->plan,
+        ]);
+
+        $account->update([
+            'active' => true,
+            'expires_at' => null,
+        ]);
+
+        if (!$account->serial_number) {
+            $account->serial_number = Account::generateSerial($subscription->plan);
+            $account->save();
+        }
+    } else {
+        // ✅ Still in progress
+        $subscription->update(['status' => 'pending']);
+
+        // Ensure an account exists but stays inactive
+        $account = Account::firstOrCreate([
+            'user_id' => $subscription->user_id,
+            'type'    => $subscription->plan,
+        ]);
+
+        $account->update([
+            'active' => false,
+            'expires_at' => null,
+        ]);
+    }
 
             \Log::info("Assigned serial number", [
                 'user_id' => $subscription->user_id,
@@ -265,5 +273,65 @@ class SubscriptionController extends Controller
             'data' => $request->all(),
         ]);
     }
+
+    public function payNextInstallment(Subscription $subscription)
+{
+    // check ownership
+    if ($subscription->user_id !== auth()->id()) {
+        abort(403);
+    }
+
+    // Calculate next installment amount
+    $installments = $subscription->installments_total ?? 1;
+    $perInstallment = $subscription->amount; // already per installment
+
+    // Count paid installments
+    $paid = $subscription->payment()->where('status', 'success')->count();
+
+    if ($paid >= $installments) {
+        return back()->with('error', 'All installments are already paid.');
+    }
+
+    $user = $subscription->user;
+    $cfg = config("services.toyyibpay.{$subscription->plan}");
+
+    // create ToyyibPay bill (same as subscribe)
+    $billName = ucfirst($subscription->plan) . " Subscription";
+    $billDescription = "Installment " . ($subscription->installments_paid + 1) . "/" . $subscription->installments_total;
+
+    $response = Http::asForm()->post("{$cfg['url']}/index.php/api/createBill", [
+        'userSecretKey' => $cfg['secret'],
+        'categoryCode' => $cfg['category'],
+        'billName' => $billName,
+        'billDescription' => $billDescription,
+        'billPriceSetting' => 1,
+        'billAmount' => $perInstallment,
+        'billReturnUrl' => route('payment.return'),
+        'billCallbackUrl' => route('payment.callback'),
+        'billExternalReferenceNo' => $subscription->id,
+        'billTo' => $user->name,
+        'billEmail' => $user->email,
+        'billPhone' => preg_replace('/\D/', '', $user->profile->phone ?? '0123456789'),
+        'billPayorInfo' => 1,
+    ]);
+
+    $data = $response->json()[0] ?? null;
+    if (!$data || empty($data['BillCode'])) {
+        return back()->with('error', 'Payment provider error.');
+    }
+
+    $subscription->update(['provider_ref' => $data['BillCode']]);
+
+    Payment::create([
+        'subscription_id' => $subscription->id,
+        'bill_code' => $data['BillCode'],
+        'amount' => $perInstallment,
+        'status' => 'pending',
+    ]);
+
+    return redirect("{$cfg['url']}/{$data['BillCode']}");
+}
+
+
 }
 

@@ -20,59 +20,88 @@ class RegisterPlusController extends Controller
         return view('auth.register-plus', ['ref' => $request->query('ref')]);
     }
 
-    public function store(Request $request, ReferralTreeService $tree){
+    public function store(Request $request, ReferralTreeService $tree)
+    {
         $data = $request->validate([
-            'name'=>'required|string|max:255',
-            'email'=>'required|email|unique:users',
-            'password'=>'required|confirmed|min:8',
-            'ref'=>'nullable|string|exists:referrals,ref_code',
+            // Name: only letters, spaces, apostrophes, dots, and hyphens
+            'name' => [
+                'required',
+                'string',
+                'min:3',
+                'max:255',
+                'regex:/^[a-zA-Z\s\'.-]+$/u'
+            ],
+    
+            // Email: must be unique, valid format, and domain must have MX records
+            'email' => 'required|email:rfc,dns|max:255|unique:users',
+    
+            // Password: at least 8 chars, must match confirmation
+            'password' => 'required|confirmed|min:8',
+    
+            // Optional referral code (must exist if provided)
+            'ref' => 'nullable|string|exists:referrals,ref_code',
+    
+            // Phone: optional, only digits, spaces, +, -, () allowed, length 8–20
+            'phone' => [
+                'nullable',
+                'regex:/^[0-9+\-()\s]{8,20}$/'
+            ],
+    
+            // Location fields: optional, max 100 chars
+            'country' => 'nullable|string|max:100',
+            'state'   => 'nullable|string|max:100',
+            'city'    => 'nullable|string|max:100',
+        ], [
+            // Custom error messages (optional)
+            'name.regex'  => 'The name may only contain letters, spaces, apostrophes, dots, and hyphens.',
+            'phone.regex' => 'The phone number format is invalid.',
         ]);
-
+    
+        // --- User creation ---
         $user = User::create([
-            'name'=>$data['name'],
-            'email'=>$data['email'],
-            'password'=>Hash::make($data['password']),
+            'name'     => $data['name'],
+            'email'    => $data['email'],
+            'password' => Hash::make($data['password']),
         ]);
-
+    
         Profile::create([
-            'user_id' => $user->id,
+            'user_id'   => $user->id,
             'full_name' => $user->name,
-            'phone'   => $request->input('phone'),
-            'country' => $request->input('country'),
-            'state'   => $request->input('state'),
-            'city'    => $request->input('city'),
+            'phone'     => $data['phone'] ?? null,
+            'country'   => $data['country'] ?? null,
+            'state'     => $data['state'] ?? null,
+            'city'      => $data['city'] ?? null,
         ]);
-
-
+    
         // default role: Entrepreneur
-        $role = Role::where('name','Entrepreneur')->first();
+        $role = Role::where('name', 'Entrepreneur')->first();
         $user->roles()->attach($role);
-
-        // create accounts (inactive by default for self-registered entrepreneurs)
+    
+        // create inactive accounts
         foreach (['rizqmall','sandbox'] as $type){
-            Account::create(['user_id'=>$user->id,'type'=>$type,'active'=>false]);
+            Account::create(['user_id' => $user->id, 'type' => $type, 'active' => false]);
         }
-
-        // referral handling (optional)
+    
+        // referral handling
         if (!empty($data['ref'])) {
             $referrerRef = Referral::where('ref_code',$data['ref'])->first();
             if ($referrerRef) {
                 $tree->attach($referrerRef->user, $user);
             }
         } else {
-            // not included in MLM: still generate personal ref_code for sharing later if they want
             $code = $tree->generateRefCode($user);
             Referral::create([
-                'user_id'=>$user->id,
-                'parent_id'=>null,
-                'root_id'=>null,
-                'level'=>1,
-                'direct_children'=>0,
-                'ref_code'=>$code,
+                'user_id'   => $user->id,
+                'parent_id' => null,
+                'root_id'   => null,
+                'level'     => 1,
+                'direct_children' => 0,
+                'ref_code'  => $code,
             ]);
         }
-
+    
         Auth::login($user);
         return redirect()->route('dashboard');
     }
+
 }

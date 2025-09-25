@@ -55,34 +55,30 @@ Route::middleware('auth')->group(function(){
 
 
     Route::prefix('admin/users')->name('admin.users.')->group(function () {
-    Route::get('/', [UserRoleController::class, 'index'])->name('index');
-    Route::get('create', [UserRoleController::class, 'create'])->name('create');
-    Route::post('store', [UserRoleController::class, 'store'])->name('store');
-
-    // show user details
-    Route::get('{user}', [UserRoleController::class, 'show'])->name('show');
-    Route::get('{user}/edit', [UserRoleController::class, 'edit'])->name('edit');
-Route::put('{user}', [UserRoleController::class, 'update'])->name('update');
-
-    // action endpoints (AJAX-friendly)
-    Route::post('{user}/toggle-admin', [UserRoleController::class, 'toggleAdminAjax'])->name('toggleAdminAjax');
-    Route::post('{user}/account/{account}/toggle-active', [UserRoleController::class, 'toggleAccountActive'])->name('toggleAccountActive');
-    Route::post('{user}/account/{account}/update-serial', [UserRoleController::class, 'updateAccountSerial'])->name('updateAccountSerial');
-
-    // referral trees
-    Route::get('{user}/referrals/tree', [UserRoleController::class, 'referralTree'])->name('referralTree');
-    Route::get('{user}/sandbox-referrals/tree', [UserRoleController::class, 'sandboxReferralTree'])->name('sandboxReferralTree');
-
-    // reuse check routes you already have
-    Route::post('check-serial', [UserRoleController::class, 'checkSerial'])->name('checkSerial');
-    Route::post('check-email', [UserRoleController::class, 'checkEmail'])->name('checkEmail');
-
-    // (existing) assign/remove referral routes...
-});
-
-
-
-
+        Route::get('/', [UserRoleController::class, 'index'])->name('index');
+        Route::get('create', [UserRoleController::class, 'create'])->name('create');
+        Route::post('store', [UserRoleController::class, 'store'])->name('store');
+    
+        // show user details
+        Route::get('{user}', [UserRoleController::class, 'show'])->name('show');
+        Route::get('{user}/edit', [UserRoleController::class, 'edit'])->name('edit');
+        Route::put('{user}', [UserRoleController::class, 'update'])->name('update');
+    
+        // action endpoints (AJAX-friendly)
+        Route::post('{user}/toggle-admin', [UserRoleController::class, 'toggleAdminAjax'])->name('toggleAdminAjax');
+        Route::post('{user}/account/{account}/toggle-active', [UserRoleController::class, 'toggleAccountActive'])->name('toggleAccountActive');
+        Route::post('{user}/account/{account}/update-serial', [UserRoleController::class, 'updateAccountSerial'])->name('updateAccountSerial');
+    
+        // referral trees
+        Route::get('{user}/referrals/tree', [UserRoleController::class, 'referralTree'])->name('referralTree');
+        Route::get('{user}/sandbox-referrals/tree', [UserRoleController::class, 'sandboxReferralTree'])->name('sandboxReferralTree');
+    
+        // reuse check routes you already have
+        Route::post('check-serial', [UserRoleController::class, 'checkSerial'])->name('checkSerial');
+        Route::post('check-email', [UserRoleController::class, 'checkEmail'])->name('checkEmail');
+    
+        // (existing) assign/remove referral routes...
+    });
 
     // Subscription actions
 
@@ -106,12 +102,10 @@ Route::middleware('auth')->group(function () {
     Route::post('/profile/nextofkin', [ProfileController::class, 'updateNextOfKin'])->name('profile.nextofkin');
     Route::post('/profile/affiliation', [ProfileController::class, 'updateAffiliation'])->name('profile.affiliation');
 
-    
-
 });
 
 Route::post('/subscribe/{plan}', [SubscriptionController::class, 'subscribe'])->name('subscribe.plan');
-    Route::post('/payment/callback', [SubscriptionController::class, 'paymentCallback'])->name('payment.callback');
-    Route::get('/payment/return', [SubscriptionController::class, 'paymentReturn'])->name('payment.return');
-    Route::get('/subscriptions/history', [SubscriptionController::class, 'history'])->name('subscriptions.history');
+Route::post('/payment/callback', [SubscriptionController::class, 'paymentCallback'])->name('payment.callback');
+Route::get('/payment/return', [SubscriptionController::class, 'paymentReturn'])->name('payment.return');
+Route::get('/subscriptions/history', [SubscriptionController::class, 'history'])->name('subscriptions.history');
 

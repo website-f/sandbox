@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Models\Account;
 use App\Models\Profile;
 use App\Models\Referral;
+use App\Models\Blacklist;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
@@ -56,6 +57,22 @@ class RegisterPlusController extends Controller
             'name.regex'  => 'The name may only contain letters, spaces, apostrophes, dots, and hyphens.',
             'phone.regex' => 'The phone number format is invalid.',
         ]);
+
+        $blacklistQuery = Blacklist::where('email', $data['email'])
+            ->orWhere('name', $data['name'])
+            ->orWhere('phone', $request->input('phone'))
+            ->first();
+
+        if ($blacklistQuery) {
+            $field = '';
+            if ($blacklistQuery->email === $data['email']) $field = 'email';
+            elseif ($blacklistQuery->name === $data['name']) $field = 'name';
+            elseif ($blacklistQuery->phone === $request->input('phone')) $field = 'phone';
+        
+            return back()->withErrors([
+                $field => "This {$field} is blacklisted. Please contact support."
+            ])->withInput();
+        }
     
         // --- User creation ---
         $user = User::create([

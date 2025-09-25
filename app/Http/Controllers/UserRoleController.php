@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use DB;
 use Carbon\Carbon;
 use App\Models\User;
 use App\Models\Account;
 use App\Models\Referral;
+use App\Models\Blacklist;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -457,6 +459,52 @@ public function update(Request $request, User $user)
 
     return redirect()->route('admin.users.show', $user)->with('success', 'User updated.');
 }
+
+public function blacklists()
+{
+    
+    return view('admin.blacklist.index');
+}
+
+public function addToBlacklist(Request $request, User $user)
+{
+    // check if already blacklisted
+    if(Blacklist::where('email', $user->email)->exists()){
+        return response()->json(['ok' => false, 'error' => 'User already blacklisted']);
+    }
+
+    Blacklist::create([
+        'email' => $user->email,
+        'reason' => 'Admin added', 
+        'name'  => $user->name,    
+        'phone' => $user->profile?->phone ?? null, 
+    ]);
+
+    // return JSON for AJAX success
+    return response()->json(['ok' => true]);
+}
+
+public function destroy(User $user)
+{
+    try {
+        // Remove this user from being parent/root in referrals
+        DB::table('referrals')
+            ->where('parent_id', $user->id)
+            ->orWhere('root_id', $user->id)
+            ->update(['parent_id' => null, 'root_id' => null]);
+
+        // Delete the user (cascade will remove profiles, businesses, educations, accounts, subscriptions, payments, etc.)
+        $user->delete();
+
+        return response()->json(['ok' => true]);
+    } catch (\Exception $e) {
+        return response()->json(['ok' => false, 'error' => 'Failed to delete user: ' . $e->getMessage()]);
+    }
+}
+
+
+
+
 
     
 }

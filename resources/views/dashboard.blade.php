@@ -173,10 +173,10 @@
                                 $sandbox  = $u->accounts->firstWhere('type', 'sandbox');
                             @endphp
                             <tr>
-                                <td class="px-4 py-3 text-sm {{ $rizqmall->serial_number ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold' }}">
+                                <td class="px-4 py-3 text-sm {{ $rizqmall && $rizqmall->serial_number ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold' }}">
                                     {{ $rizqmall->serial_number ?? 'inactive' }}
                                 </td>
-                                <td class="px-4 py-3 text-sm {{ $sandbox->serial_number ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold' }}">
+                                <td class="px-4 py-3 text-sm {{ $sandbox && $sandbox->serial_number ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold' }}">
                                     {{ $sandbox->serial_number ?? 'inactive' }}
                                 </td>
                                 <td class="px-4 py-3">
@@ -270,10 +270,10 @@
                                 $sandbox  = $u->accounts->firstWhere('type', 'sandbox');
                             @endphp
                             <tr>
-                                <td class="px-4 py-3 text-sm {{ $rizqmall->serial_number ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold' }}">
+                                <td class="px-4 py-3 text-sm {{ $rizqmall && $rizqmall->serial_number ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold' }}">
                                     {{ $rizqmall->serial_number ?? 'inactive' }}
                                 </td>
-                                <td class="px-4 py-3 text-sm {{ $sandbox->serial_number ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold' }}">
+                                <td class="px-4 py-3 text-sm {{ $sandbox && $sandbox->serial_number ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold' }}">
                                     {{ $sandbox->serial_number ?? 'inactive' }}
                                 </td>
         

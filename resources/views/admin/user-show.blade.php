@@ -49,6 +49,10 @@
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                         <div class="w-full break-words">
                             <h3 class="text-xl font-semibold">{{ $user->profile?->full_name ?? $user->name }}</h3>
+                            @if($user->checkBlacklist())
+                                <span class="px-2 py-1 bg-red-500 text-white text-xs rounded">Blacklisted</span>
+                            @endif
+
                             <p class="text-sm text-gray-500">{{ $user->email }}</p>
                             <p class="text-sm text-gray-500 mt-1">
                                 Phone: {{ $user->profile?->phone ?? '-' }} • NRIC: {{ $user->profile?->nric ?? '-' }}
@@ -56,12 +60,37 @@
                         </div>
 
                         <div class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-                            <button id="toggleAdminBtn"
-                                    class="px-3 py-2 rounded-lg text-sm font-semibold {{ $user->hasRole('Admin') ? 'bg-red-500' : 'bg-indigo-600' }} text-white">
-                                {{ $user->hasRole('Admin') ? 'Remove Admin' : 'Make Admin' }}
-                            </button>
-                            <a href="{{ route('admin.users.index') }}" class="px-3 py-2 rounded-lg border">Back</a>
-                        </div>
+                             <button id="toggleAdminBtn"
+                                     class="px-3 py-2 rounded-lg text-sm font-semibold {{ $user->hasRole('Admin') ? 'bg-red-500' : 'bg-indigo-600' }} text-white">
+                                 {{ $user->hasRole('Admin') ? 'Remove Admin' : 'Make Admin' }}
+                             </button>
+                         
+                             @unless($user->checkBlacklist())
+                                 <button id="addBlacklistBtn"
+                                         class="px-3 py-2 rounded-lg text-sm font-semibold bg-gray-800 text-white">
+                                     Add to Blacklist
+                                 </button>
+                             @endunless
+                         
+                             <a href="{{ route('admin.users.index') }}" class="px-3 py-2 rounded-lg border">Back</a>
+                         
+                             @if($user->checkBlacklist())
+                                 <span class="px-2 py-1 bg-red-500 text-white text-xs rounded">Blacklisted</span>
+                             @endif
+                         </div>
+
+
+                        <!-- Modal -->
+                            <div id="blacklistModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+                                <div class="bg-white rounded-lg p-6 w-96">
+                                    <h3 class="text-lg font-semibold mb-4">Confirm Blacklist</h3>
+                                    <p>Are you sure you want to add <span class="font-medium">{{ $user->email }}</span> to the blacklist?</p>
+                                    <div class="mt-4 flex justify-end gap-2">
+                                        <button id="cancelBlacklist" class="px-3 py-2 bg-gray-200 rounded">Cancel</button>
+                                        <button id="confirmBlacklist" class="px-3 py-2 bg-red-500 text-white rounded">Confirm</button>
+                                    </div>
+                                </div>
+                            </div>
                     </div>
 
                     <p class="mt-4 text-sm text-gray-600">Joined: {{ $user->created_at?->format('d M Y H:i') ?? '-' }}</p>
@@ -247,21 +276,21 @@
 
                     {{-- REFERRAL TREES --}}
                     {{-- REFERRAL TREES --}}
-<div data-panel="referrals" class="tab-panel hidden">
-    <h4 class="font-semibold mb-3">Referral Tree (registered referrals)</h4>
-
-    <div id="referral-tree"
-         class="p-4 border rounded min-h-[160px] text-sm text-gray-700 
-                overflow-auto max-h-[500px] w-full"
-         style="white-space: nowrap;">
-    </div>
-
-    <p class="text-xs text-gray-500 mt-2">Top 10 under this user are shown by default.</p>
-    <button id="expand-referral"
-            class="mt-3 px-3 py-1 bg-indigo-600 text-white rounded">
-        Load full tree
-    </button>
-</div>
+                    <div data-panel="referrals" class="tab-panel hidden">
+                        <h4 class="font-semibold mb-3">Referral Tree (registered referrals)</h4>
+                    
+                        <div id="referral-tree"
+                             class="p-4 border rounded min-h-[160px] text-sm text-gray-700 
+                                    overflow-auto max-h-[500px] w-full"
+                             style="white-space: nowrap;">
+                        </div>
+                    
+                        <p class="text-xs text-gray-500 mt-2">Top 10 under this user are shown by default.</p>
+                        <button id="expand-referral"
+                                class="mt-3 px-3 py-1 bg-indigo-600 text-white rounded">
+                            Load full tree
+                        </button>
+                    </div>
 
 
                     <div data-panel="sandbox" class="tab-panel hidden">
@@ -433,4 +462,69 @@
     document.querySelector('[data-tab="referrals"]').addEventListener('click', ()=>document.getElementById('expand-referral').click());
     document.querySelector('[data-tab="sandbox"]').addEventListener('click', ()=>document.getElementById('expand-sandbox').click());
 </script>
+
+<!-- ADD TO BLACKLIST -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const addBtn = document.getElementById('addBlacklistBtn');
+    const modal = document.getElementById('blacklistModal');
+    const cancelBtn = document.getElementById('cancelBlacklist');
+    const confirmBtn = document.getElementById('confirmBlacklist');
+
+    // Open modal
+    addBtn?.addEventListener('click', () => {
+        modal.classList.remove('hidden');
+    });
+
+    // Cancel modal
+    cancelBtn?.addEventListener('click', () => {
+        modal.classList.add('hidden');
+    });
+
+    // Confirm blacklist
+    confirmBtn?.addEventListener('click', function() {
+        const btn = this;
+        btn.disabled = true;
+        btn.textContent = 'Adding...'; // loading effect
+
+        fetch("{{ route('admin.users.addToBlacklist', $user) }}", {
+            method: 'POST',
+            headers: {
+                'Content-Type':'application/json',
+                'X-CSRF-TOKEN':'{{ csrf_token() }}'
+            },
+            body: JSON.stringify({})
+        })
+        .then(r => r.json())
+        .then(resp => {
+            if(resp.ok) {
+                // close modal
+                modal.classList.add('hidden');
+
+                // show Tailwind alert
+                const alertDiv = document.createElement('div');
+                alertDiv.className = 'fixed top-5 right-5 bg-green-500 text-white px-4 py-2 rounded shadow-lg z-50';
+                alertDiv.textContent = 'User added to blacklist!';
+                document.body.appendChild(alertDiv);
+
+                // fade out alert after 3s
+                setTimeout(() => alertDiv.remove(), 3000);
+
+                // reload page after short delay so badge/button updates
+                setTimeout(() => location.reload(), 1000);
+
+            } else {
+                alert(resp.error || 'Failed to add to blacklist');
+            }
+        })
+        .catch(() => alert('Request failed'))
+        .finally(() => {
+            btn.disabled = false;
+            btn.textContent = 'Confirm';
+        });
+    });
+});
+</script>
+
+
 </x-app-layout>

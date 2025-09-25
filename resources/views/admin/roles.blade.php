@@ -39,7 +39,6 @@
                         <th class="px-4 py-3">Email</th>
                         <th class="px-4 py-3">Phone</th>
                         <th class="px-4 py-3">Referrer</th>
-                        <th class="px-4 py-3">Role</th>
                         <th class="px-4 py-3">Action</th>
                     </tr>
                 </thead>
@@ -65,7 +64,10 @@
                                 @endif
                             </td>
                             <td class="px-4 py-3">
-                                {{ $user->profile?->full_name ?? $user->name }}
+                                {{ $user->profile?->full_name ?? $user->name }} <br>
+                                @if($user->checkBlacklist())
+                                <span class="px-2 py-1 bg-red-500 text-white text-xs rounded">Blacklisted</span>
+                                @endif
                             </td>
 
                             <td class="px-4 py-3">{{ $user->email }}</td>
@@ -91,30 +93,19 @@
                                     @endif
                                 </div>
                             </td>
-
-                            <td class="px-4 py-3">
-                                @if($user->hasRole('Admin'))
-                                    <span class="px-2 py-1 rounded-full bg-indigo-100 text-indigo-700 text-xs font-medium">Admin</span>
-                                @else
-                                    <span class="px-2 py-1 rounded-full bg-gray-100 text-gray-600 text-xs font-medium">User</span>
-                                @endif
-                            </td>
-                            <td class="px-4 py-3">
+                            <td class="px-4 py-3 flex gap-2">
                                 <a href="{{ route('admin.users.show', $user) }}"
-                                    class="px-3 py-1 rounded-lg text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700">
-                                    View
+                                   class="px-3 py-1 rounded-lg text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700">
+                                   View
                                 </a>
-                            </td>
                             
-                            {{-- <td class="px-4 py-3">
-                                <form method="POST" action="{{ route('admin.users.toggleAdmin', $user) }}">
-                                    @csrf
-                                    <button class="px-3 py-1 rounded-lg text-sm font-semibold text-white 
-                                        {{ $user->hasRole('Admin') ? 'bg-red-500 hover:bg-red-600' : 'bg-indigo-600 hover:bg-indigo-700' }}">
-                                        {{ $user->hasRole('Admin') ? 'Remove Admin' : 'Make Admin' }}
-                                    </button>
-                                </form>
-                            </td> --}}
+                                <button 
+                                    data-user-id="{{ $user->id }}" 
+                                    class="delete-user-btn px-3 py-1 rounded-lg text-sm font-semibold text-white bg-red-600 hover:bg-red-700">
+                                    Delete
+                                </button>
+                            </td>
+
                         </tr>
                     @empty
                         <tr>
@@ -131,6 +122,19 @@
             </div>
         </div>
     </div>
+
+    <!-- Delete User Modal -->
+    <div id="deleteUserModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white rounded-lg p-6 w-96">
+            <h3 class="text-lg font-semibold mb-4">Confirm Delete</h3>
+            <p>Are you sure you want to delete this user? This action cannot be undone.</p>
+            <div class="mt-4 flex justify-end gap-2">
+                <button id="cancelDeleteUser" class="px-3 py-2 bg-gray-200 rounded">Cancel</button>
+                <button id="confirmDeleteUser" class="px-3 py-2 bg-red-500 text-white rounded">Delete</button>
+            </div>
+        </div>
+    </div>
+
 
     <div id="referralModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-800 bg-opacity-50">
         <div class="bg-white rounded-xl shadow-lg w-full max-w-xxl max-h-[80vh] flex flex-col p-6">
@@ -196,6 +200,46 @@
             document.getElementById("removeReferralModal").classList.add("hidden");
         }
     </script>
+
+    <script>
+        let deleteUserId = null;
+
+    document.querySelectorAll('.delete-user-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            deleteUserId = this.dataset.userId;
+            document.getElementById('deleteUserModal').classList.remove('hidden');
+        });
+    });
+    
+    document.getElementById('cancelDeleteUser').addEventListener('click', function() {
+        deleteUserId = null;
+        document.getElementById('deleteUserModal').classList.add('hidden');
+    });
+    
+    document.getElementById('confirmDeleteUser').addEventListener('click', function() {
+        if (!deleteUserId) return;
+        this.disabled = true;
+        fetch(`/admin/users/${deleteUserId}/delete`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+        }).then(res => res.json())
+          .then(resp => {
+              if(resp.ok){
+                  const alertDiv = document.createElement('div');
+                  alertDiv.className = 'fixed top-5 right-5 bg-green-500 text-white px-4 py-2 rounded shadow-lg z-50';
+                  alertDiv.textContent = 'User deleted successfully!';
+                  document.body.appendChild(alertDiv);
+                  location.reload();
+              } else {
+                  alert(resp.error || 'Failed to delete user.');
+              }
+          }).finally(() => this.disabled = false);
+    });
+    
+    </script>
     
     
     <script>
@@ -205,6 +249,12 @@
             document.getElementById("referralModal").classList.remove("hidden");
         
             loadReferralList();
+        }
+
+        function closeReferralModal() {
+
+            document.getElementById("referralModal").classList.add("hidden");
+        
         }
         
         function loadReferralList(query = '', page = 1) {

@@ -58,6 +58,10 @@ Route::middleware('auth')->group(function(){
         Route::get('/', [UserRoleController::class, 'index'])->name('index');
         Route::get('create', [UserRoleController::class, 'create'])->name('create');
         Route::post('store', [UserRoleController::class, 'store'])->name('store');
+        Route::post('/import', [UserImportController::class, 'import'])->name('import');
+        Route::get('/blacklists', [UserRoleController::class, 'blacklists'])->name('blacklists');
+        Route::post('/addToBlacklist/{user}', [UserRoleController::class, 'addToBlacklist'])->name('addToBlacklist');
+
     
         // show user details
         Route::get('{user}', [UserRoleController::class, 'show'])->name('show');
@@ -79,6 +83,9 @@ Route::middleware('auth')->group(function(){
     
         // (existing) assign/remove referral routes...
     });
+
+    Route::post('/admin/users/{user}/delete', [UserRoleController::class, 'destroy'])
+    ->name('admin.users.destroy');
 
     // Subscription actions
 

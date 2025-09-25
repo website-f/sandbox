@@ -66,4 +66,10 @@ public function referrer()
 
   public function accounts(){ return $this->hasMany(Account::class); }
   public function subscriptions(){ return $this->hasMany(Subscription::class); }
+
+  public function checkBlacklist(): bool
+    {
+        return Blacklist::where('email', $this->email)->exists();
+    }
+  
 }

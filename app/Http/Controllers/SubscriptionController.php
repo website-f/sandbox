@@ -206,48 +206,48 @@ class SubscriptionController extends Controller
     }
 
     private function distributeCommission(Subscription $subscription)
-{
-    $user = $subscription->user;
-    $amounts = [300, 100, 100]; // RM3 for direct, RM1 for 2nd and 3rd upline
-
-    // Start from this user's referral record
-    $referral = $user->referral;
-    $level = 0;
-
-    while ($referral && $level < 3) {
-        $referrer = $referral->parent; // now returns User (after you fix the model)
-
-        if (!$referrer) {
-            \Log::info("No referrer found at level {$level} for user {$user->id}");
-            break;
+    {
+        $user = $subscription->user;
+        $amounts = [300, 100, 100]; // RM3 for direct, RM1 for 2nd and 3rd upline
+    
+        // Start from this user's referral record
+        $referral = $user->referral;
+        $level = 0;
+    
+        while ($referral && $level < 3) {
+            $referrer = $referral->parent; // now returns User (after you fix the model)
+    
+            if (!$referrer) {
+                \Log::info("No referrer found at level {$level} for user {$user->id}");
+                break;
+            }
+    
+            // Ensure wallet exists
+            $wallet = Wallet::firstOrCreate(['user_id' => $referrer->id]);
+    
+            // Amount to credit
+            $amount = $amounts[$level];
+    
+            // Credit the wallet
+            $wallet->credit(
+                $amount,
+                "Referral commission (Level " . ($level + 1) . ") from {$user->name} subscription",
+                $subscription->id
+            );
+    
+            // Log the commission step
+            \Log::info("Commission credited", [
+                'from_user'   => $user->id,
+                'to_referrer' => $referrer->id,
+                'level'       => $level + 1,
+                'amount'      => $amount,
+            ]);
+    
+            // Move up to the next referrer
+            $referral = $referrer->referral;
+            $level++;
         }
-
-        // Ensure wallet exists
-        $wallet = Wallet::firstOrCreate(['user_id' => $referrer->id]);
-
-        // Amount to credit
-        $amount = $amounts[$level];
-
-        // Credit the wallet
-        $wallet->credit(
-            $amount,
-            "Referral commission (Level " . ($level + 1) . ") from {$user->name} subscription",
-            $subscription->id
-        );
-
-        // Log the commission step
-        \Log::info("Commission credited", [
-            'from_user'   => $user->id,
-            'to_referrer' => $referrer->id,
-            'level'       => $level + 1,
-            'amount'      => $amount,
-        ]);
-
-        // Move up to the next referrer
-        $referral = $referrer->referral;
-        $level++;
     }
-}
 
 
 
@@ -274,64 +274,74 @@ class SubscriptionController extends Controller
         ]);
     }
 
-    public function payNextInstallment(Subscription $subscription)
-{
-    // check ownership
-    if ($subscription->user_id !== auth()->id()) {
-        abort(403);
+    public function payNextInstallment(Request $request, Subscription $subscription)
+    {
+        // Check ownership
+        if ($subscription->user_id !== auth()->id()) {
+            abort(403);
+        }
+    
+        $fullSettlement = $request->input('full_settlement') == 1;
+    
+        $installmentsTotal = $subscription->installments_total ?? 1;
+        $installmentsPaid = $subscription->installments_paid;
+        $remainingInstallments = $installmentsTotal - $installmentsPaid;
+    
+        if ($remainingInstallments <= 0) {
+            return back()->with('error', 'All installments are already paid.');
+        }
+    
+        // Amount calculations
+        $amountPerInstallment = $subscription->amount;
+        $amountToPay = $fullSettlement
+            ? $amountPerInstallment * $remainingInstallments
+            : $amountPerInstallment;
+    
+        $user = $subscription->user;
+        $cfg = config("services.toyyibpay.{$subscription->plan}");
+    
+        // Bill name & description
+        $billName = ucfirst($subscription->plan) . " Subscription";
+        $billDescription = $fullSettlement
+            ? "Full Settlement ({$installmentsTotal}/{$installmentsTotal})"
+            : "Installment " . ($installmentsPaid + 1) . "/{$installmentsTotal}";
+    
+        // Create ToyyibPay bill
+        $response = Http::asForm()->post("{$cfg['url']}/index.php/api/createBill", [
+            'userSecretKey' => $cfg['secret'],
+            'categoryCode' => $cfg['category'],
+            'billName' => $billName,
+            'billDescription' => $billDescription,
+            'billPriceSetting' => 1,
+            'billAmount' => $amountToPay,
+            'billReturnUrl' => route('payment.return'),
+            'billCallbackUrl' => route('payment.callback'),
+            'billExternalReferenceNo' => $subscription->id,
+            'billTo' => $user->name,
+            'billEmail' => $user->email,
+            'billPhone' => preg_replace('/\D/', '', $user->profile->phone ?? '0123456789'),
+            'billPayorInfo' => 1,
+        ]);
+    
+        $data = $response->json()[0] ?? null;
+        if (!$data || empty($data['BillCode'])) {
+            return back()->with('error', 'Payment provider error.');
+        }
+    
+        // Update subscription provider reference
+        $subscription->update(['provider_ref' => $data['BillCode']]);
+    
+        // Create payment record
+        Payment::create([
+            'subscription_id' => $subscription->id,
+            'bill_code' => $data['BillCode'],
+            'amount' => $amountToPay,
+            'status' => 'pending',
+            'full_settlement' => $fullSettlement,
+        ]);
+    
+        return redirect("{$cfg['url']}/{$data['BillCode']}");
     }
-
-    // Calculate next installment amount
-    $installments = $subscription->installments_total ?? 1;
-    $perInstallment = $subscription->amount; // already per installment
-
-    // Count paid installments
-    $paid = $subscription->payment()->where('status', 'success')->count();
-
-    if ($paid >= $installments) {
-        return back()->with('error', 'All installments are already paid.');
-    }
-
-    $user = $subscription->user;
-    $cfg = config("services.toyyibpay.{$subscription->plan}");
-
-    // create ToyyibPay bill (same as subscribe)
-    $billName = ucfirst($subscription->plan) . " Subscription";
-    $billDescription = "Installment " . ($subscription->installments_paid + 1) . "/" . $subscription->installments_total;
-
-    $response = Http::asForm()->post("{$cfg['url']}/index.php/api/createBill", [
-        'userSecretKey' => $cfg['secret'],
-        'categoryCode' => $cfg['category'],
-        'billName' => $billName,
-        'billDescription' => $billDescription,
-        'billPriceSetting' => 1,
-        'billAmount' => $perInstallment,
-        'billReturnUrl' => route('payment.return'),
-        'billCallbackUrl' => route('payment.callback'),
-        'billExternalReferenceNo' => $subscription->id,
-        'billTo' => $user->name,
-        'billEmail' => $user->email,
-        'billPhone' => preg_replace('/\D/', '', $user->profile->phone ?? '0123456789'),
-        'billPayorInfo' => 1,
-    ]);
-
-    $data = $response->json()[0] ?? null;
-    if (!$data || empty($data['BillCode'])) {
-        return back()->with('error', 'Payment provider error.');
-    }
-
-    $subscription->update(['provider_ref' => $data['BillCode']]);
-
-    Payment::create([
-        'subscription_id' => $subscription->id,
-        'bill_code' => $data['BillCode'],
-        'amount' => $perInstallment,
-        'status' => 'pending',
-    ]);
-
-    return redirect("{$cfg['url']}/{$data['BillCode']}");
+    
 }
-
-
-}
-
+    

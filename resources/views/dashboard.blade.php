@@ -25,7 +25,7 @@
             </div>
         </div>
 
-        <div class="bg-white rounded-2xl shadow-lg p-6 hover:shadow-2xl transition-shadow duration-300">
+        <div class="bg-white rounded-2xl shadow-lg p-6 hover:shadow-2xl transition-shadow duration-300 md:col-span-2">
             <h3 class="text-xl font-semibold text-gray-800 mb-4">Account Status</h3>
             @if(session('error'))
                 <div class="bg-red-100 text-red-600 px-4 py-2 rounded mb-4">
@@ -38,218 +38,359 @@
                                 $today = now();
                             @endphp
                     
-            @foreach (['rizqmall'=>'RizqMall','sandbox'=>'Sandbox'] as $k => $label)
-                @php
-                    $account = $accounts[$k] ?? null;
-                    $indicatorColor = 'bg-red-500';
-                    $indicatorText = 'inactive';
-                    $expiryText = '';
-                    $serialText = '';
-                    $showButton = true;
-
-                    // Check subscription progress for Sandbox
-                    $subscription = isset($subscriptions[$k]) ? $subscriptions[$k]->last() : null;
-                    $progressCount = ($subscription && $subscription->payment && $subscription->payment->status === 'success') ? 1 : 0;
-                    $totalInstallments = $subscription ? $subscription->installments_total : 0;
-
-            
-                    if($account) {
-                        $expires = $account->expires_at ? \Carbon\Carbon::parse($account->expires_at) : null;
-            
-                        if ($account->active) {
-                            $indicatorColor = 'bg-green-500';
-                            $indicatorText = 'active';
-                            $showButton = false;
-            
-                            if ($expires) $expiryText = 'Valid until ' . $expires->toFormattedDateString();
-                            if ($account->serial_number) $serialText = "Serial: {$account->serial_number}";
-                        } elseif ($k === 'sandbox' && $subscription && $progressCount > 0) {
-                            // Sandbox pending installments
-                            $indicatorColor = 'bg-yellow-500';
-                            $indicatorText = "pending ({$progressCount}/{$totalInstallments})";
-                        }
-                    }
-            
-                    // Pricing logic
-                    $basePrice = $k === 'sandbox' ? 300 : 20; // RM
-                    $tax = round($basePrice * 0.08, 2);
-                    $fpx = 1.00;
-                    $final = $basePrice + $tax + $fpx;
-                @endphp
-            
-                <li class="flex justify-between items-center p-4 rounded-xl bg-gray-50 shadow-sm hover:shadow-md transition-shadow duration-200">
-                    <div class="flex flex-col">
-                        <span class="font-medium text-gray-700">{{ $label }}</span>
-                        <span class="flex items-center gap-2 text-sm text-gray-500">
-                            <span class="inline-block w-3 h-3 rounded-full {{ $indicatorColor }}"></span>
-                            {{ ucfirst($indicatorText) }}
-                        </span>
-                        @if($expiryText)
-                            <span class="text-xs text-gray-500 mt-1">{{ $expiryText }}</span>
-                        @endif
-                        @if($serialText)
-                            <span class="text-xs font-semibold text-indigo-600 mt-1">{{ $serialText }}</span>
-                        @endif
-                    </div>
-            
-                    <div>
-                        @php
-                            $nextAmount = 0;
-                            if ($subscription && $subscription->payment) {
-                                $paidCount = $subscription->installments_paid;
-                                $totalInstallments = $subscription->installments_total ?? 0;
-                        
-                                $basePrice = 300; // Sandbox base price
-                                $tax = round($basePrice * 0.08, 2);
-                                $fpx = 1.00;
-                                $installmentAmount = ($basePrice + $tax + $fpx) / $totalInstallments;
-                        
-                                if ($paidCount < $totalInstallments) {
-                                    $nextAmount = $installmentAmount;
-                                }
+            <ul class="grid grid-cols-1 gap-6 md:grid-cols-2">
+                @foreach (['rizqmall'=>'RizqMall','sandbox'=>'Sandbox'] as $k => $label)
+                    @php
+                        $account = $accounts[$k] ?? null;
+                        $subscription = isset($subscriptions[$k]) ? $subscriptions[$k]->sortByDesc('created_at')->first() : null;
+                
+                        $indicatorColor = 'bg-red-500';
+                        $indicatorText = 'inactive';
+                        $expiryText = '';
+                        $serialText = '';
+                        $showButton = true;
+                
+                        if($account) {
+                            $expires = $account->expires_at ? \Carbon\Carbon::parse($account->expires_at) : null;
+                
+                            if ($account->active) {
+                                $indicatorColor = 'bg-green-500';
+                                $indicatorText = 'active';
+                                $showButton = false;
+                                if ($expires) $expiryText = 'Valid until ' . $expires->toFormattedDateString();
+                                if ($account->serial_number) $serialText = "Serial: {$account->serial_number}";
+                            } elseif ($k === 'sandbox' && $subscription && $subscription->installments_paid > 0 && $subscription->installments_paid < $subscription->installments_total) {
+                                $indicatorColor = 'bg-yellow-500';
+                                $indicatorText = 'pending';
                             }
-                        @endphp
+                        }
+                
+                        $basePrice = $k === 'sandbox' ? 300 : 20;
+                        $tax = round($basePrice * 0.08, 2);
+                        $fpx = 1.00;
+                        $finalPrice = $basePrice + $tax + $fpx;
+                
+                        $showProgress = $k === 'sandbox' && $subscription && $subscription->installments_paid > 0 && $subscription->installments_paid < $subscription->installments_total;
+                        $paidAmount = $showProgress ? ($subscription->installments_paid / $subscription->installments_total) * $finalPrice : 0;
+                        $progressPercent = $showProgress ? ($subscription->installments_paid / $subscription->installments_total) * 100 : 0;
+                        $nextAmount = $showProgress ? ($finalPrice / $subscription->installments_total) : 0;
+                
+                        // Logos
+                        $logos = [
+                            'rizqmall' => asset('rizqmall.jpeg'), // replace with actual logo
+                            'sandbox' => asset('sandboxlogo.png'),
+                        ];
+                    @endphp
+                
+                    <li class="flex flex-col md:flex-row justify-between items-center bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-shadow duration-300 p-5 gap-4 md:gap-6">
+                        {{-- Left: Logo --}}
+                        <div class="flex-shrink-0">
+                            <img src="{{ $logos[$k] }}" alt="{{ $label }} Logo" class="w-12 h-12 rounded-full border border-gray-200 shadow-sm object-cover">
+                        </div>
+                
+                        {{-- Middle: Info --}}
+                        <div class="flex-1 flex flex-col gap-2">
+                            <span class="font-semibold text-gray-800 text-lg">{{ $label }} @if(strtolower($label) === 'sandbox') Malaysia @endif</span>
+                
+                            <span class="flex items-center gap-2 text-sm text-gray-500">
+                                <span class="inline-block w-3 h-3 rounded-full {{ $indicatorColor }}"></span>
+                                {{ ucfirst($indicatorText) }}
+                            </span>
+                
+                            @if($expiryText)
+                                <span class="text-xs text-gray-400">{{ $expiryText }}</span>
+                            @endif
+                            @if($serialText)
+                                <span class="text-xs font-semibold text-indigo-600">{{ $serialText }}</span>
+                            @endif
+                
+                            {{-- Sandbox progress --}}
+                            @if($showProgress)
+                                <div class="mt-2 w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                                    <div class="bg-indigo-600 h-3 transition-all duration-300" style="width: {{ $progressPercent }}%"></div>
+                                </div>
+                                <p class="text-xs text-gray-600 mt-1">
+                                    RM {{ number_format($paidAmount, 2) }} paid / RM {{ number_format($finalPrice, 2) }} total
+                                </p>
+                            @endif
+                        </div>
+                
+                        {{-- Right: Action button --}}
+                        <div class="flex-shrink-0">
+                            @if($showButton)
+                                @if($showProgress)
+                                    <button 
+                                        x-data
+                                        @click="$dispatch('open-pay-next-modal', {
+                                            subscriptionId: {{ $subscription->id }},
+                                            
+                                            // FIX 1: Change $final to $finalPrice
+                                            fullFinal: {{ $finalPrice }}, 
+                                            
+                                            // FIX 2: Ensure correct variables are used for counts
+                                            paidCount: {{ $subscription->installments_paid }}, 
+                                            totalInstallments: {{ $subscription->installments_total }},
+                        
+                                            // nextAmount is still useful for initial calculation display
+                                            nextAmount: {{ $nextAmount }},
+                                            
+                                            // FIX 3: Calculate remaining amount safely using $finalPrice
+                                            remainingAmount: {{ number_format($finalPrice - $paidAmount, 2, '.', '') }} 
+                                        })"
+                                        class="px-5 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-semibold shadow">
+                                        Pay Next Installment
+                                    </button>
+                                @else
+                                    <button 
+                                        x-data 
+                                        @click="$dispatch('open-installment-modal', {
+                                            plan: '{{ $k }}',
+                                            label: '{{ $label }}',
+                                            base: '{{ $basePrice }}',
+                                            tax: '{{ $tax }}',
+                                            fpx: '{{ $fpx }}',
+                                            final: '{{ $finalPrice }}'
+                                        })"
+                                        class="px-5 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-semibold shadow">
+                                        Subscribe
+                                    </button>
+                                @endif
+                            @endif
+                        </div>
+                    </li>
+                @endforeach
+            </ul>
 
-                       @if($showButton)
-                           @if($k === 'sandbox' && isset($subscriptions[$k]))
-                               @php $subscription = $subscriptions[$k]->last(); @endphp
-                       
-                               <p>
-                                   Progress: {{ $subscription->installments_paid }}
-                                   / {{ $subscription->installments_total }}
-                               </p>
-                       
-
-                               <button 
-                                  x-data
-                                  @click="$dispatch('open-pay-next-modal', {
-                                      subscriptionId: {{ json_encode($subscription->id) }},
-                                      amount: {{ json_encode($nextAmount) }}
-                                  })"
-                                  class="px-3 py-2 bg-indigo-600 text-white rounded-lg">
-                                  Pay Next Installment
-                              </button>
-
-
-                           @else
-                               {{-- 🔹 Sandbox → installment modal, RizqMall → simple modal --}}
-                               @if($k === 'sandbox')
-                                   <button 
-                                       x-data 
-                                       @click="$dispatch('open-installment-modal', {
-                                           plan: '{{ $k }}',
-                                           label: '{{ $label }}',
-                                           base: '{{ $basePrice }}',
-                                           tax: '{{ $tax }}',
-                                           fpx: '{{ $fpx }}',
-                                           final: '{{ $final }}'
-                                       })"
-                                       class="px-4 py-2 text-sm font-semibold text-white rounded-full shadow bg-indigo-600 hover:bg-indigo-700">
-                                       Subscribe
-                                   </button>
-                               @else
-                                   <button 
-                                       x-data 
-                                       @click="$dispatch('open-modal', {
-                                           plan: '{{ $k }}',
-                                           label: '{{ $label }}',
-                                           base: '{{ $basePrice }}',
-                                           tax: '{{ $tax }}',
-                                           fpx: '{{ $fpx }}',
-                                           final: '{{ $final }}'
-                                       })"
-                                       class="px-4 py-2 text-sm font-semibold text-white rounded-full shadow bg-indigo-600 hover:bg-indigo-700">
-                                       Subscribe
-                                   </button>
-                               @endif
-                           @endif
-                       @endif
-
-
-                    </div>
-                </li>
-            @endforeach
             
             {{-- Modal --}}
 
+            <div
+                x-data="{ 
+                    open: false, 
+                    plan: '', 
+                    label: '', 
+                    // Full subscription cost details
+                    fullBase: 0, 
+                    fullTax: 0, 
+                    fullFpx: 0, 
+                    fullFinal: 0, 
+                    installments: 1,
+            
+                    // Computed properties for the currently selected installment amount breakdown
+                    get installmentBase() {
+                        return (this.fullBase / this.installments).toFixed(2);
+                    },
+                    get installmentTax() {
+                        return (this.fullTax / this.installments).toFixed(2);
+                    },
+                    get installmentFpx() {
+                        return (this.fullFpx / this.installments).toFixed(2);
+                    },
+                    get installmentAmount() {
+                        // Recalculate based on installment component prices to ensure accuracy
+                        return (parseFloat(this.installmentBase) + parseFloat(this.installmentTax) + parseFloat(this.installmentFpx)).toFixed(2);
+                    }
+                }"
+                x-on:open-installment-modal.window="
+                    open = true; 
+                    plan = $event.detail.plan; 
+                    label = $event.detail.label; 
+                    fullBase = parseFloat($event.detail.base); 
+                    fullTax = parseFloat($event.detail.tax); 
+                    fullFpx = parseFloat($event.detail.fpx); 
+                    fullFinal = parseFloat($event.detail.final); 
+                    installments = 1; // Default to full payment
+                "
+                x-show="open"
+                x-cloak
+                style="display:none"
+                class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 backdrop-blur-sm p-4">
+            
+                <div @click.away="open = false" class="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-8 space-y-6 transform transition-all duration-300">
+                    <h2 class="text-2xl font-bold text-gray-800 border-b pb-3" x-text="label + ' Subscription'"></h2>
+            
+                    <p class="text-lg font-semibold text-gray-700">Choose your payment plan:</p>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        {{-- Option 1: Full Payment --}}
+                        <button 
+                            @click="installments = 1" 
+                            :class="{'border-indigo-600 ring-2 ring-indigo-300': installments == 1, 'border-gray-300 hover:border-indigo-400': installments != 1}"
+                            class="p-4 border-2 rounded-xl text-left transition duration-200">
+                            <p class="font-bold text-lg" :class="{'text-indigo-600': installments == 1}">Full Payment</p>
+                            <p class="text-xl font-extrabold mt-1">RM <span x-text="fullFinal.toFixed(2)"></span></p>
+                            <p class="text-xs text-gray-500">One-time charge. Full access.</p>
+                        </button>
+            
+                        {{-- Option 2: 3 Installments --}}
+                        <button 
+                            @click="installments = 3" 
+                            :class="{'border-indigo-600 ring-2 ring-indigo-300': installments == 3, 'border-gray-300 hover:border-indigo-400': installments != 3}"
+                            class="p-4 border-2 rounded-xl text-left transition duration-200">
+                            <p class="font-bold text-lg" :class="{'text-indigo-600': installments == 3}">3 Installments</p>
+                            <p class="text-xl font-extrabold mt-1">RM <span x-text="(fullFinal/3).toFixed(2)"></span></p>
+                            <p class="text-xs text-gray-500">per payment (3x total)</p>
+                        </button>
+                    </div>
+            
+                    {{-- Payment Breakdown for selected option --}}
+                    <div class="bg-gray-50 p-4 rounded-xl space-y-2 text-sm">
+                        <h3 class="font-bold text-base text-gray-800 mb-2" x-text="'Payment Breakdown: ' + (installments == 1 ? 'Full Payment' : 'First Installment')"></h3>
+                        
+                        <div x-show="installments == 1">
+                            <div class="flex justify-between"><span>Base Price</span> <span>RM <span x-text="fullBase.toFixed(2)"></span></span></div>
+                            <div class="flex justify-between"><span>Tax (8%)</span> <span>RM <span x-text="fullTax.toFixed(2)"></span></span></div>
+                            <div class="flex justify-between"><span>FPX Charge</span> <span>RM <span x-text="fullFpx.toFixed(2)"></span></span></div>
+                        </div>
+            
+                        <div x-show="installments > 1">
+                            <div class="flex justify-between"><span>Base Price (per installment)</span> <span>RM <span x-text="installmentBase"></span></span></div>
+                            <div class="flex justify-between"><span>Tax (per installment)</span> <span>RM <span x-text="installmentTax"></span></span></div>
+                            <div class="flex justify-between"><span>FPX Charge (per installment)</span> <span>RM <span x-text="installmentFpx"></span></span></div>
+                        </div>
+            
+                        <div class="border-t pt-2 flex justify-between font-semibold text-gray-800">
+                            <span>Total Subscription Cost</span> <span>RM <span x-text="fullFinal.toFixed(2)"></span></span>
+                        </div>
+            
+                        <div class="pt-2 flex justify-between font-extrabold text-indigo-600 text-lg">
+                            <span x-text="installments == 1 ? 'Total to Pay Now' : 'Amount for First Installment'"></span> 
+                            <span>RM <span x-text="installmentAmount"></span></span>
+                        </div>
+                    </div>
+            
+                    <div class="flex justify-end gap-3 pt-4">
+                        <button @click="open = false" class="px-5 py-2 rounded-lg text-gray-600 border border-gray-300 hover:bg-gray-100 font-semibold transition">Cancel</button>
+                        <form method="POST" :action="'/subscribe/' + plan">
+                            @csrf
+                            <input type="hidden" name="installments" x-model="installments">
+                            <button type="submit" class="px-5 py-2 rounded-lg bg-indigo-600 text-white font-bold shadow-md hover:bg-indigo-700 transition">
+                                Pay RM <span x-text="installmentAmount"></span>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+                        
             <div 
-    x-data="{ open: false, plan: '', label: '', base: 0, tax: 0, fpx: 0, final: 0, installments: 1 }"
-    x-on:open-installment-modal.window="open = true; plan = $event.detail.plan; label = $event.detail.label; base = $event.detail.base; tax = $event.detail.tax; fpx = $event.detail.fpx; final = $event.detail.final"
-    x-show="open"
-    style="display:none"
-    class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-    
-    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 space-y-6">
-        <h2 class="text-lg font-bold text-gray-800" x-text="label + ' Subscription (Sandbox)'"></h2>
-
-        <p class="text-gray-600">Choose payment option:</p>
-        <div class="space-y-2">
-            <label class="flex items-center space-x-2">
-                <input type="radio" value="1" x-model="installments">
-                <span>Full Payment (RM <span x-text="final"></span>)</span>
-            </label>
-            <label class="flex items-center space-x-2">
-                <input type="radio" value="3" x-model="installments">
-                <span>3 Payments (RM <span x-text="(final/3).toFixed(2)"></span> each)</span>
-            </label>
-            <label class="flex items-center space-x-2">
-                <input type="radio" value="6" x-model="installments">
-                <span>6 Payments (RM <span x-text="(final/6).toFixed(2)"></span> each)</span>
-            </label>
-        </div>
-
-        <div class="flex justify-end gap-3">
-            <button @click="open = false" class="px-4 py-2 rounded-lg text-gray-600 hover:bg-gray-100">Cancel</button>
-            <form method="POST" :action="'/subscribe/' + plan">
-                @csrf
-                <input type="hidden" name="installments" x-model="installments">
-                <button type="submit" class="px-4 py-2 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700">
-                    Confirm & Pay
-                </button>
-            </form>
-        </div>
-    </div>
-</div>
-
-<!-- Next Installment Modal -->
-<div 
-    x-data="{ open: false, subscriptionId: null, amount: 0 }"
-    x-on:open-pay-next-modal.window="open = true; subscriptionId = $event.detail.subscriptionId; amount = $event.detail.amount"
-    x-show="open"
-    style="display:none"
-    class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-
-    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 space-y-6">
-        <h2 class="text-lg font-bold text-gray-800">Pay Next Installment</h2>
-
-        <p class="text-gray-600">Are you sure you want to pay your next installment?</p>
-        <p class="font-semibold text-indigo-600">
-            Amount: RM <span x-text="amount.toFixed(2)"></span>
-        </p>
-
-        <div class="flex justify-end gap-3">
-            <button @click="open = false" class="px-4 py-2 rounded-lg text-gray-600 hover:bg-gray-100">Cancel</button>
-
-            <form method="POST" :action="'/subscribe/pay-next/' + subscriptionId">
-                @csrf
-                <button type="submit" class="px-4 py-2 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700">
-                    Confirm & Pay
-                </button>
-            </form>
-        </div>
-    </div>
-</div>
-
-
-
-
+                x-data="{ 
+                    open: false, 
+                    subscriptionId: null, 
+                    selectedOption: null,
+                    
+                    // Data passed in
+                    fullFinal: 0, 
+                    paidCount: 0,
+                    totalInstallments: 0,
+                    
+                    // Calculated details (Full subscription cost)
+                    base: 300, // Hardcoded for Sandbox as RM 300
+                    get tax() { return this.base * 0.08; },
+                    get fpx() { return 1.00; },
+                    
+                    // Calculated amounts
+                    get installmentAmount() {
+                        if (this.totalInstallments === 0) return 0;
+                        return this.fullFinal / this.totalInstallments;
+                    },
+                    get remainingAmount() {
+                        return this.installmentAmount * (this.totalInstallments - this.paidCount);
+                    },
+            
+                    // Breakdown properties for the currently selected option
+                    get currentAmount() {
+                        return this.selectedOption === 'full' ? this.remainingAmount : this.installmentAmount;
+                    },
+                    get currentBase() {
+                        return (this.currentAmount / this.fullFinal) * this.base;
+                    },
+                    get currentTax() {
+                        return (this.currentAmount / this.fullFinal) * this.tax;
+                    },
+                    get currentFpx() {
+                        return (this.currentAmount / this.fullFinal) * this.fpx;
+                    },
+                }"
+                x-on:open-pay-next-modal.window="
+                    open = true; 
+                    subscriptionId = $event.detail.subscriptionId ?? null; 
+                    fullFinal = parseFloat($event.detail.fullFinal) || 0;
+                    paidCount = parseInt($event.detail.paidCount) || 0;
+                    totalInstallments = parseInt($event.detail.totalInstallments) || 0;
+                    selectedOption = 'next'; // Default to next installment
+                "
+                x-show="open"
+                x-cloak
+                style="display:none"
+                class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 backdrop-blur-sm p-4">
+            
+                <div @click.away="open = false" class="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-8 space-y-6 transform transition-all duration-300">
+                    <h2 class="text-2xl font-bold text-gray-800 border-b pb-3">Pay Subscription</h2>
+            
+                    <p class="text-md font-semibold text-gray-700">Payment Progress: <span class="font-bold text-indigo-600" x-text="paidCount + ' / ' + totalInstallments"></span></p>
+            
+                    {{-- Payment Option Selection --}}
+                    <div class="grid grid-cols-2 gap-4">
+                        {{-- Option 1: Next Installment --}}
+                        <button 
+                            @click="selectedOption = 'next'" 
+                            :class="{'border-indigo-600 ring-2 ring-indigo-300': selectedOption === 'next', 'border-gray-300 hover:border-indigo-400': selectedOption !== 'next'}"
+                            class="p-4 border-2 rounded-xl text-left transition duration-200">
+                            <p class="font-bold text-lg" :class="{'text-indigo-600': selectedOption === 'next'}">Next Installment</p>
+                            <p class="text-xl font-extrabold mt-1">RM <span x-text="Number(installmentAmount).toFixed(2)"></span></p>
+                            <p class="text-xs text-gray-500">Pay one installment.</p>
+                        </button>
+            
+                        {{-- Option 2: Full Remaining (Only show if remaining amount is positive) --}}
+                        {{-- <template x-if="remainingAmount > installmentAmount">
+                            <button 
+                                @click="selectedOption = 'full'" 
+                                :class="{'border-indigo-600 ring-2 ring-indigo-300': selectedOption === 'full', 'border-gray-300 hover:border-indigo-400': selectedOption !== 'full'}"
+                                class="p-4 border-2 rounded-xl text-left transition duration-200">
+                                <p class="font-bold text-lg" :class="{'text-indigo-600': selectedOption === 'full'}">Settle Remaining</p>
+                                <p class="text-xl font-extrabold mt-1">RM <span x-text="Number(remainingAmount).toFixed(2)"></span></p>
+                                <p class="text-xs text-gray-500">Settle all remaining payments.</p>
+                            </button>
+                        </template> --}}
+                    </div>
+            
+                    {{-- Payment Breakdown for selected option --}}
+                    <div class="bg-gray-50 p-4 rounded-xl space-y-2 text-sm" x-show="selectedOption">
+                        <h3 class="font-bold text-base text-gray-800 mb-2" x-text="'Breakdown for: ' + (selectedOption === 'full' ? 'Full Settlement' : 'Next Installment')"></h3>
+                        
+                        <div class="flex justify-between"><span>Base Price</span> <span>RM <span x-text="currentBase.toFixed(2)"></span></span></div>
+                        <div class="flex justify-between"><span>Tax (8%)</span> <span>RM <span x-text="currentTax.toFixed(2)"></span></span></div>
+                        <div class="flex justify-between"><span>FPX Charge</span> <span>RM <span x-text="currentFpx.toFixed(2)"></span></span></div>
+            
+                        <div class="border-t pt-2 flex justify-between font-extrabold text-indigo-600 text-lg">
+                            <span x-text="selectedOption === 'full' ? 'Total Settlement Amount' : 'Total Installment Amount'"></span> 
+                            <span>RM <span x-text="currentAmount.toFixed(2)"></span></span>
+                        </div>
+                    </div>
+            
+                    <div class="flex justify-end gap-3 pt-4">
+                        <button @click="open = false" class="px-5 py-2 rounded-lg text-gray-600 border border-gray-300 hover:bg-gray-100 font-semibold transition">Cancel</button>
+            
+                        <form method="POST" :action="'/subscribe/pay-next/' + subscriptionId">
+                            @csrf
+                            <input type="hidden" name="full_settlement" :value="selectedOption === 'full' ? 1 : 0">
+                            <button type="submit" 
+                                    :disabled="!selectedOption"
+                                    class="px-5 py-2 rounded-lg bg-indigo-600 text-white font-bold shadow-md hover:bg-indigo-700 transition disabled:opacity-50">
+                                Pay RM <span x-text="currentAmount.toFixed(2)"></span>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
             <div 
                 x-data="{ open: false, plan: '', label: '', base: 0, tax: 0, fpx: 0, final: 0 }"
                 x-on:open-modal.window="open = true; plan = $event.detail.plan; label = $event.detail.label; base = $event.detail.base; tax = $event.detail.tax; fpx = $event.detail.fpx; final = $event.detail.final"
                 x-show="open"
                 style="display: none"
                 class="fixed inset-0 z-50 flex items-center justify-center 
-           bg-white backdrop-blur-sm transition-opacity">
+                 bg-white backdrop-blur-sm transition-opacity">
                 
                 <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 space-y-6">
                     <h2 class="text-lg font-bold text-gray-800" x-text="label + ' Subscription'"></h2>

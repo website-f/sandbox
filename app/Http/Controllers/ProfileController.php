@@ -7,6 +7,7 @@ use App\Models\Role;
 use App\Models\User;
 use App\Models\Account;
 use App\Models\Pewaris;
+use App\Models\AccountType;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -93,7 +94,7 @@ class ProfileController extends Controller
         return back()->with('success','Affiliation updated');
     }
 
-    public function storePewaris(Request $request, ReferralTreeService $tree)
+ public function storePewaris(Request $request, ReferralTreeService $tree)
 {
     $user = auth()->user();
 
@@ -114,6 +115,7 @@ class ProfileController extends Controller
         'phone' => $data['phone'] ?? null,
         'email' => $data['email'] ?? null,
         'address' => $data['address'] ?? null,
+        'dob' => $data['dob'] ?? null, // save DOB
     ]);
 
     // Only create linked user if email provided
@@ -127,15 +129,20 @@ class ProfileController extends Controller
         $role = Role::where('name', 'Entrepreneur')->first();
         $linkedUser->roles()->attach($role);
 
-        $accounts = ['rizqmall', 'sandbox'];
+        // Determine accounts to create
+        $accounts = AccountType::whereIn('name', ['rizqmall', 'sandbox'])->get()->keyBy('name');
+
+        // Add sandbox remaja if under 25
         if (!empty($data['dob']) && Carbon::parse($data['dob'])->age < 25) {
-            $accounts[] = 'sandbox remaja';
+            $accounts['sandbox remaja'] = AccountType::where('name', 'sandbox remaja')->first();
         }
 
-        foreach ($accounts as $type) {
+        // Create accounts
+        foreach ($accounts as $type => $accountType) {
             Account::create([
                 'user_id' => $linkedUser->id,
                 'type' => $type,
+                'account_type_id' => $accountType->id,
                 'active' => false,
             ]);
         }
@@ -144,11 +151,12 @@ class ProfileController extends Controller
         $pewaris->linked_user_id = $linkedUser->id;
         $pewaris->save();
 
-        // Referral tree
+        // Attach to referral tree
         $tree->attach($user, $linkedUser);
     }
 
     return back()->with('success', 'Pewaris added successfully!');
 }
+
 }
 

@@ -99,13 +99,28 @@
                                 <label class="block text-sm font-medium text-gray-700">Alternative Email</label>
                                 <input type="email" name="email_alt" value="{{ $profile->email_alt ?? '' }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                             </div>
+
+                             <div>
+                                <label class="block text-sm font-medium text-gray-700">Country</label>
+                                <input type="text" name="email_alt" value="{{ $profile->country ?? '' }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            </div>
+
+                             <div>
+                                <label class="block text-sm font-medium text-gray-700">States</label>
+                                <input type="text" name="email_alt" value="{{ $profile->state ?? '' }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            </div>
+
+                             <div>
+                                <label class="block text-sm font-medium text-gray-700">City</label>
+                                <input type="text" name="email_alt" value="{{ $profile->city ?? '' }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            </div>
                     
-                            <div>
+                            {{-- <div>
                                 <label for="country" class="block text-sm font-medium text-gray-700">Country</label>
                                 <select id="country" name="country" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                                     <option value="">-- Select Country --</option>
                                 </select>
-                            </div>
+                            </div> --}}
                     
                             <div id="state-wrapper" class="hidden">
                                 <label for="state" class="block text-sm font-medium text-gray-700">State</label>
@@ -262,58 +277,58 @@
                         </div>
                     </div>
 
-<div x-show="tab === 'pewaris'">
-    <form method="POST" action="{{ route('profile.pewaris.store') }}" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        @csrf
-        <div>
-            <label class="block text-sm font-medium text-gray-700">Name</label>
-            <input type="text" name="name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-        </div>
-        <div>
-            <label class="block text-sm font-medium text-gray-700">Relationship</label>
-            <input type="text" name="relationship" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-        </div>
-        <div>
-            <label class="block text-sm font-medium text-gray-700">Phone</label>
-            <input type="text" name="phone" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-        </div>
-        <div>
-            <label class="block text-sm font-medium text-gray-700">Email</label>
-            <input type="email" name="email" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-        </div>
-        <div>
-            <label class="block text-sm font-medium text-gray-700">Date of Birth</label>
-            <input type="date" name="dob" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-        </div>
-        <div class="col-span-1 md:col-span-2">
-            <label class="block text-sm font-medium text-gray-700">Address</label>
-            <textarea name="address" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"></textarea>
-        </div>
-        <div class="col-span-1 md:col-span-2 flex justify-end">
-            <x-primary-button>Add Pewaris</x-primary-button>
-        </div>
-    </form>
-
-    <h3 class="text-lg font-bold mt-6 mb-2">My Next of Kin / Pewaris</h3>
-    <ul class="space-y-3">
-        @foreach($pewaris as $nk)
-            <li class="p-4 border rounded-lg flex justify-between items-center">
-                <div>
-                    <div class="font-semibold">{{ $nk->name }} ({{ $nk->relationship }})</div>
-                    <div class="text-sm text-gray-600">{{ $nk->phone }} - {{ $nk->email }}</div>
-                </div>
-                @if($nk->linked_user_id)
-                    <form action="#">
-                        
-                        <x-primary-button>Register Sandbox Remaja</x-primary-button>
-                    </form>
-                @endif
-            </li>
-        @endforeach
-    </ul>
-</div>
-
-
+                    <div x-show="tab === 'pewaris'">
+                        <form method="POST" action="{{ route('profile.pewaris.store') }}" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            @csrf
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Name</label>
+                                <input type="text" name="name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Relationship</label>
+                                <input type="text" name="relationship" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Phone</label>
+                                <input type="text" name="phone" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Email</label>
+                                <input type="email" name="email" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Date of Birth</label>
+                                <input type="date" name="dob" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            </div>
+                            <div class="col-span-1 md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700">Address</label>
+                                <textarea name="address" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"></textarea>
+                            </div>
+                            <div class="col-span-1 md:col-span-2 flex justify-end">
+                                <x-primary-button>Add Pewaris</x-primary-button>
+                            </div>
+                        </form>
+                    
+                        <h3 class="text-lg font-bold mt-6 mb-2">My Next of Kin / Pewaris</h3>
+                        <ul class="space-y-3">
+                            @foreach($pewaris as $nk)
+                                <li class="p-4 border rounded-lg flex justify-between items-center">
+                                    <div>
+                                        <div class="font-semibold">{{ $nk->name }} ({{ $nk->relationship }})</div>
+                                        <div class="text-sm text-gray-600">{{ $nk->phone }} - {{ $nk->email }}</div>
+                                    </div>
+                                    @if($nk->linked_user_id)
+                                        <form action="#">
+                                            
+                                            <x-primary-button>Register Sandbox Remaja</x-primary-button>
+                                        </form>
+                                    @endif
+                                </li>
+                            @endforeach
+                        </ul>
+                    </div>
+                    
+                    
                     {{-- Affiliation Tab --}}
                     <div x-show="tab === 'affiliation'">
                         <form method="POST" action="{{ route('profile.affiliation') }}" class="grid grid-cols-1 md:grid-cols-2 gap-6">

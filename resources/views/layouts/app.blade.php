@@ -62,7 +62,10 @@
                     }
                 });
             }
+            
         </script>
+
+        
 
         @stack('scripts')
 

@@ -113,50 +113,69 @@
                                     RM {{ number_format($paidAmount, 2) }} paid / RM {{ number_format($finalPrice, 2) }} total
                                 </p>
                             @endif
-                        </div>
-                
-                        {{-- Right: Action button --}}
-                        <div class="flex-shrink-0">
+
+                              <div class="">
                             @if($showButton)
-                                @if($showProgress)
-                                    <button 
-                                        x-data
-                                        @click="$dispatch('open-pay-next-modal', {
-                                            subscriptionId: {{ $subscription->id }},
-                                            
-                                            // FIX 1: Change $final to $finalPrice
-                                            fullFinal: {{ $finalPrice }}, 
-                                            
-                                            // FIX 2: Ensure correct variables are used for counts
-                                            paidCount: {{ $subscription->installments_paid }}, 
-                                            totalInstallments: {{ $subscription->installments_total }},
-                        
-                                            // nextAmount is still useful for initial calculation display
-                                            nextAmount: {{ $nextAmount }},
-                                            
-                                            // FIX 3: Calculate remaining amount safely using $finalPrice
-                                            remainingAmount: {{ number_format($finalPrice - $paidAmount, 2, '.', '') }} 
-                                        })"
-                                        class="px-5 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-semibold shadow">
-                                        Pay Next Installment
-                                    </button>
+                                @if ($k == 'sandbox')
+                                     @if($showProgress)
+                                        <button 
+                                            x-data
+                                            @click="$dispatch('open-pay-next-modal', {
+                                                subscriptionId: {{ $subscription->id }},
+                                                
+                                                // FIX 1: Change $final to $finalPrice
+                                                fullFinal: {{ $finalPrice }}, 
+                                                
+                                                // FIX 2: Ensure correct variables are used for counts
+                                                paidCount: {{ $subscription->installments_paid }}, 
+                                                totalInstallments: {{ $subscription->installments_total }},
+                            
+                                                // nextAmount is still useful for initial calculation display
+                                                nextAmount: {{ $nextAmount }},
+                                                
+                                                // FIX 3: Calculate remaining amount safely using $finalPrice
+                                                remainingAmount: {{ number_format($finalPrice - $paidAmount, 2, '.', '') }} 
+                                            })"
+                                            class="px-5 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-semibold shadow">
+                                            Pay Next Installment
+                                        </button>
+                                    @else
+                                        <button 
+                                            x-data 
+                                            @click="$dispatch('open-installment-modal', {
+                                                plan: '{{ $k }}',
+                                                label: '{{ $label }}',
+                                                base: '{{ $basePrice }}',
+                                                tax: '{{ $tax }}',
+                                                fpx: '{{ $fpx }}',
+                                                final: '{{ $finalPrice }}'
+                                            })"
+                                            class="px-5 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-semibold shadow">
+                                            Subscribe
+                                        </button>
+                                    @endif
                                 @else
-                                    <button 
-                                        x-data 
-                                        @click="$dispatch('open-installment-modal', {
-                                            plan: '{{ $k }}',
-                                            label: '{{ $label }}',
-                                            base: '{{ $basePrice }}',
-                                            tax: '{{ $tax }}',
-                                            fpx: '{{ $fpx }}',
-                                            final: '{{ $finalPrice }}'
-                                        })"
-                                        class="px-5 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-semibold shadow">
-                                        Subscribe
-                                    </button>
+                                <button 
+                                    x-data 
+                                    @click="$dispatch('open-modal', {
+                                        plan: '{{ $k }}',
+                                        label: '{{ $label }}',
+                                        base: '{{ $basePrice }}',
+                                        tax: '{{ $tax }}',
+                                        fpx: '{{ $fpx }}',
+                                        final: '{{ $finalPrice }}'
+                                    })"
+                                    class="px-5 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-semibold shadow">
+                                    Subscribe
+                                </button>
                                 @endif
+                               
                             @endif
                         </div>
+                        </div>
+                
+
+                      
                     </li>
                 @endforeach
             </ul>

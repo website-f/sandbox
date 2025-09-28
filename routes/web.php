@@ -107,6 +107,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/profile/education', [ProfileController::class, 'updateEducation'])->name('profile.education');
     Route::post('/profile/course', [ProfileController::class, 'updateCourse'])->name('profile.course');
     Route::post('/profile/nextofkin', [ProfileController::class, 'updateNextOfKin'])->name('profile.nextofkin');
+    Route::post('/profile/pewaris/store', [ProfileController::class, 'storePewaris'])->name('profile.pewaris.store');
     Route::post('/profile/affiliation', [ProfileController::class, 'updateAffiliation'])->name('profile.affiliation');
 
 });

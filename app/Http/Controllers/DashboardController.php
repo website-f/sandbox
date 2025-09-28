@@ -8,13 +8,15 @@ use App\Models\User;
 class DashboardController extends Controller {
     public function index(Request $req) {
         $user = $req->user();
-        $accounts = $user->accounts->keyBy('type');
 
+        $accounts = $user->accounts()->with('accountType')->get()->keyBy('account_type_id');
+        
         $subscriptions = $user->subscriptions()
-        ->with('payment')
-        ->latest()
-        ->get()
-        ->groupBy('plan');
+            ->with(['payment', 'accountType'])
+            ->latest()
+            ->get()
+            ->groupBy('account_type_id');
+
 
         // Start query
         $query = User::with(['accounts', 'profile', 'referral.parent', 'referral']);

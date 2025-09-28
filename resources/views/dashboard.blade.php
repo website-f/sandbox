@@ -39,10 +39,22 @@
                             @endphp
                     
             <ul class="grid grid-cols-1 gap-6 md:grid-cols-2">
-                @foreach (['rizqmall'=>'RizqMall','sandbox'=>'Sandbox'] as $k => $label)
+                @php
+                    $logos = [
+                        'rizqmall' => asset('rizqmall.jpeg'),
+                        'sandbox' => asset('sandboxlogo.png'),
+                    ];
+                @endphp
+                
+               @foreach ($accounts as $account)
                     @php
-                        $account = $accounts[$k] ?? null;
-                        $subscription = isset($subscriptions[$k]) ? $subscriptions[$k]->sortByDesc('created_at')->first() : null;
+                        if ($account->type === 'sandbox remaja' && $account->account_type_id == 3) {
+                            continue;
+                        }
+                
+                        $subscription = isset($subscriptions[$account->account_type_id]) 
+                                        ? $subscriptions[$account->account_type_id]->sortByDesc('created_at')->first() 
+                                        : null;
                 
                         $indicatorColor = 'bg-red-500';
                         $indicatorText = 'inactive';
@@ -50,7 +62,7 @@
                         $serialText = '';
                         $showButton = true;
                 
-                        if($account) {
+                        if ($account) {
                             $expires = $account->expires_at ? \Carbon\Carbon::parse($account->expires_at) : null;
                 
                             if ($account->active) {
@@ -59,39 +71,47 @@
                                 $showButton = false;
                                 if ($expires) $expiryText = 'Valid until ' . $expires->toFormattedDateString();
                                 if ($account->serial_number) $serialText = "Serial: {$account->serial_number}";
-                            } elseif ($k === 'sandbox' && $subscription && $subscription->installments_paid > 0 && $subscription->installments_paid < $subscription->installments_total) {
+                            } elseif ($account->type === 'sandbox' && $subscription && $subscription->installments_paid > 0 && $subscription->installments_paid < $subscription->installments_total) {
                                 $indicatorColor = 'bg-yellow-500';
                                 $indicatorText = 'pending';
                             }
                         }
                 
-                        $basePrice = $k === 'sandbox' ? 300 : 20;
+                        $basePrice = $account->type === 'sandbox' ? 300 : 20;
                         $tax = round($basePrice * 0.08, 2);
                         $fpx = 1.00;
-                        $finalPrice = $basePrice + $tax + $fpx;
                 
-                        $showProgress = $k === 'sandbox' && $subscription && $subscription->installments_paid > 0 && $subscription->installments_paid < $subscription->installments_total;
-                        $paidAmount = $showProgress ? ($subscription->installments_paid / $subscription->installments_total) * $finalPrice : 0;
-                        $progressPercent = $showProgress ? ($subscription->installments_paid / $subscription->installments_total) * 100 : 0;
-                        $nextAmount = $showProgress ? ($finalPrice / $subscription->installments_total) : 0;
+                        // Progress is based **only on basePrice**
+                        $showProgress = $account->type === 'sandbox' 
+                            && $subscription 
+                            && $subscription->installments_paid > 0 
+                            && $subscription->installments_paid < $subscription->installments_total;
                 
-                        // Logos
-                        $logos = [
-                            'rizqmall' => asset('rizqmall.jpeg'), // replace with actual logo
-                            'sandbox' => asset('sandboxlogo.png'),
-                        ];
+                        if ($showProgress) {
+                            $perInstallmentBase = round($basePrice / $subscription->installments_total, 2); // Base only
+                            $paidBase = round($subscription->installments_paid * $perInstallmentBase, 2);
+                            $progressPercent = ($subscription->installments_paid / $subscription->installments_total) * 100;
+                
+                            // Next installment **with tax + FPX**
+                            $nextAmount = round(($basePrice + ($basePrice * 0.08)) / $subscription->installments_total + $fpx, 2);
+                        } else {
+                            $perInstallmentBase = 0;
+                            $paidBase = 0;
+                            $progressPercent = 0;
+                            $nextAmount = round($basePrice + $tax + $fpx, 2); // First payment
+                        }
+                
+                        // Full price for one-time payment (base + tax + fpx)
+                        $fullPrice = round($basePrice + $tax + $fpx, 2);
                     @endphp
                 
-                    <li class="flex flex-col md:flex-row justify-between items-center bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-shadow duration-300 p-5 gap-4 md:gap-6">
-                        {{-- Left: Logo --}}
+                    <li class="flex flex-col md:flex-row justify-between items-center bg-white rounded-2xl shadow-lg p-5 gap-4 md:gap-6">
                         <div class="flex-shrink-0">
-                            <img src="{{ $logos[$k] }}" alt="{{ $label }} Logo" class="w-12 h-12 rounded-full border border-gray-200 shadow-sm object-cover">
+                            <img src="{{ $logos[$account->type] }}" alt="{{ ucfirst($account->type) }} Logo" class="w-12 h-12 rounded-full border border-gray-200 shadow-sm object-cover">
                         </div>
                 
-                        {{-- Middle: Info --}}
                         <div class="flex-1 flex flex-col gap-2">
-                            <span class="font-semibold text-gray-800 text-lg">{{ $label }} @if(strtolower($label) === 'sandbox') Malaysia @endif</span>
-                
+                            <span class="font-semibold text-gray-800 text-lg">{{ ucfirst($account->type) }} @if($account->type === 'sandbox') Malaysia @endif</span>
                             <span class="flex items-center gap-2 text-sm text-gray-500">
                                 <span class="inline-block w-3 h-3 rounded-full {{ $indicatorColor }}"></span>
                                 {{ ucfirst($indicatorText) }}
@@ -110,74 +130,63 @@
                                     <div class="bg-indigo-600 h-3 transition-all duration-300" style="width: {{ $progressPercent }}%"></div>
                                 </div>
                                 <p class="text-xs text-gray-600 mt-1">
-                                    RM {{ number_format($paidAmount, 2) }} paid / RM {{ number_format($finalPrice, 2) }} total
+                                    RM {{ number_format($paidBase, 2) }} paid / RM {{ number_format($basePrice, 2) }} total
                                 </p>
                             @endif
-
-                              <div class="">
-                            @if($showButton)
-                                @if ($k == 'sandbox')
-                                     @if($showProgress)
-                                        <button 
-                                            x-data
-                                            @click="$dispatch('open-pay-next-modal', {
-                                                subscriptionId: {{ $subscription->id }},
-                                                
-                                                // FIX 1: Change $final to $finalPrice
-                                                fullFinal: {{ $finalPrice }}, 
-                                                
-                                                // FIX 2: Ensure correct variables are used for counts
-                                                paidCount: {{ $subscription->installments_paid }}, 
-                                                totalInstallments: {{ $subscription->installments_total }},
-                            
-                                                // nextAmount is still useful for initial calculation display
-                                                nextAmount: {{ $nextAmount }},
-                                                
-                                                // FIX 3: Calculate remaining amount safely using $finalPrice
-                                                remainingAmount: {{ number_format($finalPrice - $paidAmount, 2, '.', '') }} 
-                                            })"
-                                            class="px-5 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-semibold shadow">
-                                            Pay Next Installment
-                                        </button>
+                
+                            {{-- Buttons --}}
+                            <div>
+                                @if($showButton)
+                                    @if ($account->type === 'sandbox')
+                                        @if($showProgress)
+                                           <button x-data
+                                               @click="$dispatch('open-pay-next-modal', {
+                                                   subscriptionId: {{ $subscription->id }},
+                                                   base: {{ $perInstallmentBase }},          // base per installment
+                                                   fullFinal: {{ $fullPrice }},             // full price with tax+fpx
+                                                   paidCount: {{ $subscription->installments_paid }},
+                                                   totalInstallments: {{ $subscription->installments_total }}
+                                               })"
+                                               class="px-5 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-semibold shadow">
+                                               Pay Next Installment
+                                           </button>
+                
+                
+                                        @else
+                                            <button x-data
+                                                @click="$dispatch('open-installment-modal', {
+                                                    plan: '{{ $account->type }}',
+                                                    label: '{{ ucfirst($account->type) }}',
+                                                    base: {{ $basePrice }},
+                                                    tax: {{ $tax }},
+                                                    fpx: {{ $fpx }},
+                                                    final: {{ $fullPrice }}
+                                                })"
+                                                class="px-5 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-semibold shadow">
+                                                Subscribe
+                                            </button>
+                                        @endif
                                     @else
-                                        <button 
-                                            x-data 
-                                            @click="$dispatch('open-installment-modal', {
-                                                plan: '{{ $k }}',
-                                                label: '{{ $label }}',
-                                                base: '{{ $basePrice }}',
-                                                tax: '{{ $tax }}',
-                                                fpx: '{{ $fpx }}',
-                                                final: '{{ $finalPrice }}'
+                                        <button x-data
+                                            @click="$dispatch('open-modal', {
+                                                plan: '{{ $account->type }}',
+                                                label: '{{ ucfirst($account->type) }}',
+                                                base: {{ $basePrice }},
+                                                tax: {{ $tax }},
+                                                fpx: {{ $fpx }},
+                                                final: {{ $fullPrice }}
                                             })"
                                             class="px-5 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-semibold shadow">
                                             Subscribe
                                         </button>
                                     @endif
-                                @else
-                                <button 
-                                    x-data 
-                                    @click="$dispatch('open-modal', {
-                                        plan: '{{ $k }}',
-                                        label: '{{ $label }}',
-                                        base: '{{ $basePrice }}',
-                                        tax: '{{ $tax }}',
-                                        fpx: '{{ $fpx }}',
-                                        final: '{{ $finalPrice }}'
-                                    })"
-                                    class="px-5 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-semibold shadow">
-                                    Subscribe
-                                </button>
                                 @endif
-                               
-                            @endif
-                        </div
+                            </div>
                         </div>
-                
-
-                      
                     </li>
                 @endforeach
+                
+                                
             </ul>
 
             
@@ -203,7 +212,7 @@
                         return (this.fullTax / this.installments).toFixed(2);
                     },
                     get installmentFpx() {
-                        return (this.fullFpx / this.installments).toFixed(2);
+                        return this.fullFpx.toFixed(2); // ✅ Fixed FPX per installment
                     },
                     get installmentAmount() {
                         // Recalculate based on installment component prices to ensure accuracy
@@ -247,7 +256,15 @@
                             :class="{'border-indigo-600 ring-2 ring-indigo-300': installments == 3, 'border-gray-300 hover:border-indigo-400': installments != 3}"
                             class="p-4 border-2 rounded-xl text-left transition duration-200">
                             <p class="font-bold text-lg" :class="{'text-indigo-600': installments == 3}">3 Installments</p>
-                            <p class="text-xl font-extrabold mt-1">RM <span x-text="(fullFinal/3).toFixed(2)"></span></p>
+                           <p class="text-xl font-extrabold mt-1">
+                               RM 
+                               <span 
+                                   x-text="(
+                                       (fullBase + fullTax) / 3 + fullFpx
+                                   ).toFixed(2)">
+                               </span>
+                           </p>
+
                             <p class="text-xs text-gray-500">per payment (3x total)</p>
                         </button>
                     </div>
@@ -303,15 +320,18 @@
                     totalInstallments: 0,
                     
                     // Calculated details (Full subscription cost)
-                    base: 300, // Hardcoded for Sandbox as RM 300
+                    base: 100,
                     get tax() { return this.base * 0.08; },
                     get fpx() { return 1.00; },
                     
                     // Calculated amounts
                     get installmentAmount() {
                         if (this.totalInstallments === 0) return 0;
-                        return this.fullFinal / this.totalInstallments;
+                        // For next installment, use full base for one installment
+                        return this.base + this.tax + this.fpx;
                     },
+
+
                     get remainingAmount() {
                         return this.installmentAmount * (this.totalInstallments - this.paidCount);
                     },
@@ -321,22 +341,17 @@
                         return this.selectedOption === 'full' ? this.remainingAmount : this.installmentAmount;
                     },
                     get currentBase() {
-                        return (this.currentAmount / this.fullFinal) * this.base;
-                    },
-                    get currentTax() {
-                        return (this.currentAmount / this.fullFinal) * this.tax;
-                    },
-                    get currentFpx() {
-                        return (this.currentAmount / this.fullFinal) * this.fpx;
+                        return this.base;
                     },
                 }"
                 x-on:open-pay-next-modal.window="
                     open = true; 
                     subscriptionId = $event.detail.subscriptionId ?? null; 
+                    base = parseFloat($event.detail.base) || 0;           // ✅ important
                     fullFinal = parseFloat($event.detail.fullFinal) || 0;
                     paidCount = parseInt($event.detail.paidCount) || 0;
                     totalInstallments = parseInt($event.detail.totalInstallments) || 0;
-                    selectedOption = 'next'; // Default to next installment
+                    selectedOption = 'next';
                 "
                 x-show="open"
                 x-cloak
@@ -378,8 +393,8 @@
                         <h3 class="font-bold text-base text-gray-800 mb-2" x-text="'Breakdown for: ' + (selectedOption === 'full' ? 'Full Settlement' : 'Next Installment')"></h3>
                         
                         <div class="flex justify-between"><span>Base Price</span> <span>RM <span x-text="currentBase.toFixed(2)"></span></span></div>
-                        <div class="flex justify-between"><span>Tax (8%)</span> <span>RM <span x-text="currentTax.toFixed(2)"></span></span></div>
-                        <div class="flex justify-between"><span>FPX Charge</span> <span>RM <span x-text="currentFpx.toFixed(2)"></span></span></div>
+                        <div class="flex justify-between"><span>Tax (8%)</span> <span>RM <span x-text="tax.toFixed(2)"></span></span></div>
+                        <div class="flex justify-between"><span>FPX Charge</span> <span>RM <span x-text="fpx.toFixed(2)"></span></span></div>
             
                         <div class="border-t pt-2 flex justify-between font-extrabold text-indigo-600 text-lg">
                             <span x-text="selectedOption === 'full' ? 'Total Settlement Amount' : 'Total Installment Amount'"></span> 

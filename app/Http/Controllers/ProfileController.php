@@ -2,9 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use Carbon\Carbon;
+use App\Models\Role;
+use App\Models\User;
+use App\Models\Account;
+use App\Models\Pewaris;
+use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use App\Services\ReferralTreeService;
 use App\Models\{Profile,Business,Education,Course,NextOfKin,Affiliation};
 
 class ProfileController extends Controller
@@ -18,7 +25,7 @@ class ProfileController extends Controller
             'business'     => Business::firstOrCreate(['user_id' => $userId]),
             'education'    => Education::firstOrCreate(['user_id' => $userId]),
             'courses'      => Course::where('user_id', $userId)->get(),
-            'nextOfKin'    => NextOfKin::firstOrCreate(['user_id' => $userId]),
+            'pewaris' => Pewaris::where('user_id', $userId)->get(),
             'affiliation'  => Affiliation::firstOrCreate(['user_id' => $userId]),
         ]);
     }
@@ -85,5 +92,63 @@ class ProfileController extends Controller
         );
         return back()->with('success','Affiliation updated');
     }
+
+    public function storePewaris(Request $request, ReferralTreeService $tree)
+{
+    $user = auth()->user();
+
+    $data = $request->validate([
+        'name' => 'nullable|string|max:255',
+        'relationship' => 'nullable|string|max:255',
+        'phone' => 'nullable|string|max:20',
+        'email' => 'nullable|email|unique:users,email',
+        'address' => 'nullable|string',
+        'dob' => 'nullable|date',
+    ]);
+
+    // Create Pewaris
+    $pewaris = Pewaris::create([
+        'user_id' => $user->id,
+        'name' => $data['name'] ?? null,
+        'relationship' => $data['relationship'] ?? null,
+        'phone' => $data['phone'] ?? null,
+        'email' => $data['email'] ?? null,
+        'address' => $data['address'] ?? null,
+    ]);
+
+    // Only create linked user if email provided
+    if (!empty($data['email'])) {
+        $linkedUser = User::create([
+            'name' => $data['name'] ?? 'No Name',
+            'email' => $data['email'],
+            'password' => Hash::make(Str::random(12)),
+        ]);
+
+        $role = Role::where('name', 'Entrepreneur')->first();
+        $linkedUser->roles()->attach($role);
+
+        $accounts = ['rizqmall', 'sandbox'];
+        if (!empty($data['dob']) && Carbon::parse($data['dob'])->age < 25) {
+            $accounts[] = 'sandbox remaja';
+        }
+
+        foreach ($accounts as $type) {
+            Account::create([
+                'user_id' => $linkedUser->id,
+                'type' => $type,
+                'active' => false,
+            ]);
+        }
+
+        // Link back
+        $pewaris->linked_user_id = $linkedUser->id;
+        $pewaris->save();
+
+        // Referral tree
+        $tree->attach($user, $linkedUser);
+    }
+
+    return back()->with('success', 'Pewaris added successfully!');
+}
 }
 

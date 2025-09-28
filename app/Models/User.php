@@ -71,5 +71,16 @@ public function referrer()
     {
         return Blacklist::where('email', $this->email)->exists();
     }
+
+    public function pewaris()
+{
+    return $this->hasMany(Pewaris::class, 'user_id');
+}
+
+// If this user is a linked user of a pewaris
+public function linkedPewaris()
+{
+    return $this->hasOne(Pewaris::class, 'linked_user_id');
+}
   
 }

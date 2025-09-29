@@ -180,6 +180,10 @@
                                             Subscribe
                                         </button>
                                     @endif
+                                @else 
+                                    @if ($account->type === 'rizqmall')
+                                    <a class="px-5 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-semibold shadow" href="/setup-store">Visit Store</a>
+                                    @endif
                                 @endif
                             </div>
                         </div>

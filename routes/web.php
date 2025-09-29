@@ -110,6 +110,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/profile/pewaris/store', [ProfileController::class, 'storePewaris'])->name('profile.pewaris.store');
     Route::post('/profile/affiliation', [ProfileController::class, 'updateAffiliation'])->name('profile.affiliation');
 
+    Route::get('/setup-store', [ProfileController::class, 'redirectToRizqmall'])->name('setup.store');
+
 });
 
 Route::post('/subscribe/{plan}', [SubscriptionController::class, 'subscribe'])->name('subscribe.plan');

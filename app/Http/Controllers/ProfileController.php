@@ -158,5 +158,19 @@ class ProfileController extends Controller
     return back()->with('success', 'Pewaris added successfully!');
 }
 
+
+public function redirectToRizqmall(Request $request)
+{
+    $query = http_build_query([
+        'user_id' => $request->user()->id,
+        'email'   => $request->user()->email,
+        // add other params here if needed
+    ]);
+
+    $baseUrl = env('RIZQMALL_BASE_URL', 'http://rizqmall.test'); // fallback just in case
+    return redirect("{$baseUrl}/setup-store?{$query}");
+}
+
+
 }
 

@@ -102,7 +102,9 @@
                 <nav class="flex space-x-2 border-b overflow-x-auto whitespace-nowrap">
                     <button data-tab="overview" class="py-3 px-4 -mb-px border-b-2 border-indigo-600 text-indigo-600">Overview</button>
                     <button data-tab="accounts" class="py-3 px-4 text-gray-600">Accounts</button>
+                    <button data-tab="bank" class="py-3 px-4 text-gray-600">Bank Details</button>
                     <button data-tab="wallet" class="py-3 px-4 text-gray-600">Wallet & Payments</button>
+                    <button data-tab="collection" class="py-3 px-4 text-gray-600">Collection/Tabung</button>
                     <button data-tab="referrals" class="py-3 px-4 text-gray-600">Referrals</button>
                     <button data-tab="sandbox" class="py-3 px-4 text-gray-600">Sandbox Tree</button>
                     <button data-tab="edit" class="py-3 px-4 text-gray-600">Edit / Audit</button>
@@ -231,6 +233,20 @@
                         </div>
                     </div>
 
+                    <div data-panel="bank" class="tab-panel hidden">
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <div class="p-4 border rounded-lg">
+                                <h4 class="font-semibold mb-2">Bank Details</h4>
+                                <dl class="text-sm text-gray-700">
+                                    <div><span class="font-medium">Bank Name:</span> {{ $user->bank?->bank_name ?? '-' }}</div>
+                                    <div><span class="font-medium">Account Number:</span> {{ $user->bank?->account_number ?? '-' }}</div>
+                                    <div><span class="font-medium">Account Holder:</span> {{ $user->bank?->account_holder ?? '-' }}</div>
+                                    
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+
                     {{-- WALLET & PAYMENTS --}}
                     <div data-panel="wallet" class="tab-panel hidden">
                         <div class="grid md:grid-cols-2 gap-6">
@@ -272,6 +288,50 @@
                                 </ul>
                             </div>
                         </div>
+                    </div>
+
+                    <div data-panel="collection" class="tab-panel hidden">
+                        <table class="min-w-full border border-gray-300 rounded">
+                                <thead class="bg-gray-100">
+                                    <tr>
+                                        <th class="p-2 border">Type</th>
+                                        <th class="p-2 border">Balance (RM)</th>
+                                        <th class="p-2 border">Pending (RM)</th>
+                                        <th class="p-2 border">Limit (RM)</th>
+                                        <th class="p-2 border">Redeemed</th>
+                                        <th class="p-2 border">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($user->collections as $collection)
+                                    <tr class="text-center">
+                                        <td class="p-2 border">{{ ucfirst(str_replace('_', ' ', $collection->type)) }}</td>
+                                        <td class="p-2 border">{{ number_format($collection->balance / 100, 2) }}</td>
+                                        <td class="p-2 border">{{ number_format($collection->pending_balance / 100, 2) }}</td>
+                                        <td class="p-2 border">{{ number_format($collection->limit / 100, 2) }}</td>
+                                        <td class="p-2 border">
+                                            @if($collection->is_redeemed)
+                                                <span class="text-green-600 font-semibold">Yes</span>
+                                            @else
+                                                <span class="text-red-600 font-semibold">No</span>
+                                            @endif
+                                        </td>
+                                        <td class="p-2 border">
+                                            @if(!$collection->is_redeemed)
+                                                <form action="{{ route('admin.users.collection.redeem', [$user->id, $collection->type]) }}" method="POST">
+                                                    @csrf
+                                                    <button type="submit" class="px-3 py-1 bg-indigo-600 text-white rounded hover:bg-blue-700">
+                                                        Redeem
+                                                    </button>
+                                                </form>
+                                            @else
+                                                <button disabled class="px-3 py-1 bg-gray-400 text-black rounded">Redeem</button>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
                     </div>
 
                     {{-- REFERRAL TREES --}}

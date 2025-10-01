@@ -51,6 +51,7 @@ public function referrer()
 
 
   public function profile(){ return $this->hasOne(Profile::class); }
+   public function bank(){ return $this->hasOne(BankDetail::class); }
   public function business(){ return $this->hasOne(Business::class); }
   public function education(){ return $this->hasOne(Education::class); }
   public function courses(){ return $this->hasMany(Course::class); }
@@ -81,6 +82,19 @@ public function referrer()
 public function linkedPewaris()
 {
     return $this->hasOne(Pewaris::class, 'linked_user_id');
+}
+
+public function collections()
+{
+    return $this->hasMany(Collection::class);
+}
+
+/**
+ * Get a specific collection by type
+ */
+public function collectionByType(string $type)
+{
+    return $this->collections()->where('type', $type)->first();
 }
   
 }

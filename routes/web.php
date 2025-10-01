@@ -67,6 +67,8 @@ Route::middleware('auth')->group(function(){
         Route::get('{user}', [UserRoleController::class, 'show'])->name('show');
         Route::get('{user}/edit', [UserRoleController::class, 'edit'])->name('edit');
         Route::put('{user}', [UserRoleController::class, 'update'])->name('update');
+
+        Route::post('/user/{id}/redeem/{type}', [UserRoleController::class, 'redeemCollection'])->name('collection.redeem');
     
         // action endpoints (AJAX-friendly)
         Route::post('{user}/toggle-admin', [UserRoleController::class, 'toggleAdminAjax'])->name('toggleAdminAjax');
@@ -105,6 +107,7 @@ Route::middleware('auth')->group(function () {
 
     Route::post('/profile/business', [ProfileController::class, 'updateBusiness'])->name('profile.business');
     Route::post('/profile/education', [ProfileController::class, 'updateEducation'])->name('profile.education');
+    Route::post('/profile/bank', [ProfileController::class, 'updateBank'])->name('profile.bank');
     Route::post('/profile/course', [ProfileController::class, 'updateCourse'])->name('profile.course');
     Route::post('/profile/nextofkin', [ProfileController::class, 'updateNextOfKin'])->name('profile.nextofkin');
     Route::post('/profile/pewaris/store', [ProfileController::class, 'storePewaris'])->name('profile.pewaris.store');

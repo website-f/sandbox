@@ -254,7 +254,9 @@ public function show(User $user)
     $user->load([
         'profile',
         'business',
+        'bank',
         'education',
+        'collections',
         'courses',
         'nextOfKin',
         'affiliations',
@@ -503,7 +505,23 @@ public function destroy(User $user)
 }
 
 
+public function redeemCollection(Request $request, $userId, $type)
+    {
+        $user = User::findOrFail($userId);
 
+        $collection = $user->collections()->where('type', $type)->firstOrFail();
+
+        // dd($userId, $type);
+
+        // if ($collection->balance < $collection->limit) {
+        //     return redirect()->back()->with('error', 'Balance has not reached the limit yet.');
+        // }
+
+        $collection->is_redeemed = true;
+        $collection->save();
+
+        return redirect()->back()->with('success', "Collection '{$collection->type}' marked as redeemed.");
+    }
 
 
     

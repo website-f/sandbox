@@ -7,6 +7,7 @@ use App\Models\Role;
 use App\Models\User;
 use App\Models\Account;
 use App\Models\Pewaris;
+use App\Models\BankDetail;
 use App\Models\AccountType;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
@@ -25,6 +26,7 @@ class ProfileController extends Controller
             'profile'      => Profile::firstOrCreate(['user_id' => $userId]),
             'business'     => Business::firstOrCreate(['user_id' => $userId]),
             'education'    => Education::firstOrCreate(['user_id' => $userId]),
+            'bank'    => BankDetail::firstOrCreate(['user_id' => $userId]),
             'courses'      => Course::where('user_id', $userId)->get(),
             'pewaris' => Pewaris::where('user_id', $userId)->get(),
             'affiliation'  => Affiliation::firstOrCreate(['user_id' => $userId]),
@@ -68,6 +70,15 @@ class ProfileController extends Controller
             $r->all()
         );
         return back()->with('success','Education updated');
+    }
+
+    public function updateBank(Request $r)
+    {
+        BankDetail::updateOrCreate(
+            ['user_id' => Auth::id()],
+            $r->all()
+        );
+        return back()->with('success','Bank Details updated');
     }
 
     public function updateCourse(Request $r)
@@ -164,7 +175,7 @@ public function redirectToRizqmall(Request $request)
     $query = http_build_query([
         'user_id' => $request->user()->id,
         'email'   => $request->user()->email,
-        // add other params here if needed
+
     ]);
 
     $baseUrl = env('RIZQMALL_BASE_URL', 'http://rizqmall.test'); // fallback just in case

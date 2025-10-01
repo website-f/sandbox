@@ -40,6 +40,11 @@
                             class="whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-colors duration-200 focus:outline-none">
                             Personal Profile
                         </button>
+                        <button @click="tab = 'bank'"
+                            :class="tab === 'bank' ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-800'"
+                            class="whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-colors duration-200 focus:outline-none">
+                            Bank Details
+                        </button>
                         <button @click="tab = 'password'"
                             :class="tab === 'password' ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-800'"
                             class="whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-colors duration-200 focus:outline-none">
@@ -146,6 +151,42 @@
                             </div>
                             <div class="col-span-1 md:col-span-2 flex justify-end">
                                 <x-primary-button>Save Profile</x-primary-button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div x-show="tab === 'bank'">
+                        @php
+                            $malaysianBanks = [
+                                'Affin Bank', 'Agrobank', 'Alliance Bank', 'AmBank', 'Bank Islam',
+                                'Bank Muamalat', 'Bank Rakyat', 'CIMB Bank', 'Hong Leong Bank',
+                                'HSBC Bank', 'Maybank', 'Public Bank', 'RHB Bank', 'Standard Chartered',
+                                'UOB Bank', 'OCBC Bank'
+                            ];
+                        @endphp
+                        <form method="POST" action="{{ route('profile.bank') }}" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            @csrf
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Bank Name</label>
+                                <select name="bank_name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                    <option value="">Select Bank</option>
+                                    @foreach($malaysianBanks as $bankName)
+                                        <option value="{{ $bankName }}" @if(($bank->bank_name ?? '') == $bankName) selected @endif>
+                                            {{ $bankName }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Account Number</label>
+                                <input type="text" name="account_number" value="{{ $bank->account_number ?? '' }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Account Holder</label>
+                                <input type="text" name="account_holder" value="{{ $bank->account_holder ?? '' }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            </div>
+                            <div class="col-span-1 md:col-span-2 flex justify-end">
+                                <x-primary-button>Save Bank Details</x-primary-button>
                             </div>
                         </form>
                     </div>

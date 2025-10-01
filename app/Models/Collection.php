@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Collection extends Model
 {
-    protected $fillable = ['user_id', 'type', 'balance', 'pending_balance', 'limit'];
+    protected $fillable = ['user_id', 'type', 'balance', 'pending_balance', 'limit', 'is_redeemed'];
 
     public function transactions()
     {

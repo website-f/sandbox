@@ -32,7 +32,11 @@
     <div class="w-full max-w-lg mx-auto bg-gray-900 rounded-2xl shadow-2xl overflow-hidden p-8 sm:p-12 border border-gray-800">
         <!-- Logo -->
         <div class="flex flex-col items-center justify-center mb-8">
-            <img src="{{ asset('sandboxlogo.png') }}" alt="Logo" class="w-24 h-24">
+            <div class="flex flex-row items-center justify-center gap-4">
+            <img src="{{ asset('sandboxlogo.png') }}" alt="Logo" class="w-24 h-24 rounded">
+            <img src="{{ asset('rizq.jpeg') }}" alt="Logo" class="w-24 h-24 rounded">
+            </div>
+           
             <h2 class="mt-4 text-3xl font-bold tracking-tight text-white">Join the future.</h2>
             <p class="text-sm text-gray-400 mt-2">Create your account to get started.</p>
         </div>

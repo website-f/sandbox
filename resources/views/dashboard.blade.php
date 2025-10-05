@@ -7,6 +7,232 @@
 </x-slot>
 
 <div class="py-12">
+    {{-- Admin Stats Cards (Add right after the opening div of py-12) --}}
+@if(auth()->user()->hasRole('Admin'))
+    <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 mb-8">
+        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            {{-- Total Users --}}
+            <button onclick="openLocationModal()" 
+                    class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl shadow-lg p-6 hover:shadow-2xl transition-all duration-300 text-left">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-blue-100 text-sm font-medium">Total Users</p>
+                        <p class="text-black text-3xl font-bold mt-2">{{ number_format($stats['total_users']) }}</p>
+                    </div>
+                    <div class="bg-white bg-opacity-20 rounded-full p-3">
+                        <svg class="w-8 h-8 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                        </svg>
+                    </div>
+                </div>
+                <p class="text-blue-100 text-xs mt-2">Click to view by location</p>
+            </button>
+
+            {{-- Active RizqMall --}}
+            <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-2xl shadow-lg p-6 hover:shadow-2xl transition-all duration-300">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-green-100 text-sm font-medium">Active RizqMall</p>
+                        <p class="text-black text-3xl font-bold mt-2">{{ number_format($stats['total_rizqmall']) }}</p>
+                    </div>
+                    <div class="bg-white bg-opacity-20 rounded-full p-3">
+                        <svg class="w-8 h-8 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Active Sandbox --}}
+            <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl shadow-lg p-6 hover:shadow-2xl transition-all duration-300">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-purple-100 text-sm font-medium">Active Sandbox</p>
+                        <p class="text-black text-3xl font-bold mt-2">{{ number_format($stats['total_sandbox']) }}</p>
+                    </div>
+                    <div class="bg-white bg-opacity-20 rounded-full p-3">
+                        <svg class="w-8 h-8 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Total Profit --}}
+            <div class="bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-2xl shadow-lg p-6 hover:shadow-2xl transition-all duration-300">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-yellow-100 text-sm font-medium">Total Profit</p>
+                        <p class="text-black text-3xl font-bold mt-2">RM {{ number_format($stats['total_profit'], 2) }}</p>
+                    </div>
+                    <div class="bg-white bg-opacity-20 rounded-full p-3">
+                        <svg class="w-8 h-8 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+           
+            {{-- Total Subscriptions --}}
+            <div class="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-2xl shadow-lg p-6 hover:shadow-2xl transition-all duration-300">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-indigo-100 text-sm font-medium">Subscriptions</p>
+                        <p class="text-black text-3xl font-bold mt-2">{{ number_format($stats['total_subscriptions']) }}</p>
+                    </div>
+                    <div class="bg-white bg-opacity-20 rounded-full p-3">
+                        <svg class="w-8 h-8 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Location Filter Modal --}}
+    <div id="locationModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl p-6 relative max-h-[90vh] overflow-y-auto">
+            <button onclick="closeLocationModal()" class="absolute top-3 right-3 text-gray-600 hover:text-gray-800">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+
+            <h3 class="text-2xl font-bold text-gray-800 mb-6">Users by Location</h3>
+
+            {{-- Filters --}}
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Country</label>
+                    <select id="countryFilter" class="w-full border border-gray-300 rounded-lg px-4 py-2">
+                        <option value="">All Countries</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">State</label>
+                    <select id="stateFilter" class="w-full border border-gray-300 rounded-lg px-4 py-2">
+                        <option value="">All States</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">City</label>
+                    <select id="cityFilter" class="w-full border border-gray-300 rounded-lg px-4 py-2">
+                        <option value="">All Cities</option>
+                    </select>
+                </div>
+            </div>
+
+            <button onclick="filterUsers()" class="mb-4 px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+                Apply Filters
+            </button>
+
+            {{-- Results --}}
+            <div class="mb-4">
+                <p class="text-lg font-semibold text-gray-700">
+                    Total Users: <span id="userCount" class="text-indigo-600">0</span>
+                </p>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full border border-gray-200 rounded-lg">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-sm font-semibold text-gray-600">Name</th>
+                            <th class="px-4 py-3 text-left text-sm font-semibold text-gray-600">Email</th>
+                            <th class="px-4 py-3 text-left text-sm font-semibold text-gray-600">Country</th>
+                            <th class="px-4 py-3 text-left text-sm font-semibold text-gray-600">State</th>
+                            <th class="px-4 py-3 text-left text-sm font-semibold text-gray-600">City</th>
+                        </tr>
+                    </thead>
+                    <tbody id="userTableBody" class="divide-y divide-gray-100">
+                        <tr>
+                            <td colspan="5" class="px-4 py-8 text-center text-gray-500">
+                                Click "Apply Filters" to load users
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openLocationModal() {
+            document.getElementById('locationModal').classList.remove('hidden');
+            loadLocationFilters();
+        }
+
+        function closeLocationModal() {
+            document.getElementById('locationModal').classList.add('hidden');
+        }
+
+        async function loadLocationFilters() {
+            try {
+                const res = await fetch("{{ route('admin.usersByLocation') }}");
+                const data = await res.json();
+
+                // Populate country filter
+                const countrySelect = document.getElementById('countryFilter');
+                countrySelect.innerHTML = '<option value="">All Countries</option>';
+                data.countries.forEach(country => {
+                    if (country) countrySelect.innerHTML += `<option value="${country}">${country}</option>`;
+                });
+
+                // Populate state filter
+                const stateSelect = document.getElementById('stateFilter');
+                stateSelect.innerHTML = '<option value="">All States</option>';
+                data.states.forEach(state => {
+                    if (state) stateSelect.innerHTML += `<option value="${state}">${state}</option>`;
+                });
+
+                // Populate city filter
+                const citySelect = document.getElementById('cityFilter');
+                citySelect.innerHTML = '<option value="">All Cities</option>';
+                data.cities.forEach(city => {
+                    if (city) citySelect.innerHTML += `<option value="${city}">${city}</option>`;
+                });
+            } catch (err) {
+                console.error('Failed to load filters', err);
+            }
+        }
+
+        async function filterUsers() {
+            const country = document.getElementById('countryFilter').value;
+            const state = document.getElementById('stateFilter').value;
+
+            const params = new URLSearchParams();
+            if (country) params.append('country', country);
+            if (state) params.append('state', state);
+
+            try {
+                const res = await fetch("{{ route('admin.usersByLocation') }}?" + params.toString());
+                const data = await res.json();
+
+                document.getElementById('userCount').textContent = data.count;
+
+                const tbody = document.getElementById('userTableBody');
+                if (data.users.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-8 text-center text-gray-500">No users found</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = data.users.map(user => `
+                    <tr>
+                        <td class="px-4 py-3 text-sm">${user.name || '-'}</td>
+                        <td class="px-4 py-3 text-sm">${user.email || '-'}</td>
+                        <td class="px-4 py-3 text-sm">${user.country || '-'}</td>
+                        <td class="px-4 py-3 text-sm">${user.state || '-'}</td>
+                        <td class="px-4 py-3 text-sm">${user.city || '-'}</td>
+                    </tr>
+                `).join('');
+            } catch (err) {
+                console.error('Failed to filter users', err);
+            }
+        }
+    </script>
+@endif
     <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
 
         <div class="bg-white rounded-2xl shadow-lg p-6 hover:shadow-2xl transition-shadow duration-300">
@@ -464,77 +690,93 @@
 
         @if(auth()->user()->hasRole('Admin'))
             <div class="lg:col-span-3 bg-white rounded-2xl shadow-lg p-6 hover:shadow-2xl transition-shadow duration-300">
-                <h3 class="text-xl font-semibold text-gray-800 mb-4">All Users</h3>
-                {{-- Search form --}}
-                <form method="GET" action="{{ route('dashboard') }}" class="mb-6 flex">
-                    <input type="text" name="search" value="{{ request('search') }}"
-                           placeholder="Search by name, email, or serial number..."
-                           class="w-full px-4 py-2 border rounded-l-lg focus:ring-indigo-500 focus:border-indigo-500">
-                    <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-r-lg hover:bg-indigo-700">
-                        Search
-                    </button>
-                </form>
+        <h3 class="text-xl font-semibold text-gray-800 mb-4">All Users</h3>
         
-                <table class="w-full border border-gray-200 rounded-xl overflow-hidden">
-                    <thead class="bg-gray-50 text-left text-sm font-semibold text-gray-600">
-                        <tr>
-                            <th class="px-4 py-3">RM No</th>
-                            <th class="px-4 py-3">SB No</th>
-                            <th class="px-4 py-3">Name</th>
-                            <th class="px-4 py-3">Email</th>
-                            <th class="px-4 py-3">Phone</th>
-                            <th class="px-4 py-3">Referrer</th>
-                            <th class="px-4 py-3">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-100">
-                        @foreach($users as $u)
-                            @php
-                                $rizqmall = $u->accounts->firstWhere('type', 'rizqmall');
-                                $sandbox  = $u->accounts->firstWhere('type', 'sandbox');
-                            @endphp
-                            <tr>
-                                <td class="px-4 py-3 text-sm {{ $rizqmall && $rizqmall->serial_number ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold' }}">
-                                    {{ $rizqmall->serial_number ?? 'inactive' }}
-                                </td>
-                                <td class="px-4 py-3 text-sm {{ $sandbox && $sandbox->serial_number ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold' }}">
-                                    {{ $sandbox->serial_number ?? 'inactive' }}
-                                </td>
-                                <td class="px-4 py-3">
-                                    <div class="flex items-center gap-2">
-                                        <span class="user-name-display">{{ $u->profile?->full_name ?? $u->name }}</span>
-                                        <button class="edit-name-btn text-gray-500 hover:text-indigo-600" data-user-id="{{ $u->id }}">✏️</button>
-                                    </div>
-                                
-                                    <form action="{{ route('admin.users.updateName', $u->id) }}" method="POST" class="edit-name-form hidden flex items-center gap-1 mt-1">
-                                        @csrf
-                                        @method('PUT')
-                                        <input type="text" name="name" value="{{ $u->profile?->full_name ?? $u->name }}" class="border rounded px-2 py-1 text-sm w-40">
-                                        <button type="submit" class="px-2 py-1 bg-green-600 text-white rounded text-sm">✅</button>
-                                        <button type="button" class="cancel-edit-name-btn px-2 py-1 bg-gray-300 rounded text-sm">❌</button>
-                                    </form>
-                                </td>
+        {{-- Search form --}}
+        <form method="GET" action="{{ route('dashboard') }}" class="mb-6 flex">
+            <input type="text" name="search" value="{{ request('search') }}"
+                   placeholder="Search by name, email, or serial number..."
+                   class="w-full px-4 py-2 border rounded-l-lg focus:ring-indigo-500 focus:border-indigo-500">
+            <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-r-lg hover:bg-indigo-700">
+                Search
+            </button>
+        </form>
 
-                                <td class="px-4 py-3">{{ $u->email }}</td>
-                                <td class="px-4 py-3">{{ $u->profile->phone ?? '-' }}</td>
-                                <td class="px-4 py-3">{{ $u->referral?->parent?->name ?? '-' }}</td>
-                                <td class="px-4 py-3">
-                                    <!-- View Details Button -->
-                                    <button 
-                                        data-user="{{ $u->id }}"
-                                        class="view-details px-3 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold">
-                                        View Details
-                                    </button>
-                                </td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-                {{-- Pagination --}}
-                <div class="mt-6">
-                    {{ $users->links() }}
-                </div>
-            </div>
+        {{-- Add scrollable wrapper --}}
+        <div class="overflow-x-auto -mx-6 px-6">
+            <table class="w-full border border-gray-200 rounded-xl overflow-hidden min-w-max">
+                <thead class="bg-gray-50 text-left text-sm font-semibold text-gray-600">
+                    <tr>
+                        <th class="px-4 py-3 whitespace-nowrap">RM No</th>
+                        <th class="px-4 py-3 whitespace-nowrap">SB No</th>
+                        <th class="px-4 py-3 whitespace-nowrap">Name</th>
+                        <th class="px-4 py-3 whitespace-nowrap">Email</th>
+                        <th class="px-4 py-3 whitespace-nowrap">Phone</th>
+                        <th class="px-4 py-3 whitespace-nowrap">Referrer</th>
+                        <th class="px-4 py-3 whitespace-nowrap">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    @foreach($users as $u)
+                        @php
+                            $rizqmall = $u->accounts->firstWhere('type', 'rizqmall');
+                            $sandbox  = $u->accounts->firstWhere('type', 'sandbox');
+                        @endphp
+                        <tr>
+                            <td class="px-4 py-3 text-sm whitespace-nowrap {{ $rizqmall && $rizqmall->serial_number ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold' }}">
+                                {{ $rizqmall->serial_number ?? 'inactive' }}
+                            </td>
+                            <td class="px-4 py-3 text-sm whitespace-nowrap {{ $sandbox && $sandbox->serial_number ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold' }}">
+                                {{ $sandbox->serial_number ?? 'inactive' }}
+                            </td>
+                            <td class="px-4 py-3 whitespace-nowrap">
+                                <div class="flex items-center gap-2">
+                                    <span class="user-name-display">{{ $u->profile?->full_name ?? $u->name }}</span>
+                                    <button class="edit-name-btn text-gray-500 hover:text-indigo-600" data-user-id="{{ $u->id }}">✏️</button>
+                                </div>
+                            
+                                <form action="{{ route('admin.users.updateName', $u->id) }}" method="POST" class="edit-name-form hidden flex items-center gap-1 mt-1">
+                                    @csrf
+                                    @method('PUT')
+                                    <input type="text" name="name" value="{{ $u->profile?->full_name ?? $u->name }}" class="border rounded px-2 py-1 text-sm w-40">
+                                    <button type="submit" class="px-2 py-1 bg-green-600 text-white rounded text-sm">✅</button>
+                                    <button type="button" class="cancel-edit-name-btn px-2 py-1 bg-gray-300 rounded text-sm">❌</button>
+                                </form>
+                            </td>
+                            <td class="px-4 py-3 whitespace-nowrap">{{ $u->email }}</td>
+                            <td class="px-4 py-3 whitespace-nowrap">
+                                <div class="flex items-center gap-2">
+                                    <span class="user-phone-display">{{ $u->profile?->phone ?? "-" }}</span>
+                                    <button class="edit-phone-btn text-gray-500 hover:text-indigo-600" data-phone-id="{{ $u->id }}">✏️</button>
+                                </div>
+                            
+                                <form action="{{ route('admin.users.updatePhone', $u->id) }}" method="POST" class="edit-phone-form hidden flex items-center gap-1 mt-1">
+                                    @csrf
+                                    @method('PUT')
+                                    <input type="text" name="phone" value="{{ $u->profile?->phone ?? "-" }}" class="border rounded px-2 py-1 text-sm w-40">
+                                    <button type="submit" class="px-2 py-1 bg-green-600 text-white rounded text-sm">✅</button>
+                                    <button type="button" class="cancel-edit-phone-btn px-2 py-1 bg-gray-300 rounded text-sm">❌</button>
+                                </form>
+                            </td>
+                            <td class="px-4 py-3 whitespace-nowrap">{{ $u->referral?->parent?->name ?? '-' }}</td>
+                            <td class="px-4 py-3 whitespace-nowrap">
+                                <button 
+                                    data-user="{{ $u->id }}"
+                                    class="view-details px-3 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold">
+                                    View Details
+                                </button>
+                            </td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+
+        {{-- Pagination --}}
+        <div class="mt-6">
+            {{ $users->links() }}
+        </div>
+    </div>
         
             <!-- Details Modal -->
             <div id="detailsModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -574,71 +816,75 @@
                 });
             </script>
         @else
-            <div class="lg:col-span-3 bg-white rounded-2xl shadow-lg p-6 hover:shadow-2xl transition-shadow duration-300">
-                <h3 class="text-xl font-semibold text-gray-800 mb-4">Your Referrals</h3>
-                {{-- Search form --}}
-                <form method="GET" action="{{ route('dashboard') }}" class="mb-6 flex">
-                    <input type="text" name="search" value="{{ request('search') }}"
-                           placeholder="Search by name, email, or serial number..."
-                           class="w-full px-4 py-2 border rounded-l-lg focus:ring-indigo-500 focus:border-indigo-500">
-                    <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-r-lg hover:bg-indigo-700">
-                        Search
-                    </button>
-                </form>
-                <table class="w-full border border-gray-200 rounded-xl overflow-hidden">
-                    <thead class="bg-gray-50 text-left text-sm font-semibold text-gray-600">
-                        <tr>
-                            <th class="px-4 py-3">RM No</th>
-                            <th class="px-4 py-3">SB No</th>
-                            <th class="px-4 py-3">Name</th>
-                            <th class="px-4 py-3">Email</th>
-                            <th class="px-4 py-3">Phone</th>
-                            <th class="px-4 py-3">Referrer</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-100">
-                        @foreach($users as $u)
-                            @php
-                                $rizqmall = $u->accounts->firstWhere('type', 'rizqmall');
-                                $sandbox  = $u->accounts->firstWhere('type', 'sandbox');
-                            @endphp
-                            <tr>
-                                <td class="px-4 py-3 text-sm {{ $rizqmall && $rizqmall->serial_number ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold' }}">
-                                    {{ $rizqmall->serial_number ?? 'inactive' }}
-                                </td>
-                                <td class="px-4 py-3 text-sm {{ $sandbox && $sandbox->serial_number ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold' }}">
-                                    {{ $sandbox->serial_number ?? 'inactive' }}
-                                </td>
-                                <td class="px-4 py-3">
-                                    <div class="flex items-center gap-2">
-                                        <span class="user-name-display">{{ $u->profile?->full_name ?? $u->name }}</span>
-                                        <button class="edit-name-btn text-gray-500 hover:text-indigo-600" data-user-id="{{ $u->id }}">✏️</button>
-                                    </div>
-                                
-                                    <form action="{{ route('admin.users.updateName', $u->id) }}" method="POST" class="edit-name-form hidden flex items-center gap-1 mt-1">
-                                        @csrf
-                                        @method('PUT')
-                                        <input type="text" name="name" value="{{ $u->profile?->full_name ?? $u->name }}" class="border rounded px-2 py-1 text-sm w-40">
-                                        <button type="submit" class="px-2 py-1 bg-green-600 text-white rounded text-sm">✅</button>
-                                        <button type="button" class="cancel-edit-name-btn px-2 py-1 bg-gray-300 rounded text-sm">❌</button>
-                                    </form>
-                                </td>
-
-                                <td class="px-4 py-3">{{ $u->email }}</td>
-                                <td class="px-4 py-3">{{ $u->profile->phone ?? '-' }}</td>
-                                <td class="px-4 py-3">
-                                    {{ $u->referral?->parent_id === auth()->id() ? 'YOU' : $u->referral?->parent?->name }}
-                                </td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
+           <div class="lg:col-span-3 bg-white rounded-2xl shadow-lg p-6 hover:shadow-2xl transition-shadow duration-300">
+        <h3 class="text-xl font-semibold text-gray-800 mb-4">Your Referrals</h3>
         
-                {{-- Pagination --}}
-                <div class="mt-6">
-                    {{ $users->links() }}
-                </div>
-            </div>
+        {{-- Search form --}}
+        <form method="GET" action="{{ route('dashboard') }}" class="mb-6 flex">
+            <input type="text" name="search" value="{{ request('search') }}"
+                   placeholder="Search by name, email, or serial number..."
+                   class="w-full px-4 py-2 border rounded-l-lg focus:ring-indigo-500 focus:border-indigo-500">
+            <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-r-lg hover:bg-indigo-700">
+                Search
+            </button>
+        </form>
+
+        {{-- Add scrollable wrapper --}}
+        <div class="overflow-x-auto -mx-6 px-6">
+            <table class="w-full border border-gray-200 rounded-xl overflow-hidden min-w-max">
+                <thead class="bg-gray-50 text-left text-sm font-semibold text-gray-600">
+                    <tr>
+                        <th class="px-4 py-3 whitespace-nowrap">RM No</th>
+                        <th class="px-4 py-3 whitespace-nowrap">SB No</th>
+                        <th class="px-4 py-3 whitespace-nowrap">Name</th>
+                        <th class="px-4 py-3 whitespace-nowrap">Email</th>
+                        <th class="px-4 py-3 whitespace-nowrap">Phone</th>
+                        <th class="px-4 py-3 whitespace-nowrap">Referrer</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    @foreach($users as $u)
+                        @php
+                            $rizqmall = $u->accounts->firstWhere('type', 'rizqmall');
+                            $sandbox  = $u->accounts->firstWhere('type', 'sandbox');
+                        @endphp
+                        <tr>
+                            <td class="px-4 py-3 text-sm whitespace-nowrap {{ $rizqmall && $rizqmall->serial_number ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold' }}">
+                                {{ $rizqmall->serial_number ?? 'inactive' }}
+                            </td>
+                            <td class="px-4 py-3 text-sm whitespace-nowrap {{ $sandbox && $sandbox->serial_number ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold' }}">
+                                {{ $sandbox->serial_number ?? 'inactive' }}
+                            </td>
+                            <td class="px-4 py-3 whitespace-nowrap">
+                                <div class="flex items-center gap-2">
+                                    <span class="user-name-display">{{ $u->profile?->full_name ?? $u->name }}</span>
+                                    <button class="edit-name-btn text-gray-500 hover:text-indigo-600" data-user-id="{{ $u->id }}">✏️</button>
+                                </div>
+                            
+                                <form action="{{ route('admin.users.updateName', $u->id) }}" method="POST" class="edit-name-form hidden flex items-center gap-1 mt-1">
+                                    @csrf
+                                    @method('PUT')
+                                    <input type="text" name="name" value="{{ $u->profile?->full_name ?? $u->name }}" class="border rounded px-2 py-1 text-sm w-40">
+                                    <button type="submit" class="px-2 py-1 bg-green-600 text-white rounded text-sm">✅</button>
+                                    <button type="button" class="cancel-edit-name-btn px-2 py-1 bg-gray-300 rounded text-sm">❌</button>
+                                </form>
+                            </td>
+                            <td class="px-4 py-3 whitespace-nowrap">{{ $u->email }}</td>
+                            <td class="px-4 py-3 whitespace-nowrap">{{ $u->profile->phone ?? '-' }}</td>
+                            <td class="px-4 py-3 whitespace-nowrap">
+                                {{ $u->referral?->parent_id === auth()->id() ? 'YOU' : $u->referral?->parent?->name }}
+                            </td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+
+        {{-- Pagination --}}
+        <div class="mt-6">
+            {{ $users->links() }}
+        </div>
+    </div>
         @endif
 
 
@@ -709,5 +955,52 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.edit-phone-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const td = btn.closest('td');
+            td.querySelector('.user-phone-display').parentElement.classList.add('hidden');
+            td.querySelector('.edit-phone-form').classList.remove('hidden');
+            td.querySelector('input[name="phone"]').focus();
+        });
+    });
 
+    document.querySelectorAll('.cancel-edit-phone-btn').forEach(cancel => {
+        cancel.addEventListener('click', () => {
+            const td = cancel.closest('td');
+            td.querySelector('.edit-phone-form').classList.add('hidden');
+            td.querySelector('.user-phone-display').parentElement.classList.remove('hidden');
+        });
+    });
+
+    // Optional AJAX submit to avoid page reload
+    document.querySelectorAll('.edit-phone-form').forEach(form => {
+        form.addEventListener('submit', async e => {
+            e.preventDefault();
+            const formData = new FormData(form);
+            const action = form.getAttribute('action');
+            const td = form.closest('td');
+
+            const res = await fetch(action, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': form.querySelector('[name="_token"]').value,
+                },
+                body: formData
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                td.querySelector('.user-phone-display').textContent = data.phone;
+                td.querySelector('.edit-phone-form').classList.add('hidden');
+                td.querySelector('.user-phone-display').parentElement.classList.remove('hidden');
+            } else {
+                alert('Failed to update phone');
+            }
+        });
+    });
+});
+</script>
 </x-app-layout>

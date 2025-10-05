@@ -56,6 +56,8 @@ Route::middleware('auth')->group(function(){
     ->name('admin.users.referralList');
     Route::post('/admin/users/{user}/remove-referral', [UserRoleController::class, 'removeReferral'])
     ->name('admin.users.removeReferral');
+    Route::get('admin/users-by-location', [DashboardController::class, 'getUsersByLocation'])
+    ->name('admin.usersByLocation');
 
 
     Route::prefix('admin/users')->name('admin.users.')->group(function () {
@@ -67,6 +69,8 @@ Route::middleware('auth')->group(function(){
         Route::post('/addToBlacklist/{user}', [UserRoleController::class, 'addToBlacklist'])->name('addToBlacklist');
         Route::put('/{user}/update-name', [UserRoleController::class, 'updateName'])
         ->name('updateName');
+         Route::put('/{user}/update-phone', [UserRoleController::class, 'updatePhone'])
+        ->name('updatePhone');
         Route::post('/{user}/sync-sandbox-rewards', [UserRoleController::class, 'syncSandboxRewards'])
         ->name('syncSandboxRewards');
 

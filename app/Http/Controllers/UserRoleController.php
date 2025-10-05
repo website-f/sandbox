@@ -571,6 +571,26 @@ public function updateName(Request $request, User $user)
     return redirect()->back()->with('success', 'User name updated successfully.');
 }
 
+public function updatePhone(Request $request, User $user)
+{
+    $validated = $request->validate([
+        'phone' => 'required',
+    ]);
+
+    
+    $user->profile->phone = $validated['phone'];
+    $user->profile->save();
+
+    if ($request->ajax()) {
+        return response()->json([
+            'success' => true,
+            'phone' => $validated['phone'],
+        ]);
+    }
+
+    return redirect()->back()->with('success', 'User Phone updated successfully.');
+}
+
 public function syncSandboxRewards(User $user)
 {
     try {

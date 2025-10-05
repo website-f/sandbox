@@ -138,6 +138,9 @@
                                     <div><span class="font-medium">NRIC:</span> {{ $user->profile?->nric ?? '-' }}</div>
                                     <div><span class="font-medium">DOB:</span> {{ $user->profile?->dob ?? '-' }}</div>
                                     <div><span class="font-medium">Address:</span> {!! nl2br(e($user->profile?->home_address ?? '-')) !!}</div>
+                                     <div><span class="font-medium">Country:</span> {{ $user->profile?->country ?? '-' }}</div>
+                                      <div><span class="font-medium">State:</span> {{ $user->profile?->state ?? '-' }}</div>
+                                       <div><span class="font-medium">City:</span> {{ $user->profile?->city ?? '-' }}</div>
                                 </dl>
                             </div>
 

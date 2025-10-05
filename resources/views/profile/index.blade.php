@@ -82,79 +82,120 @@
                 <div class="space-y-8">
                     {{-- Profile Tab --}}
                     <div x-show="tab === 'profile'">
-                        <form method="POST" action="{{ route('profile.update') }}" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            @csrf
-                            <div class="col-span-1 md:col-span-2">
-                                <label class="block text-sm font-medium text-gray-700">Full Name</label>
-                                <input type="text" name="full_name" value="{{ $profile->full_name ?? '' }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700">NRIC</label>
-                                <input type="text" name="nric" value="{{ $profile->nric ?? '' }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700">Date of Birth</label>
-                                <input type="date" name="dob" value="{{ $profile->dob ?? '' }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700">Phone</label>
-                                <input type="text" name="phone" value="{{ $profile->phone ?? '' }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700">Alternative Email</label>
-                                <input type="email" name="email_alt" value="{{ $profile->email_alt ?? '' }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                            </div>
+    <form method="POST" action="{{ route('profile.update') }}" enctype="multipart/form-data" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        @csrf
+        <div class="col-span-1 md:col-span-2">
+            <label class="block text-sm font-medium text-gray-700">Full Name</label>
+            <input type="text" name="full_name" value="{{ $profile->full_name ?? '' }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700">NRIC</label>
+            <input type="text" name="nric" value="{{ $profile->nric ?? '' }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700">Date of Birth</label>
+            <input type="date" name="dob" value="{{ $profile->dob ?? '' }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700">Phone</label>
+            <input type="text" name="phone" value="{{ $profile->phone ?? '' }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700">Alternative Email</label>
+            <input type="email" name="email_alt" value="{{ $profile->email_alt ?? '' }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+        </div>
 
-                             <div>
-                                <label class="block text-sm font-medium text-gray-700">Country</label>
-                                <input type="text" name="email_alt" value="{{ $profile->country ?? '' }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                            </div>
+        {{-- Country Dropdown --}}
+        <div>
+            <label for="country-profile" class="block text-sm font-medium text-gray-700">Country</label>
+            <select id="country-profile" name="country" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                <option value="">-- Select Country --</option>
+            </select>
+        </div>
 
-                             <div>
-                                <label class="block text-sm font-medium text-gray-700">States</label>
-                                <input type="text" name="email_alt" value="{{ $profile->state ?? '' }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                            </div>
+        {{-- State Dropdown --}}
+        <div id="state-wrapper-profile" class="{{ ($profile->state ?? '') ? '' : 'hidden' }}">
+            <label for="state-profile" class="block text-sm font-medium text-gray-700">State</label>
+            <select id="state-profile" name="state" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                <option value="">-- Select State --</option>
+            </select>
+        </div>
 
-                             <div>
-                                <label class="block text-sm font-medium text-gray-700">City</label>
-                                <input type="text" name="email_alt" value="{{ $profile->city ?? '' }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                            </div>
-                    
-                            {{-- <div>
-                                <label for="country" class="block text-sm font-medium text-gray-700">Country</label>
-                                <select id="country" name="country" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                                    <option value="">-- Select Country --</option>
-                                </select>
-                            </div> --}}
-                    
-                            <div id="state-wrapper" class="hidden">
-                                <label for="state" class="block text-sm font-medium text-gray-700">State</label>
-                                <select id="state" name="state" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                                    <option value="">-- Select State --</option>
-                                </select>
-                            </div>
-                    
-                            <div id="city-wrapper" class="hidden">
-                                <label for="city" class="block text-sm font-medium text-gray-700">City</label>
-                                <select id="city" name="city" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                                    <option value="">-- Select City --</option>
-                                </select>
-                            </div>
-                    
-                            <div class="col-span-1 md:col-span-2">
-                                <label class="block text-sm font-medium text-gray-700">Home Address</label>
-                                <textarea name="home_address" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">{{ $profile->home_address ?? '' }}</textarea>
-                            </div>
-                            <div class="col-span-1 md:col-span-2">
-                                <label class="block text-sm font-medium text-gray-700">Profile Photo</label>
-                                <input type="file" name="photo_path" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
-                            </div>
-                            <div class="col-span-1 md:col-span-2 flex justify-end">
-                                <x-primary-button>Save Profile</x-primary-button>
-                            </div>
-                        </form>
+        {{-- City Dropdown --}}
+        <div id="city-wrapper-profile" class="{{ ($profile->city ?? '') ? '' : 'hidden' }}">
+            <label for="city-profile" class="block text-sm font-medium text-gray-700">City</label>
+            <select id="city-profile" name="city" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                <option value="">-- Select City --</option>
+            </select>
+        </div>
+
+        <div class="col-span-1 md:col-span-2">
+            <label class="block text-sm font-medium text-gray-700">Home Address</label>
+            <textarea name="home_address" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">{{ $profile->home_address ?? '' }}</textarea>
+        </div>
+
+        {{-- Profile Photo Upload with Preview --}}
+        <div class="col-span-1 md:col-span-2">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Profile Photo</label>
+            
+            {{-- Current Photo Display --}}
+            @if($profile->photo_path)
+                <div id="current-photo" class="mb-4">
+                    <div class="flex items-start gap-4">
+                        <img src="{{ asset('storage/' . $profile->photo_path) }}" 
+                             alt="Current Profile Photo" 
+                             class="w-32 h-32 rounded-lg object-cover border border-gray-300 shadow-sm">
+                        <div class="flex flex-col gap-2">
+                            <p class="text-sm text-gray-600">Current Photo</p>
+                            <button type="button" 
+                                    onclick="removeCurrentPhoto()"
+                                    class="px-3 py-1 bg-red-100 text-red-700 rounded-md text-sm font-medium hover:bg-red-200 transition">
+                                Remove Photo
+                            </button>
+                        </div>
                     </div>
+                </div>
+            @endif
 
+            {{-- Photo Upload Input --}}
+            <div id="upload-section">
+                <input type="file" 
+                       id="photo-input"
+                       name="photo_path" 
+                       accept="image/*"
+                       onchange="previewPhoto(event)"
+                       class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer">
+                <p class="mt-1 text-xs text-gray-500">PNG, JPG, GIF up to 2MB</p>
+            </div>
+
+            {{-- New Photo Preview --}}
+            <div id="photo-preview" class="hidden mt-4">
+                <div class="flex items-start gap-4">
+                    <img id="preview-image" 
+                         src="" 
+                         alt="Photo Preview" 
+                         class="w-32 h-32 rounded-lg object-cover border border-gray-300 shadow-sm">
+                    <div class="flex flex-col gap-2">
+                        <p class="text-sm text-gray-600">New Photo Preview</p>
+                        <button type="button" 
+                                onclick="cancelUpload()"
+                                class="px-3 py-1 bg-gray-100 text-gray-700 rounded-md text-sm font-medium hover:bg-gray-200 transition">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Hidden input for photo removal --}}
+            <input type="hidden" id="remove-photo-input" name="remove_photo" value="0">
+        </div>
+
+        <div class="col-span-1 md:col-span-2 flex justify-end">
+            <x-primary-button>Save Profile</x-primary-button>
+        </div>
+    </form>
+</div>
+                    
                     <div x-show="tab === 'bank'">
                         @php
                             $malaysianBanks = [
@@ -392,77 +433,138 @@
         </div>
     </div>
 
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+    // Preview uploaded photo
+    function previewPhoto(event) {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('preview-image').src = e.target.result;
+                document.getElementById('photo-preview').classList.remove('hidden');
+            }
+            reader.readAsDataURL(file);
+        }
+    }
+
+    // Cancel new photo upload
+    function cancelUpload() {
+        document.getElementById('photo-input').value = '';
+        document.getElementById('photo-preview').classList.add('hidden');
+    }
+
+    // Remove current photo
+    function removeCurrentPhoto() {
+        if (confirm('Are you sure you want to remove your profile photo?')) {
+            document.getElementById('remove-photo-input').value = '1';
+            document.getElementById('current-photo').style.opacity = '0.5';
+            document.getElementById('current-photo').innerHTML = '<p class="text-sm text-red-600">Photo will be removed when you save</p>';
+        }
+    }
+</script>
+
+   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
-    let data = {};
-    const profileCountry = "{{ $profile->country ?? '' }}";
-    const profileState = "{{ $profile->state ?? '' }}";
-    const profileCity = "{{ $profile->city ?? '' }}";
-
-    function populateCountries() {
-        const countrySelect = $("#country");
-        countrySelect.empty().append(new Option("-- Select Country --", ""));
-        $.each(data, function(country) {
-            countrySelect.append(new Option(country, country));
-        });
-        if (profileCountry) {
-            countrySelect.val(profileCountry).change();
-        }
-    }
-
-    function populateStates(country) {
-        const stateSelect = $("#state");
-        const stateWrapper = $("#state-wrapper");
-        stateSelect.empty().append(new Option("-- Select State --", ""));
-
-        if (country === "Malaysia" && data[country]) {
-            const states = data[country];
-            stateWrapper.removeClass("hidden");
-            $.each(states, function(state) {
-                stateSelect.append(new Option(state, state));
-            });
-            if (profileState) {
-                stateSelect.val(profileState).change();
-            }
-        } else {
-            stateWrapper.addClass("hidden");
-            $("#city-wrapper").addClass("hidden");
-        }
-    }
-
-    function populateCities(country, state) {
-        const citySelect = $("#city");
-        const cityWrapper = $("#city-wrapper");
-        citySelect.empty().append(new Option("-- Select City --", ""));
-
-        if (data[country] && data[country][state] && data[country][state].length > 0) {
-            const cities = data[country][state];
-            cityWrapper.removeClass("hidden");
-            $.each(cities, function(i, city) {
-                citySelect.append(new Option(city, city));
-            });
-            if (profileCity) {
-                citySelect.val(profileCity);
-            }
-        } else {
-            cityWrapper.addClass("hidden");
-        }
-    }
+    let profileData = {};
+    const savedCountry = "{{ $profile->country ?? '' }}";
+    const savedState = "{{ $profile->state ?? '' }}";
+    const savedCity = "{{ $profile->city ?? '' }}";
 
     $.getJSON("{{ asset('select.json') }}", function(response) {
-        data = response;
-        populateCountries();
+        profileData = response;
+        
+        // Populate countries
+        $.each(profileData, function(country) {
+            $("#country-profile").append(new Option(country, country));
+        });
+
+        // If there's a saved country, select it and load states
+        if (savedCountry) {
+            $("#country-profile").val(savedCountry);
+            loadStates(savedCountry);
+        }
     });
 
-    $("#country").on("change", function() {
+    function loadStates(country) {
+        let states = profileData[country] || {};
+        
+        $("#state-profile").empty().append(new Option("-- Select State --", ""));
+        $("#city-profile").empty().append(new Option("-- Select City --", ""));
+        $("#city-wrapper-profile").addClass("hidden");
+
+        if (country === "Malaysia") {
+            $("#state-wrapper-profile").removeClass("hidden");
+            $.each(states, function(state) {
+                $("#state-profile").append(new Option(state, state));
+            });
+
+            // If there's a saved state, select it and load cities
+            if (savedState) {
+                $("#state-profile").val(savedState);
+                loadCities(country, savedState);
+            }
+        } else {
+            $("#state-wrapper-profile").addClass("hidden");
+            $("#city-wrapper-profile").addClass("hidden");
+        }
+    }
+
+    function loadCities(country, state) {
+        let cities = profileData[country][state] || [];
+
+        $("#city-profile").empty().append(new Option("-- Select City --", ""));
+
+        if (cities.length > 0) {
+            $("#city-wrapper-profile").removeClass("hidden");
+            $.each(cities, function(i, city) {
+                $("#city-profile").append(new Option(city, city));
+            });
+
+            // If there's a saved city, select it
+            if (savedCity) {
+                $("#city-profile").val(savedCity);
+            }
+        } else {
+            $("#city-wrapper-profile").addClass("hidden");
+        }
+    }
+
+    // Handle country change
+    $("#country-profile").on("change", function() {
         let country = $(this).val();
-        populateStates(country);
+        let states = profileData[country] || {};
+
+        $("#state-profile").empty().append(new Option("-- Select State --", ""));
+        $("#city-profile").empty().append(new Option("-- Select City --", ""));
+        $("#city-wrapper-profile").addClass("hidden");
+
+        if (country === "Malaysia") {
+            $("#state-wrapper-profile").removeClass("hidden");
+            $.each(states, function(state) {
+                $("#state-profile").append(new Option(state, state));
+            });
+        } else {
+            $("#state-wrapper-profile").addClass("hidden");
+            $("#city-wrapper-profile").addClass("hidden");
+        }
     });
 
-    $("#state").on("change", function() {
-        let country = $("#country").val();
+    // Handle state change
+    $("#state-profile").on("change", function() {
+        let country = $("#country-profile").val();
         let state = $(this).val();
-        populateCities(country, state);
+        let cities = profileData[country][state] || [];
+
+        $("#city-profile").empty().append(new Option("-- Select City --", ""));
+
+        if (cities.length > 0) {
+            $("#city-wrapper-profile").removeClass("hidden");
+            $.each(cities, function(i, city) {
+                $("#city-profile").append(new Option(city, city));
+            });
+        } else {
+            $("#city-wrapper-profile").addClass("hidden");
+        }
     });
 </script>
 </x-app-layout>

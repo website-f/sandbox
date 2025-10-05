@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Storage;
 use Carbon\Carbon;
 use App\Models\Role;
 use App\Models\User;
@@ -33,12 +34,40 @@ class ProfileController extends Controller
         ]);
     }
 
-    public function updateProfile(Request $request)
-    {
-        $profile = Profile::where('user_id', Auth::id())->firstOrFail();
-        $profile->update($request->all());
-        return back()->with('success', 'Profile updated');
+public function updateProfile(Request $request)
+{
+    $request->validate([
+        'photo_path' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+    ]);
+
+    $profile = Profile::where('user_id', Auth::id())->firstOrFail();
+    
+    $data = $request->except('photo_path');
+    
+    // Handle photo upload
+    if ($request->hasFile('photo_path')) {
+        // Delete old photo if exists
+        if ($profile->photo_path && \Storage::disk('public')->exists($profile->photo_path)) {
+            Storage::disk('public')->delete($profile->photo_path);
+        }
+        
+        // Store new photo
+        $path = $request->file('photo_path')->store('profile_photos', 'public');
+        $data['photo_path'] = $path;
     }
+    
+    // Handle photo removal
+    if ($request->has('remove_photo') && $request->remove_photo == '1') {
+        if ($profile->photo_path && \Storage::disk('public')->exists($profile->photo_path)) {
+            \Storage::disk('public')->delete($profile->photo_path);
+        }
+        $data['photo_path'] = null;
+    }
+    
+    $profile->update($data);
+    
+    return back()->with('success', 'Profile updated successfully');
+}
 
     public function updatePassword(Request $request)
     {

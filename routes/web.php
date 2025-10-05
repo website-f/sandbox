@@ -17,6 +17,10 @@ use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\Auth\RegisterPlusController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 
+
+Route::get('/', function() {
+    return redirect("/dashboard");
+});
 Route::post('/payment/callback-test', [SubscriptionController::class, 'callbackTest']);
 // Login routes
 Route::get('/login', [AuthenticatedSessionController::class, 'create'])
@@ -61,8 +65,11 @@ Route::middleware('auth')->group(function(){
         Route::post('/import', [UserImportController::class, 'import'])->name('import');
         Route::get('/blacklists', [UserRoleController::class, 'blacklists'])->name('blacklists');
         Route::post('/addToBlacklist/{user}', [UserRoleController::class, 'addToBlacklist'])->name('addToBlacklist');
+        Route::put('/{user}/update-name', [UserRoleController::class, 'updateName'])
+        ->name('updateName');
+        Route::post('/{user}/sync-sandbox-rewards', [UserRoleController::class, 'syncSandboxRewards'])
+        ->name('syncSandboxRewards');
 
-    
         // show user details
         Route::get('{user}', [UserRoleController::class, 'show'])->name('show');
         Route::get('{user}/edit', [UserRoleController::class, 'edit'])->name('edit');

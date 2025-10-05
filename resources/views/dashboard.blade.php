@@ -501,8 +501,20 @@
                                     {{ $sandbox->serial_number ?? 'inactive' }}
                                 </td>
                                 <td class="px-4 py-3">
-                                     {{ $u->profile?->full_name ?? $u->name }}
-                                 </td>
+                                    <div class="flex items-center gap-2">
+                                        <span class="user-name-display">{{ $u->profile?->full_name ?? $u->name }}</span>
+                                        <button class="edit-name-btn text-gray-500 hover:text-indigo-600" data-user-id="{{ $u->id }}">✏️</button>
+                                    </div>
+                                
+                                    <form action="{{ route('admin.users.updateName', $u->id) }}" method="POST" class="edit-name-form hidden flex items-center gap-1 mt-1">
+                                        @csrf
+                                        @method('PUT')
+                                        <input type="text" name="name" value="{{ $u->profile?->full_name ?? $u->name }}" class="border rounded px-2 py-1 text-sm w-40">
+                                        <button type="submit" class="px-2 py-1 bg-green-600 text-white rounded text-sm">✅</button>
+                                        <button type="button" class="cancel-edit-name-btn px-2 py-1 bg-gray-300 rounded text-sm">❌</button>
+                                    </form>
+                                </td>
+
                                 <td class="px-4 py-3">{{ $u->email }}</td>
                                 <td class="px-4 py-3">{{ $u->profile->phone ?? '-' }}</td>
                                 <td class="px-4 py-3">{{ $u->referral?->parent?->name ?? '-' }}</td>
@@ -597,10 +609,21 @@
                                 <td class="px-4 py-3 text-sm {{ $sandbox && $sandbox->serial_number ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold' }}">
                                     {{ $sandbox->serial_number ?? 'inactive' }}
                                 </td>
-        
-                                 <td class="px-4 py-3">
-                                     {{ $u->profile?->full_name ?? $u->name }}
-                                 </td>
+                                <td class="px-4 py-3">
+                                    <div class="flex items-center gap-2">
+                                        <span class="user-name-display">{{ $u->profile?->full_name ?? $u->name }}</span>
+                                        <button class="edit-name-btn text-gray-500 hover:text-indigo-600" data-user-id="{{ $u->id }}">✏️</button>
+                                    </div>
+                                
+                                    <form action="{{ route('admin.users.updateName', $u->id) }}" method="POST" class="edit-name-form hidden flex items-center gap-1 mt-1">
+                                        @csrf
+                                        @method('PUT')
+                                        <input type="text" name="name" value="{{ $u->profile?->full_name ?? $u->name }}" class="border rounded px-2 py-1 text-sm w-40">
+                                        <button type="submit" class="px-2 py-1 bg-green-600 text-white rounded text-sm">✅</button>
+                                        <button type="button" class="cancel-edit-name-btn px-2 py-1 bg-gray-300 rounded text-sm">❌</button>
+                                    </form>
+                                </td>
+
                                 <td class="px-4 py-3">{{ $u->email }}</td>
                                 <td class="px-4 py-3">{{ $u->profile->phone ?? '-' }}</td>
                                 <td class="px-4 py-3">
@@ -637,5 +660,54 @@ function copyToClipboard(button) {
         .catch(err => console.error("Failed to copy:", err));
 }
 </script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.edit-name-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const td = btn.closest('td');
+            td.querySelector('.user-name-display').parentElement.classList.add('hidden');
+            td.querySelector('.edit-name-form').classList.remove('hidden');
+            td.querySelector('input[name="name"]').focus();
+        });
+    });
+
+    document.querySelectorAll('.cancel-edit-name-btn').forEach(cancel => {
+        cancel.addEventListener('click', () => {
+            const td = cancel.closest('td');
+            td.querySelector('.edit-name-form').classList.add('hidden');
+            td.querySelector('.user-name-display').parentElement.classList.remove('hidden');
+        });
+    });
+
+    // Optional AJAX submit to avoid page reload
+    document.querySelectorAll('.edit-name-form').forEach(form => {
+        form.addEventListener('submit', async e => {
+            e.preventDefault();
+            const formData = new FormData(form);
+            const action = form.getAttribute('action');
+            const td = form.closest('td');
+
+            const res = await fetch(action, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': form.querySelector('[name="_token"]').value,
+                },
+                body: formData
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                td.querySelector('.user-name-display').textContent = data.name;
+                td.querySelector('.edit-name-form').classList.add('hidden');
+                td.querySelector('.user-name-display').parentElement.classList.remove('hidden');
+            } else {
+                alert('Failed to update name');
+            }
+        });
+    });
+});
+</script>
+
 
 </x-app-layout>

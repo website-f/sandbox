@@ -6,8 +6,10 @@ use DB;
 use Carbon\Carbon;
 use App\Models\User;
 use App\Models\Account;
+use App\Models\Payment;
 use App\Models\Referral;
 use App\Models\Blacklist;
+use App\Models\Collection;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -250,7 +252,36 @@ public function checkEmail(Request $request)
  */
 public function show(User $user)
 {
-    // eager load everything useful
+    // Run deletion + creation in a transaction to avoid partial state
+    DB::transaction(function () use ($user) {
+        // 1) Remove any malformed/empty type rows for this user (NULL, empty or whitespace-only)
+        Collection::where('user_id', $user->id)
+            ->where(function ($q) {
+                $q->whereNull('type')
+                  ->orWhereRaw("TRIM(COALESCE(type, '')) = ''");
+            })
+            ->delete();
+
+        // 2) Ensure the 3 default collections exist
+        $defaultTypes = ['geran_asas', 'tabung_usahawan', 'had_pembiayaan'];
+
+        foreach ($defaultTypes as $type) {
+            Collection::firstOrCreate(
+                [
+                    'user_id' => $user->id,
+                    'type' => $type,
+                ],
+                [
+                    'balance' => 0,
+                    'pending_balance' => 0,
+                    'limit' => null,
+                    'is_redeemed' => 0,
+                ]
+            );
+        }
+    });
+
+    // 3) Eager load and rest of your logic (unchanged)
     $user->load([
         'profile',
         'business',
@@ -264,13 +295,12 @@ public function show(User $user)
         'wallet',
         'wallet.transactions',
         'subscriptions.payment',
-        // referral relations
         'referrals',
     ]);
 
-    // build small summary for wallet and payments (latest 20 items)
     $walletTransactions = $user->wallet?->transactions()->latest()->limit(50)->get() ?? collect();
-    $payments = \App\Models\Payment::whereHas('subscription', fn($q)=>$q->where('user_id', $user->id))->latest()->limit(50)->get();
+    $payments = \App\Models\Payment::whereHas('subscription', fn($q) => $q->where('user_id', $user->id))
+        ->latest()->limit(50)->get();
 
     return view('admin.user-show', compact('user', 'walletTransactions', 'payments'));
 }
@@ -346,39 +376,6 @@ public function referralTree(User $user)
     return response()->json(['tree' => $tree]);
 }
 
-
-/**
- * For sandbox_referrals (separate table)
- */
-public function sandboxReferralTree(User $user)
-{
-    // Try find sandbox referral row directly for this user
-    $root = \DB::table('sandbox_referrals')->where('user_id', $user->id)->first();
-
-    // If none, check if this user is a parent of any sandbox_referrals
-    if (!$root) {
-        $child = \DB::table('sandbox_referrals')->where('parent_id', $user->id)->first();
-        if ($child) {
-            // fake root node for this user
-            $root = (object)[
-                'id'      => "u{$user->id}", // avoid collision with real ids
-                'user_id' => $user->id,
-                'parent_id' => null,
-                'root_id' => null,
-            ];
-        }
-    }
-
-    if (!$root) {
-        return response()->json(['tree' => []]);
-    }
-
-    $all = \DB::table('sandbox_referrals')->get()->keyBy('id')->toArray();
-
-    $node = $this->buildSandboxTree($all, $root->id, $root->user_id);
-    return response()->json(['tree' => $node]);
-}
-
 /** helper: build referral tree from referrals table (Eloquent) */
 protected function buildReferralTree($referralId)
 {
@@ -403,46 +400,73 @@ protected function buildReferralTree($referralId)
 }
 
 
-/** helper for sandbox_referrals tree (array of objects keyed by id) */
-protected function buildSandboxTree($all, $referralId, $fallbackUserId = null)
-{
-    if (is_string($referralId) && str_starts_with($referralId, 'u')) {
-        // fake root case
-        $userId = $fallbackUserId;
-        $node = [
-            'id'      => $referralId,
-            'user_id' => $userId,
-            'name'    => \App\Models\User::find($userId)?->name ?? $userId,
-            'children'=> []
-        ];
+public function sandboxReferralTree(User $user) {
+    // Get all active sandbox accounts user_ids
+    $activeSandboxUserIds = \DB::table('accounts')
+        ->where('type', 'sandbox')
+        ->where('active', 1)
+        ->pluck('user_id')
+        ->toArray();
 
-        // children = rows where parent_id == this user_id
-        $children = collect($all)->where('parent_id', $userId);
-        foreach ($children as $child) {
-            $node['children'][] = $this->buildSandboxTree($all, $child->id);
+    if (empty($activeSandboxUserIds)) {
+        return response()->json(['tree' => []]);
+    }
+
+    $ref = $user->referral;
+    if (!$ref) {
+        return response()->json(['tree' => []]);
+    }
+
+    // Build filtered tree
+    $tree = $this->buildFilteredSandboxTree($ref->id, $activeSandboxUserIds);
+    
+    if (!$tree) {
+        return response()->json(['tree' => []]);
+    }
+
+    // Limit top-level children to 10
+    if (isset($tree['children']) && is_array($tree['children'])) {
+        $tree['children'] = array_slice($tree['children'], 0, 10);
+    }
+
+    return response()->json(['tree' => $tree]);
+}
+
+/** helper: build sandbox referral tree - only show users with active sandbox accounts */
+protected function buildFilteredSandboxTree($referralId, $activeSandboxUserIds) {
+    $ref = \App\Models\Referral::with('user')->find($referralId);
+    if (!$ref) return null;
+
+    // Check if this user has an active sandbox account
+    $hasActiveSandbox = in_array($ref->user_id, $activeSandboxUserIds);
+    
+    // Get all children
+    $children = \App\Models\Referral::where('parent_id', $ref->user_id)->get();
+    
+    // Recursively build children that have active sandbox accounts
+    $filteredChildren = [];
+    foreach ($children as $childRef) {
+        $childNode = $this->buildFilteredSandboxTree($childRef->id, $activeSandboxUserIds);
+        if ($childNode) {
+            $filteredChildren[] = $childNode;
         }
-
-        return $node;
+    }
+    
+    // If this user doesn't have active sandbox AND has no children with sandbox, skip this node
+    if (!$hasActiveSandbox && empty($filteredChildren)) {
+        return null;
     }
 
-    $self = $all[$referralId] ?? null;
-    if (!$self) return null;
-
+    // Build the node
     $node = [
-        'id'      => $self->id,
-        'user_id' => $self->user_id,
-        'name'    => \App\Models\User::find($self->user_id)?->name ?? $self->user_id,
-        'children'=> []
+        'id'       => $ref->id,
+        'user_id'  => $ref->user_id,
+        'name'     => $ref->user->name ?? $ref->user_id,
+        'children' => $filteredChildren
     ];
-
-    $children = collect($all)->where('parent_id', $self->id);
-    foreach ($children as $child) {
-        $node['children'][] = $this->buildSandboxTree($all, $child->id);
-    }
 
     return $node;
 }
-
 
 public function edit(User $user)
 {
@@ -523,6 +547,202 @@ public function redeemCollection(Request $request, $userId, $type)
         return redirect()->back()->with('success', "Collection '{$collection->type}' marked as redeemed.");
     }
 
+public function updateName(Request $request, User $user)
+{
+    $validated = $request->validate([
+        'name' => 'required|string|max:255',
+    ]);
 
+    if ($user->profile) {
+        $user->profile->full_name = $validated['name'];
+        $user->profile->save();
+    } else {
+        $user->name = $validated['name'];
+        $user->save();
+    }
+
+    if ($request->ajax()) {
+        return response()->json([
+            'success' => true,
+            'name' => $validated['name'],
+        ]);
+    }
+
+    return redirect()->back()->with('success', 'User name updated successfully.');
+}
+
+public function syncSandboxRewards(User $user)
+{
+    try {
+        // Get all active sandbox accounts user_ids
+        $activeSandboxUserIds = \DB::table('accounts')
+            ->where('type', 'sandbox')
+            ->where('active', 1)
+            ->pluck('user_id')
+            ->toArray();
+
+        if (empty($activeSandboxUserIds)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No active sandbox accounts found'
+            ]);
+        }
+
+        // Count direct children with active sandbox under this user
+        $directSandboxCount = \App\Models\Referral::where('parent_id', $user->id)
+            ->whereIn('user_id', $activeSandboxUserIds)
+            ->count();
+
+        // Ensure all collections exist
+        $collections = $this->ensureCollections($user);
+        $geranAsas = $collections['geran_asas'];
+        $tabungUsahawan = $collections['tabung_usahawan'];
+        $hadPembiayaan = $collections['had_pembiayaan'];
+
+        // SYNC GERAN ASAS (6000 per referral, max 10)
+        $expectedPending = min($directSandboxCount, 10) * 6000;
+        
+        if ($geranAsas->pending_balance != $expectedPending) {
+            $geranAsas->pending_balance = $expectedPending;
+            $geranAsas->save();
+        }
+
+        // SYNC TABUNG USAHAWAN & HAD PEMBIAYAAN
+        // Each referral gives 2000 split (1000 each)
+        $expectedPerCollection = $directSandboxCount * 1000;
+        
+        // Update Tabung Usahawan
+        if ($tabungUsahawan->balance != $expectedPerCollection) {
+            $difference = $expectedPerCollection - $tabungUsahawan->balance;
+            if ($difference > 0 && $tabungUsahawan->balance + $difference <= 50000000) {
+                $tabungUsahawan->balance = $expectedPerCollection;
+                $tabungUsahawan->save();
+                
+                $tabungUsahawan->transactions()->create([
+                    'type' => 'credit',
+                    'amount' => $difference,
+                    'description' => "Sync adjustment: {$directSandboxCount} sandbox referrals",
+                ]);
+            }
+        }
+
+        // Update Had Pembiayaan
+        if ($hadPembiayaan->balance != $expectedPerCollection) {
+            $difference = $expectedPerCollection - $hadPembiayaan->balance;
+            if ($difference > 0 && $hadPembiayaan->balance + $difference <= 50000000) {
+                $hadPembiayaan->balance = $expectedPerCollection;
+                $hadPembiayaan->save();
+                
+                $hadPembiayaan->transactions()->create([
+                    'type' => 'credit',
+                    'amount' => $difference,
+                    'description' => "Sync adjustment: {$directSandboxCount} sandbox referrals",
+                ]);
+            }
+        }
+
+        // SYNC UPLINE REWARDS (recursive)
+        $this->syncUplineRewards($user, $activeSandboxUserIds);
+
+        // Response message
+        $message = "Synced! {$directSandboxCount} active sandbox referrals found.\n";
+        $message .= "- Geran Asas: RM " . number_format($geranAsas->pending_balance / 100, 2) . " pending\n";
+        $message .= "- Tabung Usahawan: RM " . number_format($tabungUsahawan->balance / 100, 2) . "\n";
+        $message .= "- Had Pembiayaan: RM " . number_format($hadPembiayaan->balance / 100, 2);
+
+        return response()->json([
+            'success' => true,
+            'message' => $message,
+            'direct_count' => $directSandboxCount,
+            'geran_pending' => $geranAsas->pending_balance,
+            'tabung_usahawan' => $tabungUsahawan->balance,
+            'had_pembiayaan' => $hadPembiayaan->balance
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Sync failed: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+/**
+ * Sync upline rewards recursively through the tree
+ */
+private function syncUplineRewards(User $user, array $activeSandboxUserIds)
+{
+    // Get upline (referrer)
+    $upline = $user->referrer ?? null;
+    if (!$upline) return;
+
+    // Count how many users under current user have active sandbox
+    $childrenCount = \App\Models\Referral::where('parent_id', $user->id)
+        ->whereIn('user_id', $activeSandboxUserIds)
+        ->count();
+
+    if ($childrenCount == 0) return;
+
+    // Ensure upline collections
+    $uplineCollections = $this->ensureCollections($upline);
+
+    // Upline gets 2000 (1000 each) per referral of their downline
+    $expectedPerCollection = $childrenCount * 1000;
+
+    // Update Tabung Usahawan
+    $tabungUsahawan = $uplineCollections['tabung_usahawan'];
+    if ($tabungUsahawan->balance < $expectedPerCollection) {
+        $difference = $expectedPerCollection - $tabungUsahawan->balance;
+        if ($tabungUsahawan->balance + $difference <= 50000000) {
+            $tabungUsahawan->balance += $difference;
+            $tabungUsahawan->save();
+            
+            $tabungUsahawan->transactions()->create([
+                'type' => 'credit',
+                'amount' => $difference,
+                'description' => "Upline sync: {$childrenCount} referrals from {$user->name}",
+            ]);
+        }
+    }
+
+    // Update Had Pembiayaan
+    $hadPembiayaan = $uplineCollections['had_pembiayaan'];
+    if ($hadPembiayaan->balance < $expectedPerCollection) {
+        $difference = $expectedPerCollection - $hadPembiayaan->balance;
+        if ($hadPembiayaan->balance + $difference <= 50000000) {
+            $hadPembiayaan->balance += $difference;
+            $hadPembiayaan->save();
+            
+            $hadPembiayaan->transactions()->create([
+                'type' => 'credit',
+                'amount' => $difference,
+                'description' => "Upline sync: {$childrenCount} referrals from {$user->name}",
+            ]);
+        }
+    }
+
+    // Continue up the chain
+    $this->syncUplineRewards($upline, $activeSandboxUserIds);
+}
+
+/**
+ * Ensure all 3 collections exist
+ */
+private function ensureCollections(User $u): array
+{
+    return [
+        'geran_asas' => \App\Models\Collection::firstOrCreate(
+            ['user_id' => $u->id, 'type' => 'geran_asas'],
+            ['balance' => 0, 'pending_balance' => 0, 'limit' => 60000]
+        ),
+        'tabung_usahawan' => \App\Models\Collection::firstOrCreate(
+            ['user_id' => $u->id, 'type' => 'tabung_usahawan'],
+            ['balance' => 0, 'limit' => 50000000]
+        ),
+        'had_pembiayaan' => \App\Models\Collection::firstOrCreate(
+            ['user_id' => $u->id, 'type' => 'had_pembiayaan'],
+            ['balance' => 0, 'limit' => 50000000]
+        ),
+    ];
+}
     
 }

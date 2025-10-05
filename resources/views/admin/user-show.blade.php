@@ -1,37 +1,36 @@
 <x-app-layout>
-    <style>
-        #referral-tree ul {
-  list-style-type: none;
-  margin-left: 20px;
-  position: relative;
-}
+<style>
+    #referral-tree ul, #sandbox-tree ul {
+        list-style-type: none;
+        margin-left: 20px;
+        position: relative;
+    }
 
-#referral-tree ul::before {
-  content: '';
-  border-left: 1px solid #ccc;
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-}
+    #referral-tree ul::before, #sandbox-tree ul::before {
+        content: '';
+        border-left: 1px solid #ccc;
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 0;
+    }
 
-#referral-tree li {
-  margin: 0;
-  padding: 0 0 0 20px;
-  line-height: 1.5em;
-  position: relative;
-}
+    #referral-tree li, #sandbox-tree li {
+        margin: 0;
+        padding: 0 0 0 20px;
+        line-height: 1.5em;
+        position: relative;
+    }
 
-#referral-tree li::before {
-  content: '';
-  border-top: 1px solid #ccc;
-  position: absolute;
-  top: 0.8em;
-  left: 0;
-  width: 20px;
-}
-
-    </style>
+    #referral-tree li::before, #sandbox-tree li::before {
+        content: '';
+        border-top: 1px solid #ccc;
+        position: absolute;
+        top: 0.8em;
+        left: 0;
+        width: 20px;
+    }
+</style>
     <x-slot name="header">
         <h2 class="font-extrabold text-2xl text-gray-900">User Details</h2>
     </x-slot>
@@ -48,7 +47,24 @@
                 <div class="flex-1 w-full">
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                         <div class="w-full break-words">
-                            <h3 class="text-xl font-semibold">{{ $user->profile?->full_name ?? $user->name }}</h3>
+                            <div class="flex items-center gap-2">
+                                <h3 id="userNameDisplay" class="text-xl font-semibold">
+                                    {{ $user->profile?->full_name ?? $user->name }}
+                                </h3>
+                                <button id="editUserNameBtn" class="text-gray-500 hover:text-indigo-600">
+                                    ✏️
+                                </button>
+                            </div>
+                            
+                            <form id="editUserNameForm" action="{{ route('admin.users.updateName', $user->id) }}" method="POST" class="hidden flex items-center gap-2">
+                                @csrf
+                                @method('PUT')
+                                <input type="text" name="name" id="userNameInput" class="border rounded px-2 py-1 text-sm w-48"
+                                       value="{{ $user->profile?->full_name ?? $user->name }}" required>
+                                <button type="submit" class="px-2 py-1 bg-green-600 text-white rounded text-sm">✅</button>
+                                <button type="button" id="cancelEditUserNameBtn" class="px-2 py-1 bg-gray-300 rounded text-sm">❌</button>
+                            </form>
+                            
                             @if($user->checkBlacklist())
                                 <span class="px-2 py-1 bg-red-500 text-white text-xs rounded">Blacklisted</span>
                             @endif
@@ -354,10 +370,26 @@
 
 
                     <div data-panel="sandbox" class="tab-panel hidden">
-                        <h4 class="font-semibold mb-3">Sandbox Referral Tree</h4>
-                        <div id="sandbox-tree" class="p-4 border rounded min-h-[160px] text-sm text-gray-700"></div>
-                        <button id="expand-sandbox" class="mt-3 px-3 py-1 bg-indigo-600 text-white rounded">Load full sandbox tree</button>
-                    </div>
+    <h4 class="font-semibold mb-3">Sandbox Referral Tree</h4>
+    <div id="sandbox-tree" 
+         class="p-4 border rounded min-h-[160px] text-sm text-gray-700 overflow-auto max-h-[500px] w-full"
+         style="white-space: nowrap;">
+    </div>
+    
+    <div class="mt-3 flex gap-2">
+        <button id="expand-sandbox" 
+                class="px-3 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700">
+            Load full sandbox tree
+        </button>
+        
+        <button id="sync-sandbox" 
+                class="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700">
+            Sync Rewards
+        </button>
+    </div>
+    
+    <div id="sync-message" class="mt-2 text-sm hidden"></div>
+</div>
 
                     {{-- EDIT / AUDIT --}}
                     <div data-panel="edit" class="tab-panel hidden">
@@ -460,8 +492,29 @@
         });
     });
 
-    // load referral trees (first top 10)
-    function renderTree(node, depth=0, max=10){
+   function renderTreeElement(nodes, depth, max, isLast = false) {
+    const ul = document.createElement('ul');
+    ul.className = 'ml-4';
+    nodes.slice(0, max).forEach((n, idx) => {
+        const li = document.createElement('li');
+        const isLastChild = idx === Math.min(nodes.length, max) - 1;
+        const prefix = isLastChild ? '└── ' : '├── ';
+        
+        li.innerHTML = `<div class="py-1">
+            <span class="text-gray-400">${prefix}</span>
+            <span class="font-medium">${n.name}</span> 
+            <span class="text-xs text-gray-500">(${n.user_id})</span>
+        </div>`;
+        
+        if(n.children && n.children.length) {
+            li.appendChild(renderTreeElement(n.children, depth+1, max, isLastChild));
+        }
+        ul.appendChild(li);
+    });
+    return ul;
+}
+
+function renderTree(node, depth=0, max=10){
     if(!node) return;
     const ul = document.createElement('ul');
     ul.className = 'ml-4';
@@ -478,17 +531,6 @@
     });
     return ul;
 }
-
-    function renderTreeElement(nodes, depth, max){
-        const ul = document.createElement('ul'); ul.className='ml-4';
-        nodes.slice(0, max).forEach(n=>{
-            const li = document.createElement('li');
-            li.innerHTML = `<div class="py-1"><span class="font-medium">${n.name}</span> <span class="text-xs text-gray-500">(${n.user_id})</span></div>`;
-            if(n.children && n.children.length) li.appendChild(renderTreeElement(n.children, depth+1, max));
-            ul.appendChild(li);
-        });
-        return ul;
-    }
 
     // fetch referrals
     document.getElementById('expand-referral').addEventListener('click', function(){
@@ -583,6 +625,73 @@ document.addEventListener('DOMContentLoaded', function() {
             btn.textContent = 'Confirm';
         });
     });
+});
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const editBtn = document.getElementById('editUserNameBtn');
+    const displayName = document.getElementById('userNameDisplay');
+    const form = document.getElementById('editUserNameForm');
+    const cancelBtn = document.getElementById('cancelEditUserNameBtn');
+    const input = document.getElementById('userNameInput');
+
+    editBtn.addEventListener('click', () => {
+        displayName.parentElement.classList.add('hidden');
+        form.classList.remove('hidden');
+        input.focus();
+    });
+
+    cancelBtn.addEventListener('click', () => {
+        form.classList.add('hidden');
+        displayName.parentElement.classList.remove('hidden');
+        input.value = displayName.textContent.trim();
+    });
+
+    // Sync sandbox rewards
+document.getElementById('sync-sandbox').addEventListener('click', function() {
+    const btn = this;
+    const msg = document.getElementById('sync-message');
+    
+    btn.disabled = true;
+    btn.textContent = 'Syncing...';
+    msg.className = 'mt-2 text-sm hidden';
+    
+    fetch("{{ route('admin.users.syncSandboxRewards', $user) }}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+        }
+    })
+    .then(r => r.json())
+    .then(d => {
+        btn.disabled = false;
+        btn.textContent = 'Sync Rewards';
+        
+        if (d.success) {
+            msg.className = 'mt-2 text-sm p-3 bg-green-50 border border-green-200 rounded text-green-800';
+            msg.innerHTML = `
+                <strong>✓ Success:</strong> ${d.message}<br>
+                <span class="text-xs">Geran Asas Balance: RM ${(d.geran_balance / 100).toFixed(2)} | 
+                Pending: RM ${(d.pending_balance / 100).toFixed(2)}</span>
+            `;
+        } else {
+            msg.className = 'mt-2 text-sm p-3 bg-red-50 border border-red-200 rounded text-red-800';
+            msg.innerHTML = `<strong>✗ Error:</strong> ${d.message}`;
+        }
+        msg.classList.remove('hidden');
+        
+        // Refresh the tree to show updated data
+        document.getElementById('expand-sandbox').click();
+    })
+    .catch(err => {
+        btn.disabled = false;
+        btn.textContent = 'Sync Rewards';
+        msg.className = 'mt-2 text-sm p-3 bg-red-50 border border-red-200 rounded text-red-800';
+        msg.textContent = 'Sync failed. Please try again.';
+        msg.classList.remove('hidden');
+    });
+});
 });
 </script>
 

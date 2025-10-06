@@ -16,6 +16,7 @@ use App\Http\Controllers\UserImportController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\Auth\RegisterPlusController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\CollectionTransactionController;
 
 
 Route::get('/', function() {
@@ -56,6 +57,10 @@ Route::middleware('auth')->group(function(){
     ->name('admin.users.referralList');
     Route::post('/admin/users/{user}/remove-referral', [UserRoleController::class, 'removeReferral'])
     ->name('admin.users.removeReferral');
+    Route::post('/admin/collection/{user}/store', [CollectionTransactionController::class, 'store'])
+    ->name('admin.collection-transactions.store');
+    Route::post('/admin/collection/{user}/destroy', [CollectionTransactionController::class, 'destroy'])
+    ->name('admin.collection-transactions.destroy');
     Route::get('admin/users-by-location', [DashboardController::class, 'getUsersByLocation'])
     ->name('admin.usersByLocation');
 

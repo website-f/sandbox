@@ -310,48 +310,307 @@
                     </div>
 
                     <div data-panel="collection" class="tab-panel hidden">
-                        <table class="min-w-full border border-gray-300 rounded">
-                                <thead class="bg-gray-100">
-                                    <tr>
-                                        <th class="p-2 border">Type</th>
-                                        <th class="p-2 border">Balance (RM)</th>
-                                        <th class="p-2 border">Pending (RM)</th>
-                                        <th class="p-2 border">Limit (RM)</th>
-                                        <th class="p-2 border">Redeemed</th>
-                                        <th class="p-2 border">Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach($user->collections as $collection)
-                                    <tr class="text-center">
-                                        <td class="p-2 border">{{ ucfirst(str_replace('_', ' ', $collection->type)) }}</td>
-                                        <td class="p-2 border">{{ number_format($collection->balance / 100, 2) }}</td>
-                                        <td class="p-2 border">{{ number_format($collection->pending_balance / 100, 2) }}</td>
-                                        <td class="p-2 border">{{ number_format($collection->limit / 100, 2) }}</td>
-                                        <td class="p-2 border">
-                                            @if($collection->is_redeemed)
-                                                <span class="text-green-600 font-semibold">Yes</span>
-                                            @else
-                                                <span class="text-red-600 font-semibold">No</span>
-                                            @endif
-                                        </td>
-                                        <td class="p-2 border">
-                                            @if(!$collection->is_redeemed)
-                                                <form action="{{ route('admin.users.collection.redeem', [$user->id, $collection->type]) }}" method="POST">
-                                                    @csrf
-                                                    <button type="submit" class="px-3 py-1 bg-indigo-600 text-white rounded hover:bg-blue-700">
-                                                        Redeem
-                                                    </button>
-                                                </form>
-                                            @else
-                                                <button disabled class="px-3 py-1 bg-gray-400 text-black rounded">Redeem</button>
-                                            @endif
-                                        </td>
-                                    </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
-                    </div>
+    <!-- Success/Error Messages -->
+    @if(session('success'))
+        <div class="mb-4 p-4 bg-green-50 border-l-4 border-green-500 text-green-700 rounded">
+            {{ session('success') }}
+        </div>
+    @endif
+
+    @if(session('error'))
+        <div class="mb-4 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded">
+            {{ session('error') }}
+        </div>
+    @endif
+
+    <!-- Collections Table -->
+    <div class="bg-white rounded-lg shadow-sm overflow-hidden mb-8">
+        <div class="px-6 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 border-b border-gray-200">
+            <h3 class="text-lg font-semibold text-white">Collection Balances</h3>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Balance</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pending</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Limit</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Redeemed</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    @foreach($user->collections as $collection)
+                    <tr class="hover:bg-gray-50 transition">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800">
+                                {{ ucfirst(str_replace('_', ' ', $collection->type)) }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                            RM {{ number_format($collection->balance / 100, 2) }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                            RM {{ number_format($collection->pending_balance / 100, 2) }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                            {{ $collection->limit ? 'RM ' . number_format($collection->limit / 100, 2) : 'N/A' }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            @if($collection->is_redeemed)
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    Yes
+                                </span>
+                            @else
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                    No
+                                </span>
+                            @endif
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            @if(!$collection->is_redeemed)
+                                <form action="{{ route('admin.users.collection.redeem', [$user->id, $collection->type]) }}" method="POST">
+                                    @csrf
+                                    <button type="submit" class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition">
+                                        Redeem
+                                    </button>
+                                </form>
+                            @else
+                                <button disabled class="inline-flex items-center px-4 py-2 bg-gray-300 text-gray-500 text-sm font-medium rounded-md cursor-not-allowed">
+                                    Redeemed
+                                </button>
+                            @endif
+                        </td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Transaction History Section -->
+    <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+        <div class="px-6 py-4 bg-gradient-to-r from-purple-600 to-pink-600 border-b border-gray-200 flex justify-between items-center">
+            <h3 class="text-lg font-semibold text-white">Transaction History</h3>
+            <button onclick="openTransactionModal()" class="inline-flex items-center px-4 py-2 bg-white text-purple-600 text-sm font-medium rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                </svg>
+                Add Transaction
+            </button>
+        </div>
+        
+        <div class="overflow-x-auto">
+            @php
+               $allTransactions = $user->collections->flatMap(function($collection) {
+    return $collection->transactions;
+})->sortByDesc(function($transaction) {
+    return $transaction->transaction_date ?? $transaction->created_at;
+});
+            @endphp
+
+            @if($allTransactions->count() > 0)
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Collection</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Slip</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created By</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        @foreach($allTransactions as $transaction)
+                        <tr class="hover:bg-gray-50 transition">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {{ $transaction->transaction_date ? $transaction->transaction_date->format('d M Y, h:i A') : $transaction->created_at->format('d M Y, h:i A') }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                    {{ ucfirst(str_replace('_', ' ', $transaction->collection->type)) }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                @if($transaction->type === 'credit')
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                        <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v3.586L7.707 9.293a1 1 0 00-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 10.586V7z" clip-rule="evenodd"/>
+                                        </svg>
+                                        Credit
+                                    </span>
+                                @else
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                        <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v3.586l-1.293-1.293a1 1 0 00-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 10.586V7z" clip-rule="evenodd"/>
+                                        </svg>
+                                        Debit
+                                    </span>
+                                @endif
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold {{ $transaction->type === 'credit' ? 'text-green-600' : 'text-red-600' }}">
+                                {{ $transaction->type === 'credit' ? '+' : '-' }} RM {{ number_format($transaction->amount / 100, 2) }}
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-600 max-w-xs truncate">
+                                {{ $transaction->description ?: 'N/A' }}
+                                @if($transaction->admin_notes)
+                                    <span class="block text-xs text-gray-400 italic mt-1">{{ $transaction->admin_notes }}</span>
+                                @endif
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                @if($transaction->slip_path)
+                                    <a href="{{ Storage::url($transaction->slip_path) }}" target="_blank" class="text-indigo-600 hover:text-indigo-900 font-medium">
+                                        View Slip
+                                    </a>
+                                @else
+                                    <span class="text-gray-400">No slip</span>
+                                @endif
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                                {{ $transaction->creator->name ?? 'System' }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                <form action="{{ route('admin.collection-transactions.destroy', $transaction->id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this transaction? This will reverse the amount.')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="text-red-600 hover:text-red-900 font-medium">
+                                        Delete
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            @else
+                <div class="px-6 py-12 text-center">
+                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    <h3 class="mt-2 text-sm font-medium text-gray-900">No transactions</h3>
+                    <p class="mt-1 text-sm text-gray-500">Get started by adding a new transaction.</p>
+                </div>
+            @endif
+        </div>
+    </div>
+</div>
+
+<!-- Transaction Modal -->
+<div id="transactionModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-75 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-full max-w-2xl shadow-2xl rounded-lg bg-white">
+        <div class="flex justify-between items-center pb-4 border-b">
+            <h3 class="text-2xl font-bold text-gray-900">Add New Transaction</h3>
+            <button onclick="closeTransactionModal()" class="text-gray-400 hover:text-gray-600 transition">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+
+        <form action="{{ route('admin.collection-transactions.store', $user->id) }}" method="POST" enctype="multipart/form-data" class="mt-6">
+            @csrf
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Collection Type -->
+                <div>
+                    <label for="collection_type" class="block text-sm font-medium text-gray-700 mb-2">Collection Type *</label>
+                    <select name="collection_type" id="collection_type" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                        <option value="">Select Collection</option>
+                        <option value="geran_asas">Geran Asas</option>
+                        <option value="tabung_usahawan">Tabung Usahawan</option>
+                        <option value="had_pembiayaan">Had Pembiayaan</option>
+                    </select>
+                    @error('collection_type')
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <!-- Transaction Type -->
+                <div>
+                    <label for="transaction_type" class="block text-sm font-medium text-gray-700 mb-2">Transaction Type *</label>
+                    <select name="transaction_type" id="transaction_type" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                        <option value="">Select Type</option>
+                        <option value="credit">Credit (Add)</option>
+                        <option value="debit">Debit (Deduct)</option>
+                    </select>
+                    @error('transaction_type')
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <!-- Amount -->
+                <div>
+                    <label for="amount" class="block text-sm font-medium text-gray-700 mb-2">Amount (RM) *</label>
+                    <input type="number" name="amount" id="amount" step="0.01" min="0.01" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" placeholder="0.00">
+                    @error('amount')
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <!-- Transaction Date -->
+                <div>
+                    <label for="transaction_date" class="block text-sm font-medium text-gray-700 mb-2">Transaction Date *</label>
+                    <input type="datetime-local" name="transaction_date" id="transaction_date" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                    @error('transaction_date')
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+            </div>
+
+            <!-- Description -->
+            <div class="mt-6">
+                <label for="description" class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                <textarea name="description" id="description" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" placeholder="Enter transaction description..."></textarea>
+                @error('description')
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <!-- Admin Notes -->
+            <div class="mt-6">
+                <label for="admin_notes" class="block text-sm font-medium text-gray-700 mb-2">Admin Notes (Internal)</label>
+                <textarea name="admin_notes" id="admin_notes" rows="2" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" placeholder="Internal notes for admin reference..."></textarea>
+                @error('admin_notes')
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <!-- File Upload -->
+            <div class="mt-6">
+                <label for="slip" class="block text-sm font-medium text-gray-700 mb-2">Upload Slip/Receipt</label>
+                <div class="flex items-center justify-center w-full">
+                    <label for="slip" class="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition">
+                        <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                            <svg class="w-10 h-10 mb-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                            </svg>
+                            <p class="mb-2 text-sm text-gray-500"><span class="font-semibold">Click to upload</span> or drag and drop</p>
+                            <p class="text-xs text-gray-500">PNG, JPG, PDF (MAX. 5MB)</p>
+                        </div>
+                        <input id="slip" name="slip" type="file" class="hidden" accept=".jpg,.jpeg,.png,.pdf"/>
+                    </label>
+                </div>
+                @error('slip')
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <!-- Form Actions -->
+            <div class="mt-8 flex justify-end space-x-3 pt-6 border-t">
+                <button type="button" onclick="closeTransactionModal()" class="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium transition">
+                    Cancel
+                </button>
+                <button type="submit" class="px-6 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 font-medium transition shadow-md">
+                    Add Transaction
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
 
                     {{-- REFERRAL TREES --}}
                     {{-- REFERRAL TREES --}}
@@ -695,6 +954,33 @@ document.getElementById('sync-sandbox').addEventListener('click', function() {
         msg.classList.remove('hidden');
     });
 });
+});
+</script>
+<script>
+function openTransactionModal() {
+    document.getElementById('transactionModal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeTransactionModal() {
+    document.getElementById('transactionModal').classList.add('hidden');
+    document.body.style.overflow = 'auto';
+}
+
+// Close modal when clicking outside
+document.getElementById('transactionModal')?.addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeTransactionModal();
+    }
+});
+
+// File upload preview
+document.getElementById('slip')?.addEventListener('change', function(e) {
+    const fileName = e.target.files[0]?.name;
+    if (fileName) {
+        const label = e.target.parentElement;
+        label.querySelector('p').innerHTML = `<span class="font-semibold text-indigo-600">${fileName}</span>`;
+    }
 });
 </script>
 

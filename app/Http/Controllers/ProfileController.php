@@ -208,7 +208,7 @@ public function redirectToRizqmall(Request $request)
     ]);
 
     $baseUrl = env('RIZQMALL_BASE_URL', 'http://rizqmall.test'); // fallback just in case
-    return redirect("{$baseUrl}/setup-store?{$query}");
+    return redirect("{$baseUrl}/select-store-category?{$query}");
 }
 
 

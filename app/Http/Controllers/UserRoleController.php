@@ -332,8 +332,7 @@ public function toggleAdminAjax(Request $request, User $user)
 public function toggleAccountActive(Request $request, User $user, Account $account)
 {
     if ($account->user_id !== $user->id) abort(404);
-    if (!auth()->user()->can('manage users')) abort(403);
-
+if (!auth()->user()->can('manage users')) abort(403);
     $account->active = ! $account->active;
     $account->save();
 
@@ -350,7 +349,7 @@ public function updateAccountSerial(Request $request, User $user, Account $accou
     ]);
 
     if ($account->user_id !== $user->id) abort(404);
-    if (!auth()->user()->can('manage users')) abort(403);
+
 
     $account->serial_number = $request->serial_number;
     $account->save();

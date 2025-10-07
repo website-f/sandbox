@@ -42,7 +42,7 @@
             <div>
                 <p class="text-sm text-gray-500">Available Balance</p>
                 <p class="text-3xl font-bold text-green-600">
-                    RM {{ number_format($collection->pending_balance / 100, 2) }}
+                    RM {{ number_format($collection->balance / 100, 2) }}
                 </p>
             </div>
             @if($collection->serial_number)

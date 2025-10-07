@@ -12,7 +12,7 @@ class ReferralRewardService
     /**
      * Process referral rewards for a new sandbox subscription.
      */
-   public function processSandboxRewards(User $newUser)
+public function processSandboxRewards(User $newUser)
 {
     $referral = $newUser->referral;
     if (!$referral) return;
@@ -43,17 +43,20 @@ class ReferralRewardService
     // STEP 5: Continue reward calculation using $parent
     $collections = $this->ensureCollections($parent);
 
-    // Geran Asas only if parent has <=10 direct sandbox referrals
+    // Geran Asas - add to pending if still collecting
     $directSubs = SandboxReferral::where('parent_id', $parent->id)->count();
+    
     if ($directSubs <= 10) {
         $geran = $collections['geran_asas'];
         $geran->pending_balance += 6000;
         $geran->save();
 
-        if ($directSubs == 10 && $geran->pending_balance >= 60000) {
-            $geran->balance += $geran->pending_balance;
+        // When completing the 10th referral, move to balance
+        if ($directSubs == 10) {
+            $geran->balance += $geran->pending_balance; // Should be 60000
             $geran->pending_balance = 0;
             $geran->save();
+            
             $geran->transactions()->create([
                 'type' => 'credit',
                 'amount' => 60000,

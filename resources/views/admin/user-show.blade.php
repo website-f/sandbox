@@ -474,9 +474,8 @@
                                 {{ $transaction->creator->name ?? 'System' }}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                <form action="{{ route('admin.collection-transactions.destroy', $transaction->id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this transaction? This will reverse the amount.')">
+                                <form action="{{ route('admin.collection-transactions.destroy', $transaction->id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this transaction {{$transaction->id}}? This will reverse the amount.')">
                                     @csrf
-                                    @method('DELETE')
                                     <button type="submit" class="text-red-600 hover:text-red-900 font-medium">
                                         Delete
                                     </button>
@@ -731,6 +730,8 @@
         });
     });
 
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
     document.querySelectorAll('.save-serial-btn').forEach(b=>{
         b.addEventListener('click', function(){
             const id = this.dataset.accountId;
@@ -740,7 +741,10 @@
             b.disabled = true;
             fetch("{{ url('admin/users') }}/{{ $user->id }}/account/"+id+"/update-serial", {
                 method:'POST',
-                headers:{'Content-Type':'application/json','X-CSRF-TOKEN':'{{ csrf_token() }}'},
+               headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': csrfToken,
+    },
                 body: JSON.stringify({ serial_number: val })
             }).then(r=>r.json()).then(resp=>{
                 if(resp.ok){

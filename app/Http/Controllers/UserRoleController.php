@@ -620,11 +620,30 @@ public function syncSandboxRewards(User $user)
         $hadPembiayaan = $collections['had_pembiayaan'];
 
         // SYNC GERAN ASAS (6000 per referral, max 10)
-        $expectedPending = min($directSandboxCount, 10) * 6000;
+        if ($directSandboxCount < 10) {
+            // Still collecting - amount goes to pending
+            $expectedPending = $directSandboxCount * 6000;
+            $expectedBalance = 0;
+        } else {
+            // Completed (10 or more referrals) - moves to balance
+            $expectedPending = 0;
+            $expectedBalance = 60000; // 10 * 6000
+        }
         
-        if ($geranAsas->pending_balance != $expectedPending) {
+        // Update Geran Asas balances
+        if ($geranAsas->pending_balance != $expectedPending || $geranAsas->balance != $expectedBalance) {
             $geranAsas->pending_balance = $expectedPending;
+            $geranAsas->balance = $expectedBalance;
             $geranAsas->save();
+            
+            // Log transaction if completed
+            if ($expectedBalance > 0 && $directSandboxCount >= 10) {
+                $geranAsas->transactions()->create([
+                    'type' => 'credit',
+                    'amount' => 60000,
+                    'description' => "Geran Asas completed (10 referrals) - Sync adjustment",
+                ]);
+            }
         }
 
         // SYNC TABUNG USAHAWAN & HAD PEMBIAYAAN
@@ -666,7 +685,7 @@ public function syncSandboxRewards(User $user)
 
         // Response message
         $message = "Synced! {$directSandboxCount} active sandbox referrals found.\n";
-        $message .= "- Geran Asas: RM " . number_format($geranAsas->pending_balance / 100, 2) . " pending\n";
+        $message .= "- Geran Asas: RM " . number_format($geranAsas->balance / 100, 2) . " (balance), RM " . number_format($geranAsas->pending_balance / 100, 2) . " (pending)\n";
         $message .= "- Tabung Usahawan: RM " . number_format($tabungUsahawan->balance / 100, 2) . "\n";
         $message .= "- Had Pembiayaan: RM " . number_format($hadPembiayaan->balance / 100, 2);
 
@@ -675,6 +694,7 @@ public function syncSandboxRewards(User $user)
             'message' => $message,
             'direct_count' => $directSandboxCount,
             'geran_pending' => $geranAsas->pending_balance,
+            'geran_balance' => $geranAsas->balance,
             'tabung_usahawan' => $tabungUsahawan->balance,
             'had_pembiayaan' => $hadPembiayaan->balance
         ]);

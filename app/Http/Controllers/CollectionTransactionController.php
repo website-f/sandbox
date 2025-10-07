@@ -81,35 +81,46 @@ class CollectionTransactionController extends Controller
         }
     }
 
-    public function destroy(CollectionTransaction $transaction)
-    {
-        DB::beginTransaction();
+public function destroy(CollectionTransaction $transaction)
+{
+    DB::beginTransaction();
+    
+    try {
+        // Load the collection relationship
+        $collection = $transaction->collection;
         
-        try {
-            $collection = $transaction->collection;
-            
-            // Reverse the transaction
-            if ($transaction->type === 'credit') {
-                $collection->balance -= $transaction->amount;
-            } else {
-                $collection->balance += $transaction->amount;
-            }
-            
-            $collection->save();
-            
-            // Delete slip file if exists
-            if ($transaction->slip_path) {
-                Storage::disk('public')->delete($transaction->slip_path);
-            }
-            
-            $transaction->delete();
-            
-            DB::commit();
-            
-            return back()->with('success', 'Transaction deleted successfully');
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return back()->with('error', 'Failed to delete transaction: ' . $e->getMessage());
+        // Check if collection exists
+        if (!$collection) {
+            throw new \Exception('Collection not found for this transaction');
         }
+        
+        // Reverse the transaction
+        if ($transaction->type === 'credit') {
+            $collection->balance -= $transaction->amount;
+        } else {
+            $collection->balance += $transaction->amount;
+        }
+        
+        // Prevent negative balance
+        if ($collection->balance < 0) {
+            throw new \Exception('Cannot delete transaction: would result in negative balance');
+        }
+        
+        $collection->save();
+        
+        // Delete slip file if exists
+        if ($transaction->slip_path) {
+            Storage::disk('public')->delete($transaction->slip_path);
+        }
+        
+        $transaction->delete();
+        
+        DB::commit();
+        
+        return back()->with('success', 'Transaction deleted successfully');
+    } catch (\Exception $e) {
+        DB::rollBack();
+        return back()->with('error', 'Failed to delete transaction: ' . $e->getMessage());
     }
+}
 }

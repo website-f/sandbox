@@ -59,7 +59,7 @@ Route::middleware('auth')->group(function(){
     ->name('admin.users.removeReferral');
     Route::post('/admin/collection/{user}/store', [CollectionTransactionController::class, 'store'])
     ->name('admin.collection-transactions.store');
-    Route::post('/admin/collection/{user}/destroy', [CollectionTransactionController::class, 'destroy'])
+    Route::post('/admin/collection/{transaction}/destroy', [CollectionTransactionController::class, 'destroy'])
     ->name('admin.collection-transactions.destroy');
     Route::get('admin/users-by-location', [DashboardController::class, 'getUsersByLocation'])
     ->name('admin.usersByLocation');

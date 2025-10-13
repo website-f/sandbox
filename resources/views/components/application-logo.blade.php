@@ -1,1 +1,1 @@
-<img src="{{asset('sandboxlogo.png')}}" alt="" width="50">
+<img src="{{asset('sandboxlogo.png')}}" alt="" width="60">

@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Auth;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\Account;
+use App\Models\AccountType;
 use App\Models\Profile;
 use App\Models\Referral;
 use App\Models\Blacklist;
@@ -94,9 +95,16 @@ class RegisterPlusController extends Controller
         $role = Role::where('name', 'Entrepreneur')->first();
         $user->roles()->attach($role);
     
-        // create inactive accounts
-        foreach (['rizqmall','sandbox'] as $type){
-            Account::create(['user_id' => $user->id, 'type' => $type, 'active' => false]);
+        // create inactive accounts with proper account_type_id
+        $accountTypes = AccountType::whereIn('name', ['rizqmall', 'sandbox'])->get()->keyBy('name');
+        
+        foreach (['rizqmall', 'sandbox'] as $type) {
+            Account::create([
+                'user_id' => $user->id,
+                'type' => $type,
+                'account_type_id' => $accountTypes[$type]->id ?? null,
+                'active' => false
+            ]);
         }
     
         // referral handling

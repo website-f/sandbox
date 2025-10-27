@@ -17,6 +17,10 @@ return Application::configure(basePath: dirname(__DIR__))
              'payment/callback-test',
          ]);
 
+          $middleware->alias([
+            'api.key' => \App\Http\Middleware\ValidateApiKey::class,
+        ]);
+
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

@@ -132,17 +132,96 @@
                         <div class="grid md:grid-cols-2 gap-6">
                             {{-- Profile --}}
                             <div class="p-4 border rounded-lg">
-                                <h4 class="font-semibold mb-2">Profile</h4>
-                                <dl class="text-sm text-gray-700">
-                                    <div><span class="font-medium">Full name:</span> {{ $user->profile?->full_name ?? '-' }}</div>
-                                    <div><span class="font-medium">NRIC:</span> {{ $user->profile?->nric ?? '-' }}</div>
-                                    <div><span class="font-medium">DOB:</span> {{ $user->profile?->dob ?? '-' }}</div>
-                                    <div><span class="font-medium">Address:</span> {!! nl2br(e($user->profile?->home_address ?? '-')) !!}</div>
-                                     <div><span class="font-medium">Country:</span> {{ $user->profile?->country ?? '-' }}</div>
-                                      <div><span class="font-medium">State:</span> {{ $user->profile?->state ?? '-' }}</div>
-                                       <div><span class="font-medium">City:</span> {{ $user->profile?->city ?? '-' }}</div>
-                                </dl>
-                            </div>
+    <div class="flex justify-between items-center mb-2">
+        <h4 class="font-semibold">Profile</h4>
+        <button id="editProfileBtn" class="text-gray-500 hover:text-indigo-600">
+            ✏️ Edit
+        </button>
+    </div>
+    
+    {{-- Display Mode --}}
+    <div id="profileDisplay">
+        <dl class="text-sm text-gray-700 space-y-1">
+            <div><span class="font-medium">Full name:</span> <span id="display-full_name">{{ $user->profile?->full_name ?? '-' }}</span></div>
+            <div><span class="font-medium">NRIC:</span> <span id="display-nric">{{ $user->profile?->nric ?? '-' }}</span></div>
+            <div><span class="font-medium">DOB:</span> <span id="display-dob">{{ $user->profile?->dob ?? '-' }}</span></div>
+            <div><span class="font-medium">Phone:</span> <span id="display-phone">{{ $user->profile?->phone ?? '-' }}</span></div>
+            <div><span class="font-medium">Address:</span> <span id="display-home_address">{!! nl2br(e($user->profile?->home_address ?? '-')) !!}</span></div>
+            <div><span class="font-medium">Country:</span> <span id="display-country">{{ $user->profile?->country ?? '-' }}</span></div>
+            <div><span class="font-medium">State:</span> <span id="display-state">{{ $user->profile?->state ?? '-' }}</span></div>
+            <div><span class="font-medium">City:</span> <span id="display-city">{{ $user->profile?->city ?? '-' }}</span></div>
+        </dl>
+    </div>
+
+    {{-- Edit Mode --}}
+    <form id="editProfileForm" action="{{ route('admin.users.updateProfile', $user->id) }}" method="POST" class="hidden space-y-3">
+        @csrf
+        @method('PUT')
+        
+        <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1">Full Name</label>
+            <input type="text" name="full_name" id="input-full_name" 
+                   class="border rounded px-2 py-1 text-sm w-full"
+                   value="{{ $user->profile?->full_name ?? '' }}">
+        </div>
+
+        <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1">NRIC</label>
+            <input type="text" name="nric" id="input-nric" 
+                   class="border rounded px-2 py-1 text-sm w-full"
+                   value="{{ $user->profile?->nric ?? '' }}">
+        </div>
+
+        <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1">Date of Birth</label>
+            <input type="date" name="dob" id="input-dob" 
+                   class="border rounded px-2 py-1 text-sm w-full"
+                   value="{{ $user->profile?->dob ?? '' }}">
+        </div>
+
+        <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1">Phone</label>
+            <input type="text" name="phone" id="input-phone" 
+                   class="border rounded px-2 py-1 text-sm w-full"
+                   value="{{ $user->profile?->phone ?? '' }}">
+        </div>
+
+        <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1">Address</label>
+            <textarea name="home_address" id="input-home_address" 
+                      class="border rounded px-2 py-1 text-sm w-full" rows="2">{{ $user->profile?->home_address ?? '' }}</textarea>
+        </div>
+
+        <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1">Country</label>
+            <select name="country" id="input-country" 
+                    class="border rounded px-2 py-1 text-sm w-full">
+                <option value="">-- Select Country --</option>
+            </select>
+        </div>
+
+        <div id="state-wrapper-edit" class="hidden">
+            <label class="block text-xs font-medium text-gray-600 mb-1">State</label>
+            <select name="state" id="input-state" 
+                    class="border rounded px-2 py-1 text-sm w-full">
+                <option value="">-- Select State --</option>
+            </select>
+        </div>
+
+        <div id="city-wrapper-edit" class="hidden">
+            <label class="block text-xs font-medium text-gray-600 mb-1">City</label>
+            <select name="city" id="input-city" 
+                    class="border rounded px-2 py-1 text-sm w-full">
+                <option value="">-- Select City --</option>
+            </select>
+        </div>
+
+        <div class="flex gap-2 pt-2">
+            <button type="submit" class="px-3 py-1 bg-green-600 text-white rounded text-sm">✅ Save</button>
+            <button type="button" id="cancelEditProfileBtn" class="px-3 py-1 bg-gray-300 rounded text-sm">❌ Cancel</button>
+        </div>
+    </form>
+</div>
 
                             {{-- Business / Education --}}
                             <div class="p-4 border rounded-lg space-y-3">
@@ -664,7 +743,156 @@
             </div>
         </div>
     </div>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const editBtn = document.getElementById('editProfileBtn');
+    const displayDiv = document.getElementById('profileDisplay');
+    const form = document.getElementById('editProfileForm');
+    const cancelBtn = document.getElementById('cancelEditProfileBtn');
 
+    let locationData = {};
+    const currentCountry = "{{ $user->profile?->country ?? '' }}";
+    const currentState = "{{ $user->profile?->state ?? '' }}";
+    const currentCity = "{{ $user->profile?->city ?? '' }}";
+
+    // Load location data
+    $.getJSON("{{ asset('select.json') }}", function(response) {
+        locationData = response;
+        
+        // Populate countries
+        $.each(locationData, function(country) {
+            const selected = country === currentCountry ? 'selected' : '';
+            $("#input-country").append(`<option value="${country}" ${selected}>${country}</option>`);
+        });
+
+        // If Malaysia is selected, show states
+        if (currentCountry === "Malaysia") {
+            $("#state-wrapper-edit").removeClass("hidden");
+            const states = locationData["Malaysia"] || {};
+            $.each(states, function(state) {
+                const selected = state === currentState ? 'selected' : '';
+                $("#input-state").append(`<option value="${state}" ${selected}>${state}</option>`);
+            });
+
+            // If state is selected, show cities
+            if (currentState) {
+                const cities = locationData["Malaysia"][currentState] || [];
+                if (cities.length > 0) {
+                    $("#city-wrapper-edit").removeClass("hidden");
+                    $.each(cities, function(i, city) {
+                        const selected = city === currentCity ? 'selected' : '';
+                        $("#input-city").append(`<option value="${city}" ${selected}>${city}</option>`);
+                    });
+                }
+            }
+        }
+    });
+
+    // Country change handler
+    $("#input-country").on("change", function() {
+        let country = $(this).val();
+        let states = locationData[country] || {};
+
+        $("#input-state").empty().append(new Option("-- Select State --", ""));
+        $("#input-city").empty().append(new Option("-- Select City --", ""));
+        $("#city-wrapper-edit").addClass("hidden");
+
+        if (country === "Malaysia") {
+            $("#state-wrapper-edit").removeClass("hidden");
+            $.each(states, function(state) {
+                $("#input-state").append(new Option(state, state));
+            });
+        } else {
+            $("#state-wrapper-edit").addClass("hidden");
+            $("#city-wrapper-edit").addClass("hidden");
+        }
+    });
+
+    // State change handler
+    $("#input-state").on("change", function() {
+        let country = $("#input-country").val();
+        let state = $(this).val();
+        let cities = locationData[country][state] || [];
+
+        $("#input-city").empty().append(new Option("-- Select City --", ""));
+
+        if (cities.length > 0) {
+            $("#city-wrapper-edit").removeClass("hidden");
+            $.each(cities, function(i, city) {
+                $("#input-city").append(new Option(city, city));
+            });
+        } else {
+            $("#city-wrapper-edit").addClass("hidden");
+        }
+    });
+
+    // Edit button
+    editBtn.addEventListener('click', () => {
+        displayDiv.classList.add('hidden');
+        form.classList.remove('hidden');
+    });
+
+    // Cancel button
+    cancelBtn.addEventListener('click', () => {
+        form.classList.add('hidden');
+        displayDiv.classList.remove('hidden');
+    });
+
+    // Form submission
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        const submitBtn = this.querySelector('button[type="submit"]');
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Saving...';
+
+        fetch(this.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            }
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                // Update display values
+                document.getElementById('display-full_name').textContent = data.profile.full_name || '-';
+                document.getElementById('display-nric').textContent = data.profile.nric || '-';
+                document.getElementById('display-dob').textContent = data.profile.dob || '-';
+                document.getElementById('display-phone').textContent = data.profile.phone || '-';
+                document.getElementById('display-home_address').innerHTML = (data.profile.home_address || '-').replace(/\n/g, '<br>');
+                document.getElementById('display-country').textContent = data.profile.country || '-';
+                document.getElementById('display-state').textContent = data.profile.state || '-';
+                document.getElementById('display-city').textContent = data.profile.city || '-';
+
+                // Switch back to display mode
+                form.classList.add('hidden');
+                displayDiv.classList.remove('hidden');
+
+                // Show success message
+                const alert = document.createElement('div');
+                alert.className = 'fixed top-5 right-5 bg-green-500 text-white px-4 py-2 rounded shadow-lg z-50';
+                alert.textContent = 'Profile updated successfully!';
+                document.body.appendChild(alert);
+                setTimeout(() => alert.remove(), 3000);
+            } else {
+                alert(data.message || 'Failed to update profile');
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert('An error occurred while updating the profile');
+        })
+        .finally(() => {
+            submitBtn.disabled = false;
+            submitBtn.textContent = '✅ Save';
+        });
+    });
+});
+</script>
 <script>
     // tab behavior
     document.querySelectorAll('[data-tab]').forEach(btn=>{

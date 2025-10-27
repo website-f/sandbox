@@ -78,6 +78,8 @@ Route::middleware('auth')->group(function(){
         ->name('updatePhone');
         Route::post('/{user}/sync-sandbox-rewards', [UserRoleController::class, 'syncSandboxRewards'])
         ->name('syncSandboxRewards');
+        Route::put('/{user}/update-profile', [UserRoleController::class, 'updateProfile'])
+        ->name('updateProfile');
 
         // show user details
         Route::get('{user}', [UserRoleController::class, 'show'])->name('show');
@@ -129,7 +131,12 @@ Route::middleware('auth')->group(function () {
     Route::post('/profile/pewaris/store', [ProfileController::class, 'storePewaris'])->name('profile.pewaris.store');
     Route::post('/profile/affiliation', [ProfileController::class, 'updateAffiliation'])->name('profile.affiliation');
 
-    Route::get('/setup-store', [ProfileController::class, 'redirectToRizqmall'])->name('setup.store');
+   Route::post('/rizqmall/redirect', [SsoController::class, 'redirectToRizqmall'])
+        ->name('rizqmall.redirect');
+    
+    // Customer redirect (no subscription required)
+    Route::post('/rizqmall/customer-redirect', [SsoController::class, 'customerRedirectToRizqmall'])
+        ->name('rizqmall.customer-redirect');
 
 });
 
@@ -141,3 +148,5 @@ Route::post('/subscribe/pay-next/{subscription}', [SubscriptionController::class
     ->name('subscriptions.payNext');
 
 
+Route::post('/webhooks/rizqmall/logout', [SsoController::class, 'handleLogout'])
+    ->middleware('api.key');

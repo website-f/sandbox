@@ -15,20 +15,16 @@ use App\Http\Controllers\Api\SubscriptionApiController;
 Route::middleware(['api.key'])->group(function () {
     
     // User endpoints
-    Route::prefix('users')->group(function () {
-        Route::get('/{id}', [UserApiController::class, 'show']);
-        Route::get('/{id}/profile', [UserApiController::class, 'profile']);
-    });
-
+    Route::get('/users/{id}', [UserApiController::class, 'show']);
+    Route::get('/users/{id}/profile', [UserApiController::class, 'profile']);
+    
     // Subscription endpoints
-    Route::prefix('subscriptions')->group(function () {
-        Route::get('/verify/{userId}', [SubscriptionApiController::class, 'verify']);
-        Route::get('/{userId}/status', [SubscriptionApiController::class, 'status']);
-    });
-
-    // Auth validation
+    Route::get('/subscriptions/verify/{userId}', [SubscriptionApiController::class, 'verify']);
+    Route::get('/subscriptions/{userId}/status', [SubscriptionApiController::class, 'status']);
+    
+    // Token validation
     Route::post('/auth/validate', [UserApiController::class, 'validateToken']);
+    
+    // Webhook from RizqMall (for events like store_created)
+    Route::post('/webhooks/rizqmall', [WebhookController::class, 'handleRizqmall']);
 });
-
-// Webhook from RizqMall (different authentication)
-Route::post('/webhooks/rizqmall', [\App\Http\Controllers\RizqMallController::class, 'webhook']);

@@ -200,17 +200,111 @@ public function updateProfile(Request $request)
 
 
 public function redirectToRizqmall(Request $request)
-{
-    $query = http_build_query([
-        'user_id' => $request->user()->id,
-        'email'   => $request->user()->email,
+    {
+        $user = $request->user();
+        
+        if (!$user) {
+            return redirect()->route('login')
+                ->with('error', 'Please login first.');
+        }
 
-    ]);
+        // Check if user has RizqMall account
+        $rizqmallAccount = $user->accounts()
+            ->where('type', 'rizqmall')
+            ->first();
 
-    $baseUrl = env('RIZQMALL_BASE_URL', 'http://rizqmall.test'); // fallback just in case
-    return redirect("{$baseUrl}/select-store-category?{$query}");
-}
+        if (!$rizqmallAccount) {
+            return back()->with('error', 'You do not have a RizqMall account. Please subscribe first.');
+        }
 
+        // Check if account is active
+        if (!$rizqmallAccount->active) {
+            return back()->with('error', 'Your RizqMall account is not active. Please contact support.');
+        }
+
+        // Check if expired
+        if ($rizqmallAccount->expires_at && $rizqmallAccount->expires_at->isPast()) {
+            return back()->with('error', 'Your RizqMall subscription has expired. Please renew.');
+        }
+
+        Log::info('SSO redirect to RizqMall', [
+            'user_id' => $user->id,
+            'email' => $user->email,
+        ]);
+
+        // Build SSO query parameters
+        $query = http_build_query([
+            'user_id' => $user->id,
+            'email' => $user->email,
+            'name' => $user->name,
+            'token' => $this->generateSsoToken($user), // Optional: for extra security
+        ]);
+
+        $baseUrl = config('services.rizqmall.base_url', 'http://rizqmall.test');
+        
+        return redirect("{$baseUrl}/auth/redirect?{$query}");
+    }
+
+    /**
+     * Handle customer registration/login redirect to RizqMall
+     * (For customers who want to browse/buy without vendor subscription)
+     */
+    public function customerRedirectToRizqmall(Request $request)
+    {
+        $user = $request->user();
+        
+        if (!$user) {
+            return redirect()->route('login')
+                ->with('error', 'Please login first.');
+        }
+
+        Log::info('Customer SSO redirect to RizqMall', [
+            'user_id' => $user->id,
+            'email' => $user->email,
+        ]);
+
+        // Build SSO query parameters
+        $query = http_build_query([
+            'user_id' => $user->id,
+            'email' => $user->email,
+            'name' => $user->name,
+            'customer' => 'true', // Flag as customer
+        ]);
+
+        $baseUrl = config('services.rizqmall.base_url', 'http://rizqmall.test');
+        
+        return redirect("{$baseUrl}/auth/redirect?{$query}");
+    }
+
+    /**
+     * Generate a simple SSO token (optional)
+     */
+    private function generateSsoToken(User $user)
+    {
+        // Simple token: hash of user data + secret
+        $secret = config('services.rizqmall.sso_secret', config('app.key'));
+        return hash('sha256', $user->id . $user->email . time() . $secret);
+    }
+
+    /**
+     * Handle logout from RizqMall (webhook)
+     */
+    public function handleLogout(Request $request)
+    {
+        $userId = $request->input('user_id');
+        
+        Log::info('RizqMall logout webhook received', [
+            'user_id' => $userId,
+        ]);
+
+        // You can add additional logout logic here
+        // e.g., invalidate sessions, update activity logs, etc.
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Logout processed',
+        ]);
+    }
 
 }
 

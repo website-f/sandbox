@@ -49,4 +49,12 @@ return [
     ],
 
 
+    'rizqmall' => [
+        'base_url' => env('RIZQMALL_BASE_URL', 'http://rizqmall.test'),
+        'api_key' => env('RIZQMALL_API_KEY', 'your-secret-api-key-here'),
+        'sso_secret' => env('RIZQMALL_SSO_SECRET', env('APP_KEY')),
+        'webhook_secret' => env('RIZQMALL_WEBHOOK_SECRET'),
+    ],
+
+
 ];

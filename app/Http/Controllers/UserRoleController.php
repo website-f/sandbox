@@ -326,6 +326,33 @@ public function toggleAdminAjax(Request $request, User $user)
     return response()->json(['ok' => true, 'status' => $status, 'is_admin' => $user->hasRole('Admin')]);
 }
 
+public function updateProfile(Request $request, User $user)
+{
+    $validated = $request->validate([
+        'full_name' => 'nullable|string|max:255',
+        'nric' => 'nullable|string|max:50',
+        'dob' => 'nullable|date',
+        'phone' => 'nullable|string|max:20',
+        'home_address' => 'nullable|string|max:500',
+        'country' => 'nullable|string|max:100',
+        'state' => 'nullable|string|max:100',
+        'city' => 'nullable|string|max:100',
+    ]);
+
+    // Create profile if it doesn't exist
+    if (!$user->profile) {
+        $user->profile()->create($validated);
+    } else {
+        $user->profile->update($validated);
+    }
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Profile updated successfully',
+        'profile' => $user->profile->fresh()
+    ]);
+}
+
 /**
  * Toggle account active/inactive (account is route-model bound)
  */

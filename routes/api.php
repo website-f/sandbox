@@ -2,8 +2,7 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Api\UserApiController;
-use App\Http\Controllers\Api\SubscriptionApiController;
+use App\Http\Controllers\SsoController;
 
 /*
 |--------------------------------------------------------------------------
@@ -11,20 +10,29 @@ use App\Http\Controllers\Api\SubscriptionApiController;
 |--------------------------------------------------------------------------
 */
 
-// Middleware to verify API key
-Route::middleware(['api.key'])->group(function () {
-    
-    // User endpoints
-    Route::get('/users/{id}', [UserApiController::class, 'show']);
-    Route::get('/users/{id}/profile', [UserApiController::class, 'profile']);
-    
-    // Subscription endpoints
-    Route::get('/subscriptions/verify/{userId}', [SubscriptionApiController::class, 'verify']);
-    Route::get('/subscriptions/{userId}/status', [SubscriptionApiController::class, 'status']);
-    
-    // Token validation
-    Route::post('/auth/validate', [UserApiController::class, 'validateToken']);
-    
-    // Webhook from RizqMall (for events like store_created)
-    Route::post('/webhooks/rizqmall', [WebhookController::class, 'handleRizqmall']);
+// Middleware to verify API key from RizqMall
+Route::middleware(['api'])->prefix('rizqmall')->group(function () {
+
+    // SSO Token validation
+    Route::post('/validate-token', [SsoController::class, 'validateToken']);
+
+    // User data endpoints
+    Route::get('/user/{userId}', [SsoController::class, 'getUserData']);
+
+    // Subscription verification
+    Route::get('/subscription/{userId}/verify', [SsoController::class, 'verifySubscription']);
+
+    // Store quota management
+    Route::get('/store-quota/{userId}', function ($userId) {
+        $user = \App\Models\User::find($userId);
+        return response()->json([
+            'success' => true,
+            'quota' => $user ? ($user->rizqmall_stores_quota ?? 0) : 0,
+        ]);
+    });
+
+    Route::post('/store-quota/{userId}', [SsoController::class, 'updateStoreQuota']);
+
+    // Logout webhook from RizqMall
+    Route::post('/logout-webhook', [SsoController::class, 'handleLogout']);
 });

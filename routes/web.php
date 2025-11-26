@@ -3,11 +3,12 @@
 // routes/web.php
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\SsoController;
 use App\Http\Controllers\WalletController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PasswordController;
-use App\Http\Controllers\ReferralController;
 
+use App\Http\Controllers\ReferralController;
 use App\Http\Controllers\UserRoleController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ToyyibPayController;
@@ -15,11 +16,11 @@ use App\Http\Controllers\CollectionController;
 use App\Http\Controllers\UserImportController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\Auth\RegisterPlusController;
-use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\CollectionTransactionController;
+use App\Http\Controllers\Auth\AuthenticatedSessionController;
 
 
-Route::get('/', function() {
+Route::get('/', function () {
     return redirect("/dashboard");
 });
 Route::post('/payment/callback-test', [SubscriptionController::class, 'callbackTest']);
@@ -30,7 +31,7 @@ Route::get('/login', [AuthenticatedSessionController::class, 'create'])
 
 Route::post('/login', [AuthenticatedSessionController::class, 'store'])
     ->middleware('guest');
-    
+
 Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
     ->middleware('auth')
     ->name('logout');
@@ -39,30 +40,30 @@ Route::get('/users/import', [UserImportController::class, 'showForm'])->name('us
 Route::post('/users/import', [UserImportController::class, 'import'])->name('users.import');
 
 
-Route::get('/register', [RegisterPlusController::class,'show'])->name('register'); // override Breeze’s view if needed
-Route::post('/register', [RegisterPlusController::class,'store'])->name('register.store');
+Route::get('/register', [RegisterPlusController::class, 'show'])->name('register'); // override Breeze’s view if needed
+Route::post('/register', [RegisterPlusController::class, 'store'])->name('register.store');
 
-Route::middleware('auth')->group(function(){
-    Route::get('/dashboard', [DashboardController::class,'index'])->name('dashboard');
-    Route::get('/referrals/tree', [ReferralController::class,'tree'])->name('referrals.tree'); // JSON for visualization
-    Route::get('/referrals/qr', [ReferralController::class,'qr'])->name('referrals.qr');
+Route::middleware('auth')->group(function () {
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/referrals/tree', [ReferralController::class, 'tree'])->name('referrals.tree'); // JSON for visualization
+    Route::get('/referrals/qr', [ReferralController::class, 'qr'])->name('referrals.qr');
 
     Route::get('/admin/users', [UserRoleController::class, 'index'])->name('admin.users.index');
     Route::post('/admin/users/{user}/toggle-admin', [UserRoleController::class, 'toggleAdmin'])->name('admin.users.toggleAdmin');
     Route::get('/admin/user/{id}/details', [UserRoleController::class, 'details'])
         ->name('admin.user.details');
     Route::post('/admin/users/{user}/assign-referral', [UserRoleController::class, 'assignReferral'])
-    ->name('admin.users.assignReferral');
+        ->name('admin.users.assignReferral');
     Route::get('/admin/users/referral-list', [UserRoleController::class, 'referralList'])
-    ->name('admin.users.referralList');
+        ->name('admin.users.referralList');
     Route::post('/admin/users/{user}/remove-referral', [UserRoleController::class, 'removeReferral'])
-    ->name('admin.users.removeReferral');
+        ->name('admin.users.removeReferral');
     Route::post('/admin/collection/{user}/store', [CollectionTransactionController::class, 'store'])
-    ->name('admin.collection-transactions.store');
+        ->name('admin.collection-transactions.store');
     Route::post('/admin/collection/{transaction}/destroy', [CollectionTransactionController::class, 'destroy'])
-    ->name('admin.collection-transactions.destroy');
+        ->name('admin.collection-transactions.destroy');
     Route::get('admin/users-by-location', [DashboardController::class, 'getUsersByLocation'])
-    ->name('admin.usersByLocation');
+        ->name('admin.usersByLocation');
 
 
     Route::prefix('admin/users')->name('admin.users.')->group(function () {
@@ -73,13 +74,13 @@ Route::middleware('auth')->group(function(){
         Route::get('/blacklists', [UserRoleController::class, 'blacklists'])->name('blacklists');
         Route::post('/addToBlacklist/{user}', [UserRoleController::class, 'addToBlacklist'])->name('addToBlacklist');
         Route::put('/{user}/update-name', [UserRoleController::class, 'updateName'])
-        ->name('updateName');
-         Route::put('/{user}/update-phone', [UserRoleController::class, 'updatePhone'])
-        ->name('updatePhone');
+            ->name('updateName');
+        Route::put('/{user}/update-phone', [UserRoleController::class, 'updatePhone'])
+            ->name('updatePhone');
         Route::post('/{user}/sync-sandbox-rewards', [UserRoleController::class, 'syncSandboxRewards'])
-        ->name('syncSandboxRewards');
+            ->name('syncSandboxRewards');
         Route::put('/{user}/update-profile', [UserRoleController::class, 'updateProfile'])
-        ->name('updateProfile');
+            ->name('updateProfile');
 
         // show user details
         Route::get('{user}', [UserRoleController::class, 'show'])->name('show');
@@ -87,31 +88,30 @@ Route::middleware('auth')->group(function(){
         Route::put('{user}', [UserRoleController::class, 'update'])->name('update');
 
         Route::post('/user/{id}/redeem/{type}', [UserRoleController::class, 'redeemCollection'])->name('collection.redeem');
-    
+
         // action endpoints (AJAX-friendly)
         Route::post('{user}/toggle-admin', [UserRoleController::class, 'toggleAdminAjax'])->name('toggleAdminAjax');
         Route::post('{user}/account/{account}/toggle-active', [UserRoleController::class, 'toggleAccountActive'])->name('toggleAccountActive');
         Route::post('{user}/account/{account}/update-serial', [UserRoleController::class, 'updateAccountSerial'])->name('updateAccountSerial');
-    
+
         // referral trees
         Route::get('{user}/referrals/tree', [UserRoleController::class, 'referralTree'])->name('referralTree');
         Route::get('{user}/sandbox-referrals/tree', [UserRoleController::class, 'sandboxReferralTree'])->name('sandboxReferralTree');
-    
+
         // reuse check routes you already have
         Route::post('check-serial', [UserRoleController::class, 'checkSerial'])->name('checkSerial');
         Route::post('check-email', [UserRoleController::class, 'checkEmail'])->name('checkEmail');
-    
+
         // (existing) assign/remove referral routes...
     });
 
     Route::post('/admin/users/{user}/delete', [UserRoleController::class, 'destroy'])
-    ->name('admin.users.destroy');
+        ->name('admin.users.destroy');
 
     // Subscription actions
 
     Route::get('/wallet', [WalletController::class, 'index'])->name('wallet.users.index');
     Route::get('/collection', [CollectionController::class, 'index'])->name('collection.index');
-
 });
 
 Route::get('/login', function () {
@@ -131,13 +131,13 @@ Route::middleware('auth')->group(function () {
     Route::post('/profile/pewaris/store', [ProfileController::class, 'storePewaris'])->name('profile.pewaris.store');
     Route::post('/profile/affiliation', [ProfileController::class, 'updateAffiliation'])->name('profile.affiliation');
 
-   Route::post('/rizqmall/redirect', [SsoController::class, 'redirectToRizqmall'])
+    // RizqMall SSO Redirects
+    Route::post('/rizqmall/redirect', [App\Http\Controllers\SsoController::class, 'redirectToRizqmall'])
         ->name('rizqmall.redirect');
-    
-    // Customer redirect (no subscription required)
-    Route::post('/rizqmall/customer-redirect', [SsoController::class, 'customerRedirectToRizqmall'])
-        ->name('rizqmall.customer-redirect');
 
+    // Customer redirect (no subscription required)
+    Route::post('/rizqmall/customer-redirect', [App\Http\Controllers\SsoController::class, 'customerRedirectToRizqmall'])
+        ->name('rizqmall.customer-redirect');
 });
 
 Route::post('/subscribe/{plan}', [SubscriptionController::class, 'subscribe'])->name('subscribe.plan');

@@ -50,10 +50,18 @@ return [
 
 
     'rizqmall' => [
+        'url' => env('RIZQMALL_URL', 'http://localhost:8001'),
         'base_url' => env('RIZQMALL_BASE_URL', 'http://rizqmall.test'),
         'api_key' => env('RIZQMALL_API_KEY', 'your-secret-api-key-here'),
         'sso_secret' => env('RIZQMALL_SSO_SECRET', env('APP_KEY')),
         'webhook_secret' => env('RIZQMALL_WEBHOOK_SECRET'),
+        'timeout' => env('RIZQMALL_TIMEOUT', 30),
+        'enabled' => env('RIZQMALL_ENABLED', true),
+    ],
+
+    'sso' => [
+        'token_expiry' => env('SSO_TOKEN_EXPIRY', 3600), // 1 hour in seconds
+        'session_lifetime' => env('SSO_SESSION_LIFETIME', 30), // 30 days
     ],
 
 

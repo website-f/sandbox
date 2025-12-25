@@ -349,23 +349,26 @@
                         ? \Carbon\Carbon::parse($account->expires_at)
                         : null;
 
-                        if ($account->active) {
-                        $indicatorColor = 'bg-green-500';
-                        $indicatorText = 'active';
-                        $showButton = false;
-                        if ($expires) {
-                        $expiryText = 'Valid until ' . $expires->toFormattedDateString();
-                        }
-                        if ($account->serial_number) {
-                        $serialText = "Serial: {$account->serial_number}";
-                        }
-                        } elseif ($account->type === 'rizqmall' && $expires && $expires->isPast()) {
+                        // CHECK EXPIRATION FIRST - before checking active status
+                        // This ensures expired RizqMall shows renew button even if active flag is still true
+                        if ($account->type === 'rizqmall' && $expires && $expires->isPast()) {
                         // RizqMall subscription expired
                         $indicatorColor = 'bg-orange-500';
                         $indicatorText = 'expired';
                         $expiryText = 'Expired on ' . $expires->toFormattedDateString();
                         $isExpired = true;
                         $showButton = true;
+                        if ($account->serial_number) {
+                        $serialText = "Serial: {$account->serial_number}";
+                        }
+                        } elseif ($account->active && (!$expires || $expires->isFuture())) {
+                        // Account is active AND not expired
+                        $indicatorColor = 'bg-green-500';
+                        $indicatorText = 'active';
+                        $showButton = false;
+                        if ($expires) {
+                        $expiryText = 'Valid until ' . $expires->toFormattedDateString();
+                        }
                         if ($account->serial_number) {
                         $serialText = "Serial: {$account->serial_number}";
                         }

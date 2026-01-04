@@ -232,6 +232,7 @@ class SsoController extends Controller
                 'subscription_expires_at' => $rizqmallAccount?->expires_at ?? null,
                 'stores_quota' => $user->rizqmall_stores_quota ?? 0,
                 'rizqmall_activated_at' => $user->rizqmall_activated_at,
+                'has_rizqmall_subscription' => $rizqmallAccount && $rizqmallAccount->active,
             ],
         ]);
     }

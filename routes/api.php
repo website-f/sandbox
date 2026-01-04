@@ -35,4 +35,10 @@ Route::middleware(['api'])->prefix('rizqmall')->group(function () {
 
     // Logout webhook from RizqMall
     Route::post('/logout-webhook', [SsoController::class, 'handleLogout']);
+
+    // User creation from RizqMall (when customer registers in RizqMall)
+    Route::post('/create-user', [\App\Http\Controllers\Api\UserApiController::class, 'createFromRizqmall']);
+
+    // Find user by email (for linking existing accounts)
+    Route::get('/user-by-email', [\App\Http\Controllers\Api\UserApiController::class, 'findByEmail']);
 });

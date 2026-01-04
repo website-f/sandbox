@@ -81,7 +81,7 @@ class RegisterPlusController extends Controller
             'email'    => $data['email'],
             'password' => Hash::make($data['password']),
         ]);
-    
+
         Profile::create([
             'user_id'   => $user->id,
             'full_name' => $user->name,
@@ -90,6 +90,37 @@ class RegisterPlusController extends Controller
             'state'     => $data['state'] ?? null,
             'city'      => $data['city'] ?? null,
         ]);
+
+        // Create corresponding user in RizqMall
+        try {
+            $rizqmallService = app(\App\Services\RizqmallApiService::class);
+            $rizqmallUser = $rizqmallService->createUserInRizqmall([
+                'name' => $data['name'],
+                'email' => $data['email'],
+                'phone' => $data['phone'] ?? null,
+                'country' => $data['country'] ?? null,
+                'state' => $data['state'] ?? null,
+                'city' => $data['city'] ?? null,
+                'sandbox_user_id' => $user->id,
+            ]);
+
+            if ($rizqmallUser) {
+                \Log::info('RizqMall account created for Sandbox user', [
+                    'sandbox_user_id' => $user->id,
+                    'rizqmall_user_id' => $rizqmallUser['id'],
+                ]);
+            } else {
+                \Log::warning('Failed to create RizqMall account for Sandbox user', [
+                    'sandbox_user_id' => $user->id,
+                ]);
+            }
+        } catch (\Exception $e) {
+            \Log::error('Error creating RizqMall account', [
+                'sandbox_user_id' => $user->id,
+                'error' => $e->getMessage(),
+            ]);
+            // Don't fail registration if RizqMall creation fails
+        }
     
         // default role: Entrepreneur
         $role = Role::where('name', 'Entrepreneur')->first();

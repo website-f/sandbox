@@ -120,7 +120,6 @@ class UserApiController extends Controller
                     'referral_code' => $code,
                 ],
             ], 201);
-
         } catch (\Illuminate\Validation\ValidationException $e) {
             Log::error('Validation failed for RizqMall user creation', [
                 'errors' => $e->errors(),
@@ -131,7 +130,6 @@ class UserApiController extends Controller
                 'message' => 'Validation failed',
                 'errors' => $e->errors(),
             ], 422);
-
         } catch (\Exception $e) {
             Log::error('Failed to create Sandbox user from RizqMall', [
                 'error' => $e->getMessage(),
@@ -178,7 +176,6 @@ class UserApiController extends Controller
                     'name' => $user->name,
                 ],
             ], 200);
-
         } catch (\Exception $e) {
             Log::error('Failed to find user by email', [
                 'error' => $e->getMessage(),
@@ -187,6 +184,140 @@ class UserApiController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Error finding user',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Link a RizqMall customer as a member under a vendor in the referral system
+     * This creates a parent-child relationship in the unlimited referral tree
+     */
+    public function linkMemberToVendor(Request $request)
+    {
+        try {
+            $request->validate([
+                'vendor_user_id' => 'required|integer|exists:users,id',
+                'member_user_id' => 'required|integer|exists:users,id',
+                'store_id' => 'required|integer',
+            ]);
+
+            Log::info('Linking member to vendor in referral system', [
+                'vendor_user_id' => $request->vendor_user_id,
+                'member_user_id' => $request->member_user_id,
+                'store_id' => $request->store_id,
+            ]);
+
+            $vendor = User::find($request->vendor_user_id);
+            $member = User::find($request->member_user_id);
+
+            if (!$vendor || !$member) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Vendor or member not found',
+                ], 404);
+            }
+
+            // Check if member already has referral record with a parent
+            $existingReferral = Referral::where('user_id', $member->id)->first();
+
+            if ($existingReferral && $existingReferral->parent_id) {
+                // Already linked to a vendor/parent
+                Log::info('Member already has a parent in referral system', [
+                    'member_id' => $member->id,
+                    'existing_parent_id' => $existingReferral->parent_id,
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Member already has a referral parent',
+                    'referral_id' => $existingReferral->id,
+                    'already_linked' => true,
+                ]);
+            }
+
+            // Get or create vendor's referral record
+            $tree = app(ReferralTreeService::class);
+            $vendorReferral = Referral::where('user_id', $vendor->id)->first();
+
+            if (!$vendorReferral) {
+                // Create referral record for vendor (they become a root)
+                $vendorReferral = Referral::create([
+                    'user_id' => $vendor->id,
+                    'parent_id' => null,
+                    'root_id' => $vendor->id,
+                    'level' => 1,
+                    'direct_children' => 0,
+                    'ref_code' => $tree->generateRefCode($vendor),
+                ]);
+            }
+
+            // Link member under vendor
+            if ($existingReferral) {
+                // Update existing referral to link to vendor
+                $existingReferral->parent_id = $vendor->id;
+                $existingReferral->root_id = $vendorReferral->root_id ?? $vendor->id;
+                $existingReferral->level = $vendorReferral->level + 1;
+                $existingReferral->save();
+
+                $vendorReferral->increment('direct_children');
+
+                Log::info('Updated existing referral to link to vendor', [
+                    'referral_id' => $existingReferral->id,
+                    'member_id' => $member->id,
+                    'vendor_id' => $vendor->id,
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Member linked to vendor successfully',
+                    'referral_id' => $existingReferral->id,
+                ]);
+            }
+
+            // Create new referral record for member under vendor
+            $memberReferral = Referral::create([
+                'user_id' => $member->id,
+                'parent_id' => $vendor->id,
+                'root_id' => $vendorReferral->root_id ?? $vendor->id,
+                'level' => $vendorReferral->level + 1,
+                'direct_children' => 0,
+                'ref_code' => $tree->generateRefCode($member),
+            ]);
+
+            $vendorReferral->increment('direct_children');
+
+            Log::info('Member linked to vendor in referral system', [
+                'referral_id' => $memberReferral->id,
+                'member_id' => $member->id,
+                'vendor_id' => $vendor->id,
+                'level' => $memberReferral->level,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Member linked to vendor successfully',
+                'referral_id' => $memberReferral->id,
+            ], 201);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::error('Validation failed for link member request', [
+                'errors' => $e->errors(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Failed to link member to vendor', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to link member to vendor',
                 'error' => $e->getMessage(),
             ], 500);
         }

@@ -41,4 +41,7 @@ Route::middleware(['api'])->prefix('rizqmall')->group(function () {
 
     // Find user by email (for linking existing accounts)
     Route::get('/user-by-email', [\App\Http\Controllers\Api\UserApiController::class, 'findByEmail']);
+
+    // Link RizqMall customer as member under vendor in referral system
+    Route::post('/link-member', [\App\Http\Controllers\Api\UserApiController::class, 'linkMemberToVendor']);
 });

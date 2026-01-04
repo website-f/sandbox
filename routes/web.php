@@ -138,6 +138,10 @@ Route::middleware('auth')->group(function () {
     // Customer redirect (no subscription required)
     Route::post('/rizqmall/customer-redirect', [App\Http\Controllers\SsoController::class, 'customerRedirectToRizqmall'])
         ->name('rizqmall.customer-redirect');
+
+    // Get RizqMall Store Members (Ajax)
+    Route::get('/rizqmall/members', [App\Http\Controllers\SsoController::class, 'getRizqmallMembers'])
+        ->name('rizqmall.members');
 });
 
 Route::post('/subscribe/{plan}', [SubscriptionController::class, 'subscribe'])->name('subscribe.plan');

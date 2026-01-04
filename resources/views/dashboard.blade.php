@@ -835,8 +835,113 @@
                 </ul>
             </div>
 
+            <!-- RizqMall Store Members Section -->
+            <div x-data="{
+                loading: true,
+                error: null,
+                members: [],
+                stats: null,
+                store: null,
+                init() {
+                    fetch('{{ route('rizqmall.members') }}')
+                        .then(res => res.json())
+                        .then(data => {
+                            this.loading = false;
+                            if (data.success && data.store) {
+                                this.members = data.members;
+                                this.stats = data.stats;
+                                this.store = data.store;
+                            } else {
+                                // If no store or error, this section will remain hidden due to x-show='store'
+                            }
+                        })
+                        .catch(err => {
+                            this.loading = false;
+                            this.error = 'Failed to load members';
+                            console.error(err);
+                        });
+                }
+            }" x-show="store" x-cloak class="lg:col-span-3 bg-white rounded-2xl shadow-lg p-6 hover:shadow-2xl transition-shadow duration-300">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-semibold text-gray-800">
+                        <span class="text-indigo-600" x-text="store?.name"></span> Members
+                    </h3>
+                    <div class="flex gap-4 text-sm" x-show="stats">
+                        <div class="px-3 py-1 bg-indigo-50 text-indigo-700 rounded-full">
+                            Total: <span class="font-bold" x-text="stats?.total_members || 0"></span>
+                        </div>
+                        <div class="px-3 py-1 bg-green-50 text-green-700 rounded-full">
+                            New: <span class="font-bold" x-text="stats?.new_this_month || 0"></span>
+                        </div>
+                    </div>
+                </div>
 
+                <div x-show="loading" class="flex justify-center py-8">
+                    <svg class="animate-spin h-8 w-8 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                </div>
 
+                <div x-show="!loading && members.length === 0" class="text-center py-8 text-gray-500">
+                    No members found.
+                </div>
+
+                <div x-show="!loading && members.length > 0" class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="text-gray-500 border-b">
+                                <th class="p-3 font-medium">Customer</th>
+                                <th class="p-3 font-medium">Join Method</th>
+                                <th class="p-3 font-medium">Joined Date</th>
+                                <th class="p-3 font-medium">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            <template x-for="member in members" :key="member.id">
+                                <tr class="hover:bg-gray-50 transition">
+                                    <td class="p-3">
+                                        <div class="flex items-center gap-3">
+                                            <template x-if="member.customer_avatar">
+                                                <img :src="member.customer_avatar" class="w-8 h-8 rounded-full object-cover">
+                                            </template>
+                                            <template x-if="!member.customer_avatar">
+                                                <div class="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold">
+                                                    <span x-text="member.customer_name ? member.customer_name.charAt(0) : 'U'"></span>
+                                                </div>
+                                            </template>
+                                            <div>
+                                                <div class="font-medium text-gray-800" x-text="member.customer_name"></div>
+                                                <div class="text-xs text-gray-500" x-text="member.customer_email"></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="p-3">
+                                        <span class="px-2 py-1 text-xs rounded-full"
+                                            :class="{
+                                                'bg-blue-100 text-blue-700': member.join_method === 'qr_scan',
+                                                'bg-green-100 text-green-700': member.join_method === 'referral' || member.join_method === 'ref_code',
+                                                'bg-gray-100 text-gray-700': !['qr_scan', 'referral', 'ref_code'].includes(member.join_method)
+                                            }"
+                                            x-text="member.join_method === 'qr_scan' ? 'QR Scan' : (member.join_method === 'referral' || member.join_method === 'ref_code' ? 'Referral' : member.join_method)">
+                                        </span>
+                                    </td>
+                                    <td class="p-3 text-sm text-gray-600" x-text="member.joined_at_human"></td>
+                                    <td class="p-3">
+                                        <span class="px-2 py-1 text-xs rounded-full"
+                                            :class="{
+                                                'bg-green-100 text-green-700': member.status === 'active',
+                                                'bg-red-100 text-red-700': member.status === 'inactive'
+                                            }"
+                                            x-text="member.status">
+                                        </span>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
             @if (auth()->user()->hasRole('Admin'))
             <div
                 class="lg:col-span-3 bg-white rounded-2xl shadow-lg p-6 hover:shadow-2xl transition-shadow duration-300">

@@ -321,4 +321,50 @@ class SsoController extends Controller
             'quota' => $user->rizqmall_stores_quota,
         ]);
     }
+
+    /**
+     * Get store members from RizqMall (Proxy)
+     */
+    public function getRizqmallMembers(Request $request)
+    {
+        $user = Auth::user();
+
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        try {
+            $baseUrl = config('services.rizqmall.base_url', 'http://rizqmall.test');
+            $url = $baseUrl . '/api/sandbox/store-members/' . $user->id;
+
+            $params = $request->all();
+
+            $response = Http::timeout(5)->get($url, $params);
+
+            if ($response->successful()) {
+                return $response->json();
+            }
+
+            Log::error('Failed to fetch RizqMall members', [
+                'user_id' => $user->id,
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch members from RizqMall: ' . $response->status(),
+            ], $response->status());
+        } catch (\Exception $e) {
+            Log::error('Error proxying to RizqMall', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Connection to RizqMall failed',
+            ], 500);
+        }
+    }
 }

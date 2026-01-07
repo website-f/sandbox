@@ -311,7 +311,7 @@ public function show(User $user)
 public function toggleAdminAjax(Request $request, User $user)
 {
     // authorize: allow only Admins to do this
-    if (!auth()->user()->can('manage users')) {
+    if (!auth()->user()->hasRole('Admin')) {
         abort(403);
     }
 
@@ -355,15 +355,33 @@ public function updateProfile(Request $request, User $user)
 
 /**
  * Toggle account active/inactive (account is route-model bound)
+ * When activating, generates a unique serial number if one doesn't exist
  */
 public function toggleAccountActive(Request $request, User $user, Account $account)
 {
     if ($account->user_id !== $user->id) abort(404);
-if (!auth()->user()->can('manage users')) abort(403);
-    $account->active = ! $account->active;
+    if (!auth()->user()->hasRole('Admin')) abort(403);
+
+    $account->active = !$account->active;
+
+    // If activating and no serial number exists, generate one
+    if ($account->active && empty($account->serial_number)) {
+        $account->serial_number = Account::generateUniqueSerial($account->type);
+
+        // For rizqmall accounts, also set expiry date (1 year from now)
+        if ($account->type === 'rizqmall' && !$account->expires_at) {
+            $account->expires_at = Carbon::now()->addYear();
+        }
+    }
+
     $account->save();
 
-    return response()->json(['ok' => true, 'active' => $account->active]);
+    return response()->json([
+        'ok' => true,
+        'active' => $account->active,
+        'serial' => $account->serial_number,
+        'expires_at' => $account->expires_at?->format('d M Y')
+    ]);
 }
 
 /**
@@ -371,12 +389,28 @@ if (!auth()->user()->can('manage users')) abort(403);
  */
 public function updateAccountSerial(Request $request, User $user, Account $account)
 {
-    $request->validate([
+    if ($account->user_id !== $user->id) {
+        return response()->json(['ok' => false, 'error' => 'Account not found'], 404);
+    }
+
+    if (!auth()->user()->hasRole('Admin')) {
+        return response()->json(['ok' => false, 'error' => 'Unauthorized'], 403);
+    }
+
+    $validator = \Validator::make($request->all(), [
         'serial_number' => 'required|string|max:255|unique:accounts,serial_number,' . $account->id,
+    ], [
+        'serial_number.required' => 'Serial number is required',
+        'serial_number.unique' => 'This serial number is already assigned to another account',
+        'serial_number.max' => 'Serial number must not exceed 255 characters',
     ]);
 
-    if ($account->user_id !== $user->id) abort(404);
-
+    if ($validator->fails()) {
+        return response()->json([
+            'ok' => false,
+            'error' => $validator->errors()->first('serial_number')
+        ], 422);
+    }
 
     $account->serial_number = $request->serial_number;
     $account->save();

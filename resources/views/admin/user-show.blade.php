@@ -293,23 +293,42 @@
                     <div data-panel="accounts" class="tab-panel hidden">
                         <div class="grid md:grid-cols-2 gap-6">
                             @forelse(($user->accounts ?? collect([])) as $account)
-                                <div class="p-4 border rounded-lg">
+                                <div class="p-4 border rounded-lg {{ $account->active ? 'border-green-200 bg-green-50' : 'border-gray-200' }}">
                                     <div class="flex justify-between items-start">
                                         <div>
-                                            <h4 class="font-semibold capitalize">{{ $account->type ?? '-' }} account</h4>
-                                            <p class="text-sm text-gray-600">Serial: <span id="serial-{{ $account->id }}">{{ $account->serial_number ?? '-' }}</span></p>
-                                            <p class="text-sm text-gray-600">Status: <span id="status-{{ $account->id }}">{{ $account->active ? 'Active' : 'Inactive' }}</span></p>
-                                            @if($account->expires_at)
-                                                <p class="text-sm text-gray-600">Expires: {{ $account->expires_at?->format('d M Y') ?? '-' }}</p>
-                                            @endif
+                                            <h4 class="font-semibold capitalize flex items-center gap-2">
+                                                {{ $account->type ?? '-' }} Account
+                                                @if($account->active)
+                                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">Active</span>
+                                                @else
+                                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600">Inactive</span>
+                                                @endif
+                                            </h4>
+                                            <p class="text-sm text-gray-600 mt-2">
+                                                <span class="font-medium">Serial:</span>
+                                                <span id="serial-{{ $account->id }}" class="font-mono {{ $account->serial_number ? 'text-indigo-600' : 'text-gray-400' }}">
+                                                    {{ $account->serial_number ?? 'Not assigned' }}
+                                                </span>
+                                            </p>
+                                            <p class="text-sm text-gray-600">
+                                                <span class="font-medium">Status:</span>
+                                                <span id="status-{{ $account->id }}">{{ $account->active ? 'Active' : 'Inactive' }}</span>
+                                            </p>
+                                            <p class="text-sm text-gray-600" id="expires-row-{{ $account->id }}" style="{{ $account->expires_at ? '' : 'display:none;' }}">
+                                                <span class="font-medium">Expires:</span>
+                                                <span id="expires-{{ $account->id }}">{{ $account->expires_at?->format('d M Y') ?? '-' }}</span>
+                                            </p>
                                         </div>
 
                                         <div class="space-y-2 text-right">
-                                            <button data-account-id="{{ $account->id }}" class="toggle-account-btn px-3 py-1 rounded bg-gray-100 text-sm">
+                                            <button data-account-id="{{ $account->id }}"
+                                                    class="toggle-account-btn px-3 py-1.5 rounded text-sm font-medium transition-colors
+                                                           {{ $account->active ? 'bg-red-100 text-red-700 hover:bg-red-200' : 'bg-green-600 text-white hover:bg-green-700' }}">
                                                 {{ $account->active ? 'Deactivate' : 'Activate' }}
                                             </button>
 
-                                            <button data-account-id="{{ $account->id }}" class="edit-serial-btn px-3 py-1 rounded bg-indigo-600 text-white text-sm">
+                                            <button data-account-id="{{ $account->id }}"
+                                                    class="edit-serial-btn px-3 py-1.5 rounded bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition-colors">
                                                 Edit Serial
                                             </button>
                                         </div>
@@ -318,11 +337,15 @@
                                     {{-- inline serial edit form (hidden) --}}
                                     <div id="serial-edit-{{ $account->id }}" class="mt-3 hidden">
                                         <div class="flex items-center gap-2">
-                                            <input type="text" id="serial-input-{{ $account->id }}" class="border rounded p-2 flex-1" value="{{ $account->serial_number ?? '' }}">
-                                            <button data-account-id="{{ $account->id }}" class="save-serial-btn px-3 py-2 bg-green-600 text-white rounded">Save</button>
-                                            <button onclick="document.getElementById('serial-edit-{{ $account->id }}').classList.add('hidden')" class="px-3 py-2 bg-gray-200 rounded">Cancel</button>
+                                            <input type="text" id="serial-input-{{ $account->id }}"
+                                                   class="border rounded p-2 flex-1 font-mono text-sm"
+                                                   value="{{ $account->serial_number ?? '' }}"
+                                                   placeholder="e.g., RM2601070001">
+                                            <button data-account-id="{{ $account->id }}" class="save-serial-btn px-3 py-2 bg-green-600 text-white rounded text-sm font-medium hover:bg-green-700">Save</button>
+                                            <button onclick="document.getElementById('serial-edit-{{ $account->id }}').classList.add('hidden')" class="px-3 py-2 bg-gray-200 rounded text-sm">Cancel</button>
                                         </div>
                                         <div id="serial-error-{{ $account->id }}" class="text-red-500 text-sm mt-1"></div>
+                                        <p class="text-xs text-gray-500 mt-1">Format: RM/SB + YYMMDD + 4-digit number (e.g., RM2601070001)</p>
                                     </div>
                                 </div>
                             @empty
@@ -939,15 +962,80 @@ document.addEventListener('DOMContentLoaded', () => {
             const accId = this.dataset.accountId;
             const url = "{{ url('admin/users') }}/{{ $user->id }}/account/"+accId+"/toggle-active";
             const btn = this;
+            const card = btn.closest('.border.rounded-lg');
             btn.disabled = true;
+            btn.textContent = 'Processing...';
             fetch(url, {method:'POST', headers:{'X-CSRF-TOKEN':'{{ csrf_token() }}'}})
                 .then(r=>r.json()).then(data=>{
                     if(data.ok){
                         const statusEl = document.getElementById('status-'+accId);
+                        const serialEl = document.getElementById('serial-'+accId);
+                        const expiresEl = document.getElementById('expires-'+accId);
+                        const expiresRow = document.getElementById('expires-row-'+accId);
+
                         statusEl.textContent = data.active ? 'Active' : 'Inactive';
                         btn.textContent = data.active ? 'Deactivate' : 'Activate';
+
+                        // Update button styling based on status
+                        if(data.active){
+                            btn.className = 'toggle-account-btn px-3 py-1.5 rounded text-sm font-medium transition-colors bg-red-100 text-red-700 hover:bg-red-200';
+                            card.classList.remove('border-gray-200');
+                            card.classList.add('border-green-200', 'bg-green-50');
+                        } else {
+                            btn.className = 'toggle-account-btn px-3 py-1.5 rounded text-sm font-medium transition-colors bg-green-600 text-white hover:bg-green-700';
+                            card.classList.remove('border-green-200', 'bg-green-50');
+                            card.classList.add('border-gray-200');
+                        }
+
+                        // Update status badge in header
+                        const header = card.querySelector('h4');
+                        const badge = header.querySelector('span');
+                        if(badge){
+                            if(data.active){
+                                badge.className = 'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800';
+                                badge.textContent = 'Active';
+                            } else {
+                                badge.className = 'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600';
+                                badge.textContent = 'Inactive';
+                            }
+                        }
+
+                        // Update serial number if returned
+                        if(data.serial && serialEl){
+                            serialEl.textContent = data.serial;
+                            serialEl.classList.remove('text-gray-400');
+                            serialEl.classList.add('text-indigo-600');
+                            // Also update the input field if exists
+                            const serialInput = document.getElementById('serial-input-'+accId);
+                            if(serialInput) serialInput.value = data.serial;
+                        }
+
+                        // Update expiry date if returned
+                        if(data.expires_at && expiresEl){
+                            expiresEl.textContent = data.expires_at;
+                            if(expiresRow) expiresRow.style.display = '';
+                        }
+
+                        // Show success toast
+                        const toast = document.createElement('div');
+                        toast.className = 'fixed top-5 right-5 bg-green-500 text-white px-4 py-2 rounded shadow-lg z-50';
+                        toast.textContent = data.active ? 'Account activated successfully!' : 'Account deactivated';
+                        document.body.appendChild(toast);
+                        setTimeout(() => toast.remove(), 3000);
+                    } else {
+                        alert('Failed to toggle account status');
                     }
-                }).finally(()=>btn.disabled=false);
+                }).catch(err=>{
+                    console.error(err);
+                    alert('Request failed');
+                }).finally(()=>{
+                    btn.disabled = false;
+                    // Reset button text if it's still "Processing..."
+                    if(btn.textContent === 'Processing...'){
+                        const statusEl = document.getElementById('status-'+accId);
+                        btn.textContent = statusEl.textContent === 'Active' ? 'Deactivate' : 'Activate';
+                    }
+                });
         });
     });
 
@@ -965,24 +1053,54 @@ document.addEventListener('DOMContentLoaded', () => {
             const id = this.dataset.accountId;
             const val = document.getElementById('serial-input-'+id).value.trim();
             const err = document.getElementById('serial-error-'+id);
-            if(!val){ err.textContent = 'Serial cannot be empty'; return; }
-            b.disabled = true;
+            const btn = this;
+            const originalText = btn.textContent;
+
+            if(!val){
+                err.textContent = 'Serial cannot be empty';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Saving...';
+            err.textContent = '';
+
             fetch("{{ url('admin/users') }}/{{ $user->id }}/account/"+id+"/update-serial", {
                 method:'POST',
-               headers: {
-        'Content-Type': 'application/json',
-        'X-CSRF-TOKEN': csrfToken,
-    },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                },
                 body: JSON.stringify({ serial_number: val })
-            }).then(r=>r.json()).then(resp=>{
+            }).then(r=>{
+                if(!r.ok){
+                    return r.json().then(data => { throw new Error(data.message || 'Server error'); });
+                }
+                return r.json();
+            }).then(resp=>{
                 if(resp.ok){
-                    document.getElementById('serial-'+id).textContent = resp.serial;
+                    const serialEl = document.getElementById('serial-'+id);
+                    serialEl.textContent = resp.serial;
+                    serialEl.classList.remove('text-gray-400');
+                    serialEl.classList.add('text-indigo-600');
                     document.getElementById('serial-edit-'+id).classList.add('hidden');
                     err.textContent = '';
+
+                    // Show success toast
+                    const toast = document.createElement('div');
+                    toast.className = 'fixed top-5 right-5 bg-green-500 text-white px-4 py-2 rounded shadow-lg z-50';
+                    toast.textContent = 'Serial number updated successfully!';
+                    document.body.appendChild(toast);
+                    setTimeout(() => toast.remove(), 3000);
                 } else {
-                    err.textContent = resp.error || 'Failed to update';
+                    err.textContent = resp.error || 'Failed to update serial number';
                 }
-            }).catch(()=>err.textContent = 'Request failed').finally(()=>b.disabled=false);
+            }).catch(e=>{
+                err.textContent = e.message || 'Request failed';
+            }).finally(()=>{
+                btn.disabled = false;
+                btn.textContent = originalText;
+            });
         });
     });
 

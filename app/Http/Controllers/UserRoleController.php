@@ -18,17 +18,11 @@ class UserRoleController extends Controller
 {
     public function index(Request $request)
     {
-        $query = User::with(['roles', 'accounts', 'profile', 'referral.parent']);
-
-        // Search by name or email
-        if ($search = $request->input('search')) {
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%");
-            });
-        }
-
-        $users = $query->orderBy('name')->paginate(10)->withQueryString();
+        // Load all users for DataTables client-side processing
+        // DataTables will handle pagination, sorting, and searching
+        $users = User::with(['roles', 'accounts', 'profile', 'referral.parent'])
+            ->orderBy('name')
+            ->get();
 
         return view('admin.roles', compact('users'));
     }

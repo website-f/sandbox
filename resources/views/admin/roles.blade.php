@@ -104,10 +104,6 @@
             </table>
         </div>
 
-        {{-- Pagination --}}
-        <div class="mt-4 sm:mt-6">
-            {{ $users->links() }}
-        </div>
     </div>
 
     <!-- Modals -->
@@ -187,9 +183,11 @@
     @push('scripts')
     <script>
         $(document).ready(function() {
-            // Initialize DataTable
+            // Initialize DataTable with full client-side search
             $('#rolesTable').DataTable({
                 responsive: false,
+                pageLength: 25,
+                lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
                 order: [
                     [2, 'asc']
                 ], // Sort by Name
@@ -201,7 +199,20 @@
                         targets: [6],
                         orderable: false
                     } // Disable sort on Action column
-                ]
+                ],
+                language: {
+                    search: "Search all users:",
+                    lengthMenu: "Show _MENU_ users",
+                    info: "Showing _START_ to _END_ of _TOTAL_ users",
+                    infoEmpty: "No users found",
+                    infoFiltered: "(filtered from _MAX_ total users)",
+                    paginate: {
+                        first: "First",
+                        last: "Last",
+                        next: "Next",
+                        previous: "Previous"
+                    }
+                }
             });
         });
 

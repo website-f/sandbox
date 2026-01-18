@@ -224,14 +224,140 @@
             background: inherit;
             animation: pulse-ring 1.5s infinite;
         }
+
+        /* Mobile Responsive Fixes */
+        @media (max-width: 640px) {
+
+            /* Prevent horizontal overflow on body and html */
+            html,
+            body {
+                overflow-x: hidden;
+                width: 100%;
+                max-width: 100%;
+            }
+
+            /* Allow horizontal scroll for table containers */
+            .overflow-x-auto {
+                -webkit-overflow-scrolling: touch;
+                overflow-x: auto !important;
+                padding-bottom: 8px;
+            }
+
+            /* Ensure text doesn't overflow */
+            .truncate-mobile {
+                max-width: 120px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+
+            /* Stack cards on mobile */
+            .mobile-stack {
+                flex-direction: column !important;
+            }
+
+            /* Full width buttons on mobile */
+            .mobile-full-btn {
+                width: 100%;
+                justify-content: center;
+            }
+
+            /* Smaller padding on mobile */
+            .mobile-p-4 {
+                padding: 1rem !important;
+            }
+
+            /* Hide on mobile */
+            .hide-mobile {
+                display: none !important;
+            }
+
+            /* Show on mobile */
+            .show-mobile {
+                display: block !important;
+            }
+
+            /* Smaller text on mobile */
+            .mobile-text-sm {
+                font-size: 0.875rem !important;
+            }
+
+            .mobile-text-xs {
+                font-size: 0.75rem !important;
+            }
+
+            /* Mobile card adjustments */
+            .mobile-card {
+                padding: 1rem !important;
+            }
+
+            /* Referral input smaller on mobile */
+            #referralLink {
+                font-size: 0.7rem;
+            }
+
+            /* Fix DataTables on mobile */
+            .dataTables_wrapper {
+                width: 100% !important;
+                overflow-x: auto !important;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .dataTables_wrapper .dataTables_length,
+            .dataTables_wrapper .dataTables_filter {
+                float: none !important;
+                text-align: left !important;
+                margin-bottom: 0.5rem !important;
+            }
+
+            .dataTables_wrapper .dataTables_filter input {
+                width: 100% !important;
+                max-width: 200px !important;
+            }
+
+            .dataTables_wrapper .dataTables_info,
+            .dataTables_wrapper .dataTables_paginate {
+                float: none !important;
+                text-align: center !important;
+                padding-top: 0.5rem !important;
+            }
+
+            .dataTables_wrapper .dataTables_paginate .paginate_button {
+                padding: 0.25rem 0.5rem !important;
+                font-size: 0.75rem !important;
+            }
+        }
+
+        /* Table minimum width for horizontal scroll */
+        .min-w-table {
+            min-width: 700px;
+        }
+
+        /* Better touch targets on mobile */
+        @media (max-width: 768px) {
+            .touch-target {
+                min-height: 44px;
+                min-width: 44px;
+            }
+        }
+
+        /* Hide scrollbar but allow scrolling */
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
     </style>
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @stack('styles')
 </head>
 
-<body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 antialiased">
-    <div class="flex min-h-screen">
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 antialiased overflow-x-hidden">
+    <div class="flex min-h-screen w-full max-w-full overflow-x-hidden">
         <!-- Sidebar Overlay (Mobile) -->
         <div x-show="sidebarMobileOpen"
             x-transition:enter="transition-opacity ease-linear duration-300"
@@ -347,27 +473,27 @@
         </aside>
 
         <!-- Main Content -->
-        <div :class="sidebarOpen ? 'lg:ml-72' : 'lg:ml-20'" class="flex-1 main-transition">
+        <div :class="sidebarOpen ? 'lg:ml-72' : 'lg:ml-20'" class="flex-1 main-transition w-full min-w-0">
             <!-- Top Header -->
             <header class="sticky top-0 z-30 bg-white/80 dark:bg-gray-800/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700">
                 <div class="flex items-center justify-between h-16 px-4 lg:px-8">
                     <!-- Left side -->
-                    <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-2 sm:space-x-4 min-w-0 flex-1">
                         <!-- Mobile menu button -->
-                        <button @click="sidebarMobileOpen = true" class="lg:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+                        <button @click="sidebarMobileOpen = true" class="lg:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 flex-shrink-0">
                             <i class="fas fa-bars text-gray-500"></i>
                         </button>
 
                         <!-- Sidebar toggle (Desktop) -->
-                        <button @click="sidebarOpen = !sidebarOpen" class="hidden lg:block p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+                        <button @click="sidebarOpen = !sidebarOpen" class="hidden lg:block p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 flex-shrink-0">
                             <i class="fas fa-bars text-gray-500"></i>
                         </button>
 
                         <!-- Page Title -->
-                        <div>
-                            <h1 class="text-lg font-semibold text-gray-900 dark:text-white">{{ $pageTitle ?? 'Dashboard' }}</h1>
+                        <div class="min-w-0 flex-1">
+                            <h1 class="text-sm sm:text-lg font-semibold text-gray-900 dark:text-white truncate">{{ $pageTitle ?? 'Dashboard' }}</h1>
                             @isset($breadcrumb)
-                            <p class="text-sm text-gray-500">{{ $breadcrumb }}</p>
+                            <p class="text-xs sm:text-sm text-gray-500 truncate hidden sm:block">{{ $breadcrumb }}</p>
                             @endisset
                         </div>
                     </div>
@@ -439,7 +565,7 @@
             </header>
 
             <!-- Page Content -->
-            <main class="p-4 lg:p-8">
+            <main class="p-4 lg:p-8 max-w-full">
                 <!-- Alert Messages -->
                 @if(session('success'))
                 <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 5000)"

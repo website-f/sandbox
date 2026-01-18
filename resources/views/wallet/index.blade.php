@@ -16,38 +16,38 @@
     </div>
     @endif
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
         {{-- Balance Card --}}
-        <div class="lg:col-span-2 bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-100 dark:border-gray-700">
-            <div class="gradient-primary rounded-2xl p-6 text-white mb-6">
-                <div class="flex items-center justify-between mb-4">
+        <div class="lg:col-span-2 bg-white dark:bg-gray-800 rounded-2xl p-4 sm:p-6 border border-gray-100 dark:border-gray-700">
+            <div class="gradient-primary rounded-2xl p-4 sm:p-6 text-white mb-4 sm:mb-6">
+                <div class="flex items-center justify-between mb-3 sm:mb-4">
                     <div>
-                        <p class="text-white/80 text-sm font-medium">Total Balance</p>
-                        <h2 class="text-4xl font-bold mt-1">
+                        <p class="text-white/80 text-xs sm:text-sm font-medium">Total Balance</p>
+                        <h2 class="text-2xl sm:text-4xl font-bold mt-1">
                             RM {{ number_format(($user->wallet->balance ?? 0) / 100, 2) }}
                         </h2>
-                        <p class="text-white/60 text-sm mt-1">MYR</p>
+                        <p class="text-white/60 text-xs sm:text-sm mt-1">MYR</p>
                     </div>
-                    <div class="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center">
-                        <i class="fas fa-wallet text-3xl"></i>
+                    <div class="w-12 h-12 sm:w-16 sm:h-16 bg-white/20 rounded-2xl flex items-center justify-center">
+                        <i class="fas fa-wallet text-xl sm:text-3xl"></i>
                     </div>
                 </div>
             </div>
 
-            <button class="w-full py-4 bg-green-500 hover:bg-green-600 text-white rounded-xl font-bold transition-colors shadow-lg">
+            <button class="w-full py-3 sm:py-4 bg-green-500 hover:bg-green-600 text-white rounded-xl font-bold transition-colors shadow-lg text-sm sm:text-base">
                 <i class="fas fa-plus-circle mr-2"></i> Topup Wallet
             </button>
         </div>
 
         {{-- Quick Stats --}}
-        <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-100 dark:border-gray-700">
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 sm:p-6 border border-gray-100 dark:border-gray-700">
+            <h3 class="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-3 sm:mb-4">
                 <i class="fas fa-chart-line text-indigo-600 dark:text-indigo-400 mr-2"></i>
                 Overall Balance
             </h3>
 
-            <div class="flex items-center space-x-2 mb-4">
-                <span class="text-2xl font-bold text-gray-900 dark:text-white">
+            <div class="flex items-center space-x-2 mb-3 sm:mb-4">
+                <span class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
                     RM {{ number_format(($user->wallet->balance ?? 0) / 100, 2) }}
                 </span>
                 <span class="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-semibold rounded-lg">
@@ -55,54 +55,54 @@
                 </span>
             </div>
 
-            <div class="w-full h-48">
+            <div class="w-full h-40 sm:h-48">
                 <canvas id="overAllBalance"></canvas>
             </div>
         </div>
     </div>
 
     {{-- Transaction History --}}
-    <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-100 dark:border-gray-700">
-        <div class="flex items-center justify-between mb-6">
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 sm:p-6 border border-gray-100 dark:border-gray-700">
+        <div class="flex items-center justify-between mb-4 sm:mb-6">
+            <h3 class="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
                 <i class="fas fa-history text-indigo-600 dark:text-indigo-400 mr-2"></i>
                 Transaction History
             </h3>
         </div>
 
-        <div class="overflow-x-auto">
-            <table id="transactionsTable" class="w-full">
+        <div class="overflow-x-auto" style="-webkit-overflow-scrolling: touch;">
+            <table id="transactionsTable" class="w-full min-w-[500px]">
                 <thead>
-                    <tr class="text-left text-sm font-semibold text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
-                        <th class="pb-3 px-4">Date</th>
-                        <th class="pb-3 px-4">Description</th>
-                        <th class="pb-3 px-4 text-right">Amount</th>
-                        <th class="pb-3 px-4 text-center">Type</th>
+                    <tr class="text-left text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
+                        <th class="pb-3 px-3 sm:px-4">Date</th>
+                        <th class="pb-3 px-3 sm:px-4 hidden sm:table-cell">Description</th>
+                        <th class="pb-3 px-3 sm:px-4 text-right">Amount</th>
+                        <th class="pb-3 px-3 sm:px-4 text-center">Type</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
                     @forelse($user->wallet->transactions()->latest()->take(20)->get() as $tx)
                     <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                        <td class="py-4 px-4 text-sm text-gray-600 dark:text-gray-400">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-xl {{ $tx->type === 'credit' ? 'bg-green-100 dark:bg-green-900/30' : 'bg-red-100 dark:bg-red-900/30' }} flex items-center justify-center">
-                                    <i class="fas {{ $tx->type === 'credit' ? 'fa-arrow-down text-green-600 dark:text-green-400' : 'fa-arrow-up text-red-600 dark:text-red-400' }}"></i>
+                        <td class="py-3 sm:py-4 px-3 sm:px-4 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                            <div class="flex items-center gap-2 sm:gap-3">
+                                <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl {{ $tx->type === 'credit' ? 'bg-green-100 dark:bg-green-900/30' : 'bg-red-100 dark:bg-red-900/30' }} flex items-center justify-center flex-shrink-0">
+                                    <i class="fas {{ $tx->type === 'credit' ? 'fa-arrow-down text-green-600 dark:text-green-400' : 'fa-arrow-up text-red-600 dark:text-red-400' }} text-xs sm:text-sm"></i>
                                 </div>
-                                <div>
-                                    <p class="font-medium text-gray-900 dark:text-white">{{ $tx->created_at->format('d M Y') }}</p>
-                                    <p class="text-xs text-gray-500 dark:text-gray-400">{{ $tx->created_at->format('h:i A') }}</p>
+                                <div class="min-w-0">
+                                    <p class="font-medium text-gray-900 dark:text-white text-xs sm:text-sm">{{ $tx->created_at->format('d M Y') }}</p>
+                                    <p class="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">{{ $tx->created_at->format('h:i A') }}</p>
                                 </div>
                             </div>
                         </td>
-                        <td class="py-4 px-4 text-sm font-medium text-gray-800 dark:text-gray-200">
+                        <td class="py-3 sm:py-4 px-3 sm:px-4 text-xs sm:text-sm font-medium text-gray-800 dark:text-gray-200 hidden sm:table-cell">
                             {{ $tx->description ?? '-' }}
                         </td>
-                        <td class="py-4 px-4 text-right text-sm font-bold {{ $tx->type === 'credit' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400' }}">
+                        <td class="py-3 sm:py-4 px-3 sm:px-4 text-right text-xs sm:text-sm font-bold {{ $tx->type === 'credit' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400' }}">
                             {{ $tx->type === 'credit' ? '+' : '-' }}
                             RM {{ number_format($tx->amount / 100, 2) }}
                         </td>
-                        <td class="py-4 px-4 text-center">
-                            <span class="px-3 py-1.5 text-xs font-semibold rounded-lg {{ $tx->type === 'credit' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' }}">
+                        <td class="py-3 sm:py-4 px-3 sm:px-4 text-center">
+                            <span class="px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs font-semibold rounded-lg {{ $tx->type === 'credit' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' }}">
                                 {{ ucfirst($tx->type) }}
                             </span>
                         </td>

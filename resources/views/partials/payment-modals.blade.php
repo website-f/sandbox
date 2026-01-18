@@ -36,32 +36,32 @@
     class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
 
     <div @click.away="open = false"
-        class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg p-8 space-y-6">
+        class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg p-4 sm:p-8 space-y-4 sm:space-y-6 max-h-[90vh] overflow-y-auto">
 
-        <div class="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 pb-4">
-            <h2 class="text-xl font-bold text-gray-900 dark:text-white" x-text="label + ' Subscription'"></h2>
+        <div class="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 pb-3 sm:pb-4">
+            <h2 class="text-lg sm:text-xl font-bold text-gray-900 dark:text-white" x-text="label + ' Subscription'"></h2>
             <button @click="open = false" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
                 <i class="fas fa-times text-gray-500 dark:text-gray-400"></i>
             </button>
         </div>
 
-        <p class="text-lg font-semibold text-gray-700 dark:text-gray-300">Choose your payment plan:</p>
+        <p class="text-base sm:text-lg font-semibold text-gray-700 dark:text-gray-300">Choose your payment plan:</p>
 
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-2 gap-2 sm:gap-4">
             {{-- Full Payment --}}
             <button @click="installments = 1"
                 :class="{
                     'border-indigo-500 ring-2 ring-indigo-200 dark:ring-indigo-800 bg-indigo-50 dark:bg-indigo-900/20': installments == 1,
                     'border-gray-200 dark:border-gray-600 hover:border-indigo-400 dark:hover:border-indigo-500': installments != 1
                 }"
-                class="p-4 border-2 rounded-xl text-left transition-all duration-200">
-                <p class="font-bold text-lg" :class="{ 'text-indigo-600 dark:text-indigo-400': installments == 1, 'text-gray-700 dark:text-gray-300': installments != 1 }">
+                class="p-3 sm:p-4 border-2 rounded-xl text-left transition-all duration-200">
+                <p class="font-bold text-sm sm:text-lg" :class="{ 'text-indigo-600 dark:text-indigo-400': installments == 1, 'text-gray-700 dark:text-gray-300': installments != 1 }">
                     Full Payment
                 </p>
-                <p class="text-2xl font-extrabold mt-1 text-gray-900 dark:text-white">
+                <p class="text-xl sm:text-2xl font-extrabold mt-1 text-gray-900 dark:text-white">
                     RM <span x-text="fullFinal.toFixed(2)"></span>
                 </p>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">One-time charge</p>
+                <p class="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mt-1">One-time charge</p>
             </button>
 
             {{-- 3 Installments --}}
@@ -70,14 +70,14 @@
                     'border-indigo-500 ring-2 ring-indigo-200 dark:ring-indigo-800 bg-indigo-50 dark:bg-indigo-900/20': installments == 3,
                     'border-gray-200 dark:border-gray-600 hover:border-indigo-400 dark:hover:border-indigo-500': installments != 3
                 }"
-                class="p-4 border-2 rounded-xl text-left transition-all duration-200">
-                <p class="font-bold text-lg" :class="{ 'text-indigo-600 dark:text-indigo-400': installments == 3, 'text-gray-700 dark:text-gray-300': installments != 3 }">
+                class="p-3 sm:p-4 border-2 rounded-xl text-left transition-all duration-200">
+                <p class="font-bold text-sm sm:text-lg" :class="{ 'text-indigo-600 dark:text-indigo-400': installments == 3, 'text-gray-700 dark:text-gray-300': installments != 3 }">
                     3 Installments
                 </p>
-                <p class="text-2xl font-extrabold mt-1 text-gray-900 dark:text-white">
+                <p class="text-xl sm:text-2xl font-extrabold mt-1 text-gray-900 dark:text-white">
                     RM <span x-text="((fullBase + fullTax) / 3 + fullFpx).toFixed(2)"></span>
                 </p>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">per payment (3x)</p>
+                <p class="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mt-1">per payment (3x)</p>
             </button>
         </div>
 
@@ -109,16 +109,16 @@
             </div>
         </div>
 
-        <div class="flex justify-end gap-3 pt-2">
+        <div class="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 pt-2">
             <button @click="open = false"
-                class="px-5 py-2.5 rounded-xl text-gray-600 dark:text-gray-400 border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 font-semibold transition-colors">
+                class="px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl text-gray-600 dark:text-gray-400 border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 font-semibold transition-colors text-sm sm:text-base order-2 sm:order-1">
                 Cancel
             </button>
-            <form method="POST" :action="'/subscribe/' + plan">
+            <form method="POST" :action="'/subscribe/' + plan" class="order-1 sm:order-2">
                 @csrf
                 <input type="hidden" name="installments" x-model="installments">
                 <button type="submit"
-                    class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-lg transition-colors">
+                    class="w-full sm:w-auto px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-lg transition-colors text-sm sm:text-base">
                     <i class="fas fa-credit-card mr-2"></i> Pay RM <span x-text="installmentAmount"></span>
                 </button>
             </form>
@@ -165,34 +165,34 @@
     class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
 
     <div @click.away="open = false"
-        class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg p-8 space-y-6">
+        class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg p-4 sm:p-8 space-y-4 sm:space-y-6 max-h-[90vh] overflow-y-auto">
 
-        <div class="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 pb-4">
-            <h2 class="text-xl font-bold text-gray-900 dark:text-white">Pay Subscription</h2>
+        <div class="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 pb-3 sm:pb-4">
+            <h2 class="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">Pay Subscription</h2>
             <button @click="open = false" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
                 <i class="fas fa-times text-gray-500 dark:text-gray-400"></i>
             </button>
         </div>
 
-        <div class="flex items-center justify-between p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl">
-            <span class="text-gray-700 dark:text-gray-300 font-medium">Payment Progress</span>
-            <span class="text-xl font-bold text-indigo-600 dark:text-indigo-400" x-text="paidCount + ' / ' + totalInstallments"></span>
+        <div class="flex items-center justify-between p-3 sm:p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl">
+            <span class="text-sm sm:text-base text-gray-700 dark:text-gray-300 font-medium">Payment Progress</span>
+            <span class="text-lg sm:text-xl font-bold text-indigo-600 dark:text-indigo-400" x-text="paidCount + ' / ' + totalInstallments"></span>
         </div>
 
-        <div class="grid grid-cols-1 gap-4">
+        <div class="grid grid-cols-1 gap-3 sm:gap-4">
             <button @click="selectedOption = 'next'"
                 :class="{
                     'border-indigo-500 ring-2 ring-indigo-200 dark:ring-indigo-800 bg-indigo-50 dark:bg-indigo-900/20': selectedOption === 'next',
                     'border-gray-200 dark:border-gray-600 hover:border-indigo-400 dark:hover:border-indigo-500': selectedOption !== 'next'
                 }"
-                class="p-4 border-2 rounded-xl text-left transition-all duration-200">
-                <p class="font-bold text-lg" :class="{ 'text-indigo-600 dark:text-indigo-400': selectedOption === 'next' }">
+                class="p-3 sm:p-4 border-2 rounded-xl text-left transition-all duration-200">
+                <p class="font-bold text-base sm:text-lg" :class="{ 'text-indigo-600 dark:text-indigo-400': selectedOption === 'next' }">
                     <i class="fas fa-arrow-right mr-2"></i> Next Installment
                 </p>
-                <p class="text-2xl font-extrabold mt-1 text-gray-900 dark:text-white">
+                <p class="text-xl sm:text-2xl font-extrabold mt-1 text-gray-900 dark:text-white">
                     RM <span x-text="Number(installmentAmount).toFixed(2)"></span>
                 </p>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Pay one installment</p>
+                <p class="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mt-1">Pay one installment</p>
             </button>
         </div>
 
@@ -212,17 +212,17 @@
             </div>
         </div>
 
-        <div class="flex justify-end gap-3 pt-2">
+        <div class="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 pt-2">
             <button @click="open = false"
-                class="px-5 py-2.5 rounded-xl text-gray-600 dark:text-gray-400 border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 font-semibold transition-colors">
+                class="px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl text-gray-600 dark:text-gray-400 border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 font-semibold transition-colors text-sm sm:text-base order-2 sm:order-1">
                 Cancel
             </button>
 
-            <form method="POST" :action="'/subscribe/pay-next/' + subscriptionId">
+            <form method="POST" :action="'/subscribe/pay-next/' + subscriptionId" class="order-1 sm:order-2">
                 @csrf
                 <input type="hidden" name="full_settlement" :value="selectedOption === 'full' ? 1 : 0">
                 <button type="submit" :disabled="!selectedOption"
-                    class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-lg transition-colors disabled:opacity-50">
+                    class="w-full sm:w-auto px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-lg transition-colors disabled:opacity-50 text-sm sm:text-base">
                     <i class="fas fa-credit-card mr-2"></i> Pay RM <span x-text="currentAmount.toFixed(2)"></span>
                 </button>
             </form>
@@ -237,34 +237,34 @@
     class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
 
     <div @click.away="open = false"
-        class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-6">
+        class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md p-4 sm:p-6 space-y-4 sm:space-y-6 max-h-[90vh] overflow-y-auto">
 
-        <div class="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 pb-4">
-            <h2 class="text-xl font-bold text-gray-900 dark:text-white" x-text="label + ' Subscription'"></h2>
+        <div class="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 pb-3 sm:pb-4">
+            <h2 class="text-lg sm:text-xl font-bold text-gray-900 dark:text-white" x-text="label + ' Subscription'"></h2>
             <button @click="open = false" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
                 <i class="fas fa-times text-gray-500 dark:text-gray-400"></i>
             </button>
         </div>
 
-        <div class="space-y-3 text-sm">
+        <div class="space-y-2 sm:space-y-3 text-xs sm:text-sm">
             <div class="flex justify-between text-gray-600 dark:text-gray-400"><span>Base Price</span> <span>RM <span x-text="base"></span></span></div>
             <div class="flex justify-between text-gray-600 dark:text-gray-400"><span>Tax (8%)</span> <span>RM <span x-text="tax"></span></span></div>
             <div class="flex justify-between text-gray-600 dark:text-gray-400"><span>FPX Charge</span> <span>RM <span x-text="fpx"></span></span></div>
-            <div class="border-t border-gray-200 dark:border-gray-600 pt-3 flex justify-between font-bold text-lg text-gray-900 dark:text-white">
+            <div class="border-t border-gray-200 dark:border-gray-600 pt-3 flex justify-between font-bold text-base sm:text-lg text-gray-900 dark:text-white">
                 <span>Total</span> <span>RM <span x-text="final"></span></span>
             </div>
         </div>
 
-        <div class="flex justify-end gap-3">
+        <div class="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3">
             <button @click="open = false"
-                class="px-5 py-2.5 rounded-xl text-gray-600 dark:text-gray-400 border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 font-semibold transition-colors">
+                class="px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl text-gray-600 dark:text-gray-400 border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 font-semibold transition-colors text-sm sm:text-base order-2 sm:order-1">
                 Cancel
             </button>
 
-            <form method="POST" :action="'/subscribe/' + plan">
+            <form method="POST" :action="'/subscribe/' + plan" class="order-1 sm:order-2">
                 @csrf
                 <button type="submit"
-                    class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-lg transition-colors">
+                    class="w-full sm:w-auto px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-lg transition-colors text-sm sm:text-base">
                     <i class="fas fa-credit-card mr-2"></i> Confirm & Pay
                 </button>
             </form>

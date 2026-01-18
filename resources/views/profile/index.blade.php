@@ -26,49 +26,49 @@
     @endif
 
     {{-- Tabs Container --}}
-    <div x-data="{ tab: 'profile' }" class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 p-6">
+    <div x-data="{ tab: 'profile' }" class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 p-4 sm:p-6">
         {{-- Tab Navigation --}}
-        <div class="mb-6 border-b border-gray-200 dark:border-gray-700 pb-4">
-            <nav class="flex flex-wrap gap-2" aria-label="Tabs">
+        <div class="mb-4 sm:mb-6 border-b border-gray-200 dark:border-gray-700 pb-4 -mx-4 sm:mx-0 px-4 sm:px-0">
+            <nav class="flex overflow-x-auto gap-2 pb-2 sm:pb-0 sm:flex-wrap scrollbar-hide" aria-label="Tabs" style="-webkit-overflow-scrolling: touch;">
                 <button @click="tab = 'profile'"
                     :class="tab === 'profile' ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-800 dark:hover:text-white'"
-                    class="whitespace-nowrap rounded-xl px-4 py-2.5 text-sm font-medium transition-all duration-200 focus:outline-none">
-                    <i class="fas fa-user mr-2"></i> Personal Profile
+                    class="whitespace-nowrap rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-medium transition-all duration-200 focus:outline-none flex-shrink-0">
+                    <i class="fas fa-user sm:mr-2"></i><span class="hidden sm:inline"> Personal Profile</span>
                 </button>
                 <button @click="tab = 'bank'"
                     :class="tab === 'bank' ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-800 dark:hover:text-white'"
-                    class="whitespace-nowrap rounded-xl px-4 py-2.5 text-sm font-medium transition-all duration-200 focus:outline-none">
-                    <i class="fas fa-university mr-2"></i> Bank Details
+                    class="whitespace-nowrap rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-medium transition-all duration-200 focus:outline-none flex-shrink-0">
+                    <i class="fas fa-university sm:mr-2"></i><span class="hidden sm:inline"> Bank</span>
                 </button>
                 <button @click="tab = 'password'"
                     :class="tab === 'password' ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-800 dark:hover:text-white'"
-                    class="whitespace-nowrap rounded-xl px-4 py-2.5 text-sm font-medium transition-all duration-200 focus:outline-none">
-                    <i class="fas fa-lock mr-2"></i> Password
+                    class="whitespace-nowrap rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-medium transition-all duration-200 focus:outline-none flex-shrink-0">
+                    <i class="fas fa-lock sm:mr-2"></i><span class="hidden sm:inline"> Password</span>
                 </button>
                 <button @click="tab = 'business'"
                     :class="tab === 'business' ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-800 dark:hover:text-white'"
-                    class="whitespace-nowrap rounded-xl px-4 py-2.5 text-sm font-medium transition-all duration-200 focus:outline-none">
-                    <i class="fas fa-briefcase mr-2"></i> Business
+                    class="whitespace-nowrap rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-medium transition-all duration-200 focus:outline-none flex-shrink-0">
+                    <i class="fas fa-briefcase sm:mr-2"></i><span class="hidden sm:inline"> Business</span>
                 </button>
                 <button @click="tab = 'education'"
                     :class="tab === 'education' ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-800 dark:hover:text-white'"
-                    class="whitespace-nowrap rounded-xl px-4 py-2.5 text-sm font-medium transition-all duration-200 focus:outline-none">
-                    <i class="fas fa-graduation-cap mr-2"></i> Education
+                    class="whitespace-nowrap rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-medium transition-all duration-200 focus:outline-none flex-shrink-0">
+                    <i class="fas fa-graduation-cap sm:mr-2"></i><span class="hidden sm:inline"> Education</span>
                 </button>
                 <button @click="tab = 'courses'"
                     :class="tab === 'courses' ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-800 dark:hover:text-white'"
-                    class="whitespace-nowrap rounded-xl px-4 py-2.5 text-sm font-medium transition-all duration-200 focus:outline-none">
-                    <i class="fas fa-book mr-2"></i> Courses
+                    class="whitespace-nowrap rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-medium transition-all duration-200 focus:outline-none flex-shrink-0">
+                    <i class="fas fa-book sm:mr-2"></i><span class="hidden sm:inline"> Courses</span>
                 </button>
                 <button @click="tab = 'pewaris'"
                     :class="tab === 'pewaris' ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-800 dark:hover:text-white'"
-                    class="whitespace-nowrap rounded-xl px-4 py-2.5 text-sm font-medium transition-all duration-200 focus:outline-none">
-                    <i class="fas fa-users mr-2"></i> Next of Kin
+                    class="whitespace-nowrap rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-medium transition-all duration-200 focus:outline-none flex-shrink-0">
+                    <i class="fas fa-users sm:mr-2"></i><span class="hidden sm:inline"> Next of Kin</span>
                 </button>
                 <button @click="tab = 'affiliation'"
                     :class="tab === 'affiliation' ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-800 dark:hover:text-white'"
-                    class="whitespace-nowrap rounded-xl px-4 py-2.5 text-sm font-medium transition-all duration-200 focus:outline-none">
-                    <i class="fas fa-handshake mr-2"></i> Affiliation
+                    class="whitespace-nowrap rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-medium transition-all duration-200 focus:outline-none flex-shrink-0">
+                    <i class="fas fa-handshake sm:mr-2"></i><span class="hidden sm:inline"> Affiliation</span>
                 </button>
             </nav>
         </div>

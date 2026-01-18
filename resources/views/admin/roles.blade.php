@@ -2,36 +2,36 @@
     <x-slot name="pageTitle">Manage User Roles</x-slot>
     <x-slot name="breadcrumb">Manage users, assign roles, and handle referrals</x-slot>
 
-    <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-100 dark:border-gray-700">
-        <div class="flex justify-between items-center mb-6">
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 sm:p-6 border border-gray-100 dark:border-gray-700">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0 mb-4 sm:mb-6">
+            <h3 class="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
                 <i class="fas fa-users-cog text-indigo-600 dark:text-indigo-400 mr-2"></i>
                 All Users
             </h3>
-            <a href="{{ route('admin.users.create') }}" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-semibold transition-colors shadow-md">
-                <i class="fas fa-user-plus mr-2"></i> Add User
+            <a href="{{ route('admin.users.create') }}" class="px-3 sm:px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs sm:text-sm font-semibold transition-colors shadow-md">
+                <i class="fas fa-user-plus mr-1 sm:mr-2"></i> Add User
             </a>
         </div>
 
         {{-- Status flash --}}
         @if(session('status'))
-        <div class="mb-6 p-4 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 font-semibold flex items-center">
-            <i class="fas fa-check-circle mr-3 text-green-500"></i>
+        <div class="mb-4 sm:mb-6 p-3 sm:p-4 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 font-semibold flex items-center text-xs sm:text-sm">
+            <i class="fas fa-check-circle mr-2 sm:mr-3 text-green-500"></i>
             {{ session('status') }}
         </div>
         @endif
 
-        <div class="overflow-x-auto">
-            <table id="rolesTable" class="w-full">
+        <div class="overflow-x-auto" style="-webkit-overflow-scrolling: touch;">
+            <table id="rolesTable" class="w-full min-w-[800px]">
                 <thead>
-                    <tr class="text-left text-sm font-semibold text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
-                        <th class="pb-3 px-4">RM No</th>
-                        <th class="pb-3 px-4">SB No</th>
-                        <th class="pb-3 px-4">Name</th>
-                        <th class="pb-3 px-4">Email</th>
-                        <th class="pb-3 px-4">Phone</th>
-                        <th class="pb-3 px-4">Referrer</th>
-                        <th class="pb-3 px-4 no-export">Action</th>
+                    <tr class="text-left text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
+                        <th class="pb-3 px-3 sm:px-4">RM No</th>
+                        <th class="pb-3 px-3 sm:px-4">SB No</th>
+                        <th class="pb-3 px-3 sm:px-4">Name</th>
+                        <th class="pb-3 px-3 sm:px-4 hidden md:table-cell">Email</th>
+                        <th class="pb-3 px-3 sm:px-4 hidden lg:table-cell">Phone</th>
+                        <th class="pb-3 px-3 sm:px-4 hidden md:table-cell">Referrer</th>
+                        <th class="pb-3 px-3 sm:px-4 no-export">Action</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
@@ -41,33 +41,35 @@
                     $sandbox = $user->accounts->find($user->accounts->where('type', 'sandbox')->first()?->id);
                     @endphp
                     <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                        <td class="py-4 px-4 text-sm">
+                        <td class="py-3 sm:py-4 px-3 sm:px-4 text-xs sm:text-sm">
                             @if($rizqmall && $rizqmall->active)
-                            <span class="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-semibold rounded-lg">{{ $rizqmall->serial_number }}</span>
+                            <span class="px-1.5 sm:px-2 py-0.5 sm:py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-[10px] sm:text-xs font-semibold rounded-lg">{{ $rizqmall->serial_number ?? 'N/A' }}</span>
                             @else
-                            <span class="px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-xs font-semibold rounded-lg">Inactive</span>
+                            <span class="px-1.5 sm:px-2 py-0.5 sm:py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-[10px] sm:text-xs font-semibold rounded-lg">N/A</span>
                             @endif
                         </td>
-                        <td class="py-4 px-4 text-sm">
+                        <td class="py-3 sm:py-4 px-3 sm:px-4 text-xs sm:text-sm">
                             @if($sandbox && $sandbox->active)
-                            <span class="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-semibold rounded-lg">{{ $sandbox->serial_number }}</span>
+                            <span class="px-1.5 sm:px-2 py-0.5 sm:py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-[10px] sm:text-xs font-semibold rounded-lg">{{ $sandbox->serial_number ?? 'N/A' }}</span>
                             @else
-                            <span class="px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-xs font-semibold rounded-lg">Inactive</span>
+                            <span class="px-1.5 sm:px-2 py-0.5 sm:py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-[10px] sm:text-xs font-semibold rounded-lg">N/A</span>
                             @endif
                         </td>
-                        <td class="py-4 px-4">
-                            <div class="font-medium text-gray-900 dark:text-white">{{ $user->profile?->full_name ?? $user->name }}</div>
+                        <td class="py-3 sm:py-4 px-3 sm:px-4">
+                            <div class="font-medium text-gray-900 dark:text-white text-xs sm:text-sm truncate max-w-[100px] sm:max-w-none">{{ $user->profile?->full_name ?? $user->name }}</div>
                             @if($user->checkBlacklist())
-                            <span class="inline-block mt-1 px-2 py-0.5 bg-red-500 text-white text-[10px] font-bold uppercase tracking-wider rounded">Blacklisted</span>
+                            <span class="inline-block mt-1 px-1.5 sm:px-2 py-0.5 bg-red-500 text-white text-[8px] sm:text-[10px] font-bold uppercase tracking-wider rounded">Blacklisted</span>
                             @endif
                         </td>
-                        <td class="py-4 px-4 text-sm text-gray-600 dark:text-gray-400">{{ $user->email }}</td>
-                        <td class="py-4 px-4 text-sm text-gray-600 dark:text-gray-400">{{ $user->profile->phone ?? '-' }}</td>
-                        <td class="py-4 px-4">
-                            <div class="flex items-center gap-2">
+                        <td class="py-3 sm:py-4 px-3 sm:px-4 text-xs sm:text-sm text-gray-600 dark:text-gray-400 hidden md:table-cell">
+                            <span class="truncate block max-w-[150px]">{{ $user->email }}</span>
+                        </td>
+                        <td class="py-3 sm:py-4 px-3 sm:px-4 text-xs sm:text-sm text-gray-600 dark:text-gray-400 hidden lg:table-cell">{{ $user->profile->phone ?? '-' }}</td>
+                        <td class="py-3 sm:py-4 px-3 sm:px-4 hidden md:table-cell">
+                            <div class="flex items-center gap-1 sm:gap-2">
                                 <button
                                     type="button"
-                                    class="px-2 py-1 rounded-lg text-xs font-medium transition-colors border {{ $user->referral?->parent ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800' : 'bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600' }}"
+                                    class="px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-lg text-[10px] sm:text-xs font-medium transition-colors border {{ $user->referral?->parent ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800' : 'bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600' }}"
                                     onclick="openReferralModal({{ $user->id }}, '{{ addslashes($user->name) }}')">
                                     {{ $user->referral?->parent?->name ?? 'Assign' }}
                                 </button>
@@ -77,22 +79,22 @@
                                     type="button"
                                     onclick="openRemoveReferralModal({{ $user->id }}, '{{ addslashes($user->name) }}')"
                                     class="p-1 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors">
-                                    <i class="fas fa-times text-xs"></i>
+                                    <i class="fas fa-times text-[10px] sm:text-xs"></i>
                                 </button>
                                 @endif
                             </div>
                         </td>
-                        <td class="py-4 px-4">
-                            <div class="flex gap-2">
+                        <td class="py-3 sm:py-4 px-3 sm:px-4">
+                            <div class="flex gap-1 sm:gap-2">
                                 <a href="{{ route('admin.users.show', $user) }}"
-                                    class="p-2 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors">
-                                    <i class="fas fa-eye"></i>
+                                    class="p-1.5 sm:p-2 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors">
+                                    <i class="fas fa-eye text-xs sm:text-sm"></i>
                                 </a>
 
                                 <button
                                     data-user-id="{{ $user->id }}"
-                                    class="delete-user-btn p-2 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors">
-                                    <i class="fas fa-trash-alt"></i>
+                                    class="delete-user-btn p-1.5 sm:p-2 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors">
+                                    <i class="fas fa-trash-alt text-xs sm:text-sm"></i>
                                 </button>
                             </div>
                         </td>
@@ -103,7 +105,7 @@
         </div>
 
         {{-- Pagination --}}
-        <div class="mt-6">
+        <div class="mt-4 sm:mt-6">
             {{ $users->links() }}
         </div>
     </div>
@@ -127,20 +129,20 @@
     </div>
 
     {{-- Referral Modal --}}
-    <div id="referralModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-lg max-h-[80vh] flex flex-col p-6">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-lg font-bold text-gray-900 dark:text-white">Assign Referrer to <span id="modalUserName" class="text-indigo-600 dark:text-indigo-400"></span></h2>
+    <div id="referralModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/50 backdrop-blur-sm">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-lg max-h-[80vh] flex flex-col p-4 sm:p-6">
+            <div class="flex justify-between items-center mb-4 sm:mb-6">
+                <h2 class="text-sm sm:text-lg font-bold text-gray-900 dark:text-white">Assign Referrer to <span id="modalUserName" class="text-indigo-600 dark:text-indigo-400"></span></h2>
                 <button onclick="closeReferralModal()" class="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300">
-                    <i class="fas fa-times text-xl"></i>
+                    <i class="fas fa-times text-lg sm:text-xl"></i>
                 </button>
             </div>
 
-            <div class="relative mb-4">
+            <div class="relative mb-3 sm:mb-4">
                 <input type="text" id="referralSearch" placeholder="Search referrer..."
-                    class="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    class="w-full pl-8 sm:pl-10 pr-4 py-2.5 sm:py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
                     onkeyup="filterReferralList()">
-                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
             </div>
 
             <div id="referralList" class="overflow-y-auto space-y-2 flex-1 pr-2 custom-scrollbar"></div>
@@ -187,7 +189,7 @@
         $(document).ready(function() {
             // Initialize DataTable
             $('#rolesTable').DataTable({
-                responsive: true,
+                responsive: false,
                 order: [
                     [2, 'asc']
                 ], // Sort by Name

@@ -4,143 +4,143 @@
 
     {{-- Admin Stats Cards --}}
     @if (auth()->user()->hasRole('Admin'))
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mb-6 sm:mb-8">
         {{-- Total Users --}}
         <button onclick="openLocationModal()"
-            class="card-hover bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-100 dark:border-gray-700 text-left group">
-            <div class="flex items-center justify-between mb-4">
-                <div class="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                    <i class="fas fa-users text-blue-600 dark:text-blue-400 text-xl"></i>
+            class="card-hover bg-white dark:bg-gray-800 rounded-2xl p-4 sm:p-6 border border-gray-100 dark:border-gray-700 text-left group">
+            <div class="flex items-center justify-between mb-3 sm:mb-4">
+                <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                    <i class="fas fa-users text-blue-600 dark:text-blue-400 text-lg sm:text-xl"></i>
                 </div>
-                <span class="text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded-lg">
+                <span class="text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded-lg hidden sm:inline">
                     <i class="fas fa-filter mr-1"></i> Filter
                 </span>
             </div>
-            <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ number_format($stats['total_users']) }}</p>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Total Users</p>
+            <p class="text-xl sm:text-3xl font-bold text-gray-900 dark:text-white">{{ number_format($stats['total_users']) }}</p>
+            <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">Total Users</p>
         </button>
 
         {{-- Active RizqMall --}}
-        <div class="card-hover bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-100 dark:border-gray-700">
-            <div class="flex items-center justify-between mb-4">
-                <div class="w-12 h-12 rounded-xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                    <i class="fas fa-store text-green-600 dark:text-green-400 text-xl"></i>
+        <div class="card-hover bg-white dark:bg-gray-800 rounded-2xl p-4 sm:p-6 border border-gray-100 dark:border-gray-700">
+            <div class="flex items-center justify-between mb-3 sm:mb-4">
+                <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                    <i class="fas fa-store text-green-600 dark:text-green-400 text-lg sm:text-xl"></i>
                 </div>
             </div>
-            <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ number_format($stats['total_rizqmall']) }}</p>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Active RizqMall</p>
+            <p class="text-xl sm:text-3xl font-bold text-gray-900 dark:text-white">{{ number_format($stats['total_rizqmall']) }}</p>
+            <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">Active RizqMall</p>
         </div>
 
         {{-- Active Sandbox --}}
-        <div class="card-hover bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-100 dark:border-gray-700">
-            <div class="flex items-center justify-between mb-4">
-                <div class="w-12 h-12 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-                    <i class="fas fa-box text-purple-600 dark:text-purple-400 text-xl"></i>
+        <div class="card-hover bg-white dark:bg-gray-800 rounded-2xl p-4 sm:p-6 border border-gray-100 dark:border-gray-700">
+            <div class="flex items-center justify-between mb-3 sm:mb-4">
+                <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                    <i class="fas fa-box text-purple-600 dark:text-purple-400 text-lg sm:text-xl"></i>
                 </div>
             </div>
-            <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ number_format($stats['total_sandbox']) }}</p>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Active Sandbox</p>
+            <p class="text-xl sm:text-3xl font-bold text-gray-900 dark:text-white">{{ number_format($stats['total_sandbox']) }}</p>
+            <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">Active Sandbox</p>
         </div>
 
         {{-- Total Profit --}}
-        <div class="card-hover bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-100 dark:border-gray-700">
-            <div class="flex items-center justify-between mb-4">
-                <div class="w-12 h-12 rounded-xl bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center">
-                    <i class="fas fa-coins text-yellow-600 dark:text-yellow-400 text-xl"></i>
+        <div class="card-hover bg-white dark:bg-gray-800 rounded-2xl p-4 sm:p-6 border border-gray-100 dark:border-gray-700">
+            <div class="flex items-center justify-between mb-3 sm:mb-4">
+                <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center">
+                    <i class="fas fa-coins text-yellow-600 dark:text-yellow-400 text-lg sm:text-xl"></i>
                 </div>
             </div>
-            <p class="text-3xl font-bold text-gray-900 dark:text-white">RM {{ number_format($stats['total_profit'], 2) }}</p>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Total Profit</p>
+            <p class="text-lg sm:text-3xl font-bold text-gray-900 dark:text-white">RM {{ number_format($stats['total_profit'], 2) }}</p>
+            <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">Total Profit</p>
         </div>
 
         {{-- Total Subscriptions --}}
-        <div class="card-hover bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-100 dark:border-gray-700">
-            <div class="flex items-center justify-between mb-4">
-                <div class="w-12 h-12 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-                    <i class="fas fa-file-invoice text-indigo-600 dark:text-indigo-400 text-xl"></i>
+        <div class="card-hover bg-white dark:bg-gray-800 rounded-2xl p-4 sm:p-6 border border-gray-100 dark:border-gray-700 col-span-2 sm:col-span-1">
+            <div class="flex items-center justify-between mb-3 sm:mb-4">
+                <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
+                    <i class="fas fa-file-invoice text-indigo-600 dark:text-indigo-400 text-lg sm:text-xl"></i>
                 </div>
             </div>
-            <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ number_format($stats['total_subscriptions']) }}</p>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Subscriptions</p>
+            <p class="text-xl sm:text-3xl font-bold text-gray-900 dark:text-white">{{ number_format($stats['total_subscriptions']) }}</p>
+            <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">Subscriptions</p>
         </div>
     </div>
     @endif
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
         {{-- Referral Link & QR --}}
-        <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-100 dark:border-gray-700">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 sm:p-6 border border-gray-100 dark:border-gray-700">
             <div class="flex items-center justify-between mb-4">
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Your Referral</h3>
-                <div class="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-                    <i class="fas fa-link text-indigo-600 dark:text-indigo-400"></i>
+                <h3 class="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">Your Referral</h3>
+                <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
+                    <i class="fas fa-link text-indigo-600 dark:text-indigo-400 text-sm sm:text-base"></i>
                 </div>
             </div>
             <div class="mb-4 relative">
                 <input id="referralLink"
-                    class="w-full px-4 py-3 pr-12 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 font-mono text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    class="w-full px-3 sm:px-4 py-2.5 sm:py-3 pr-10 sm:pr-12 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 font-mono text-xs sm:text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     readonly value="{{ route('register', ['ref' => auth()->user()->referral?->ref_code]) }}">
-                <button class="absolute right-3 top-1/2 -translate-y-1/2 p-2 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors"
+                <button class="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 p-1.5 sm:p-2 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors touch-target"
                     onclick="copyToClipboard()">
                     <i class="fas fa-copy text-gray-500 dark:text-gray-400"></i>
                 </button>
             </div>
-            <div class="flex justify-center p-4 bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-700">
-                <img src="{{ route('referrals.qr') }}" alt="QR Code" class="w-32 h-32 rounded-lg">
+            <div class="flex justify-center p-3 sm:p-4 bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-700">
+                <img src="{{ route('referrals.qr') }}" alt="QR Code" class="w-24 h-24 sm:w-32 sm:h-32 rounded-lg">
             </div>
         </div>
 
         {{-- RizqMall Shopping Card --}}
-        <div class="gradient-success rounded-2xl p-6 text-white">
+        <div class="gradient-success rounded-2xl p-4 sm:p-6 text-white">
             <div class="flex items-center justify-between mb-4">
-                <h3 class="text-lg font-semibold">Shop on RizqMall</h3>
-                <div class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
-                    <i class="fas fa-shopping-bag text-xl"></i>
+                <h3 class="text-base sm:text-lg font-semibold">Shop on RizqMall</h3>
+                <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-white/20 flex items-center justify-center">
+                    <i class="fas fa-shopping-bag text-lg sm:text-xl"></i>
                 </div>
             </div>
-            <p class="text-white/80 mb-6">Browse products, add to cart, and shop from verified vendors</p>
+            <p class="text-white/80 mb-4 sm:mb-6 text-sm sm:text-base">Browse products, add to cart, and shop from verified vendors</p>
             <form method="POST" action="{{ route('rizqmall.customer-redirect') }}">
                 @csrf
-                <button type="submit" class="w-full px-6 py-3 bg-white text-green-600 rounded-xl font-semibold hover:bg-gray-100 transition-colors shadow-lg">
+                <button type="submit" class="w-full px-4 sm:px-6 py-2.5 sm:py-3 bg-white text-green-600 rounded-xl font-semibold hover:bg-gray-100 transition-colors shadow-lg text-sm sm:text-base">
                     <i class="fas fa-arrow-right mr-2"></i> Start Shopping
                 </button>
             </form>
         </div>
 
         {{-- Account Status Summary --}}
-        <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-100 dark:border-gray-700">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 sm:p-6 border border-gray-100 dark:border-gray-700">
             <div class="flex items-center justify-between mb-4">
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Quick Stats</h3>
-                <div class="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-                    <i class="fas fa-chart-pie text-purple-600 dark:text-purple-400"></i>
+                <h3 class="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">Quick Stats</h3>
+                <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                    <i class="fas fa-chart-pie text-purple-600 dark:text-purple-400 text-sm sm:text-base"></i>
                 </div>
             </div>
-            <div class="space-y-4">
+            <div class="space-y-3 sm:space-y-4">
                 @php
                     $activeCount = $accounts->filter(fn($a) => $a->active)->count();
                     $pendingCount = $accounts->filter(fn($a) => !$a->active)->count();
                 @endphp
-                <div class="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 rounded-xl">
-                    <div class="flex items-center gap-3">
-                        <div class="w-3 h-3 bg-green-500 rounded-full"></div>
-                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Active Accounts</span>
+                <div class="flex items-center justify-between p-2.5 sm:p-3 bg-green-50 dark:bg-green-900/20 rounded-xl">
+                    <div class="flex items-center gap-2 sm:gap-3">
+                        <div class="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-green-500 rounded-full"></div>
+                        <span class="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">Active Accounts</span>
                     </div>
-                    <span class="text-lg font-bold text-green-600 dark:text-green-400">{{ $activeCount }}</span>
+                    <span class="text-base sm:text-lg font-bold text-green-600 dark:text-green-400">{{ $activeCount }}</span>
                 </div>
-                <div class="flex items-center justify-between p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-xl">
-                    <div class="flex items-center gap-3">
-                        <div class="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Pending Setup</span>
+                <div class="flex items-center justify-between p-2.5 sm:p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-xl">
+                    <div class="flex items-center gap-2 sm:gap-3">
+                        <div class="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-yellow-500 rounded-full"></div>
+                        <span class="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">Pending Setup</span>
                     </div>
-                    <span class="text-lg font-bold text-yellow-600 dark:text-yellow-400">{{ $pendingCount }}</span>
+                    <span class="text-base sm:text-lg font-bold text-yellow-600 dark:text-yellow-400">{{ $pendingCount }}</span>
                 </div>
             </div>
         </div>
     </div>
 
     {{-- Account Status Section --}}
-    <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-100 dark:border-gray-700 mb-8">
-        <div class="flex items-center justify-between mb-6">
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Account Status</h3>
+    <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 sm:p-6 border border-gray-100 dark:border-gray-700 mb-6 sm:mb-8">
+        <div class="flex items-center justify-between mb-4 sm:mb-6">
+            <h3 class="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">Account Status</h3>
         </div>
 
         @if (session('error'))
@@ -234,14 +234,30 @@
                     $fullPrice = round($basePrice + $tax + $fpx, 2);
                 @endphp
 
-                <div class="flex items-start gap-4 p-5 bg-gray-50 dark:bg-gray-700/50 rounded-2xl border border-gray-100 dark:border-gray-600">
-                    <div class="flex-shrink-0">
-                        <img src="{{ $logos[$account->type] }}" alt="{{ ucfirst($account->type) }} Logo"
-                            class="w-14 h-14 rounded-xl border-2 border-white dark:border-gray-600 shadow-md object-cover">
+                <div class="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4 p-4 sm:p-5 bg-gray-50 dark:bg-gray-700/50 rounded-2xl border border-gray-100 dark:border-gray-600">
+                    <div class="flex items-center gap-3 sm:block">
+                        <div class="flex-shrink-0">
+                            <img src="{{ $logos[$account->type] }}" alt="{{ ucfirst($account->type) }} Logo"
+                                class="w-12 h-12 sm:w-14 sm:h-14 rounded-xl border-2 border-white dark:border-gray-600 shadow-md object-cover">
+                        </div>
+                        {{-- Mobile: Show status badge next to logo --}}
+                        <div class="sm:hidden flex-1">
+                            <h4 class="font-semibold text-gray-900 dark:text-white text-base">
+                                {{ ucfirst($account->type) }}
+                                @if ($account->type === 'sandbox') Malaysia @endif
+                            </h4>
+                            @if ($serialText)
+                            <p class="text-xs font-mono text-indigo-600 dark:text-indigo-400">{{ $serialText }}</p>
+                            @endif
+                        </div>
+                        <span class="sm:hidden px-2.5 py-1 text-xs font-semibold rounded-full {{ $indicatorBg }} whitespace-nowrap">
+                            {{ ucfirst($indicatorText) }}
+                        </span>
                     </div>
 
                     <div class="flex-1 min-w-0">
-                        <div class="flex items-start justify-between mb-2">
+                        {{-- Desktop: Show title and status --}}
+                        <div class="hidden sm:flex items-start justify-between mb-2">
                             <div>
                                 <h4 class="font-semibold text-gray-900 dark:text-white text-lg">
                                     {{ ucfirst($account->type) }}
@@ -257,17 +273,17 @@
                         </div>
 
                         @if ($expiryText)
-                        <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">{{ $expiryText }}</p>
+                        <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-2 sm:mb-3">{{ $expiryText }}</p>
                         @endif
 
                         @if ($showProgress)
                         <div class="mb-3">
-                            <div class="flex justify-between text-sm mb-1">
+                            <div class="flex justify-between text-xs sm:text-sm mb-1">
                                 <span class="text-gray-600 dark:text-gray-400">Payment Progress</span>
                                 <span class="font-medium text-gray-900 dark:text-white">{{ $subscription->installments_paid }}/{{ $subscription->installments_total }}</span>
                             </div>
-                            <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2.5">
-                                <div class="bg-gradient-to-r from-indigo-500 to-purple-500 h-2.5 rounded-full transition-all duration-300"
+                            <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2 sm:h-2.5">
+                                <div class="bg-gradient-to-r from-indigo-500 to-purple-500 h-2 sm:h-2.5 rounded-full transition-all duration-300"
                                     style="width: {{ $progressPercent }}%"></div>
                             </div>
                             <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
@@ -288,8 +304,8 @@
                                             paidCount: {{ $subscription->installments_paid }},
                                             totalInstallments: {{ $subscription->installments_total }}
                                         })"
-                                        class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-semibold transition-colors shadow-md">
-                                        <i class="fas fa-credit-card mr-2"></i> Pay Next Installment
+                                        class="flex-1 sm:flex-none px-3 sm:px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs sm:text-sm font-semibold transition-colors shadow-md text-center">
+                                        <i class="fas fa-credit-card mr-1 sm:mr-2"></i> <span class="hidden sm:inline">Pay Next </span>Installment
                                     </button>
                                     @else
                                     <button x-data
@@ -301,8 +317,8 @@
                                             fpx: {{ $fpx }},
                                             final: {{ $fullPrice }}
                                         })"
-                                        class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-semibold transition-colors shadow-md">
-                                        <i class="fas fa-plus-circle mr-2"></i> Subscribe
+                                        class="flex-1 sm:flex-none px-3 sm:px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs sm:text-sm font-semibold transition-colors shadow-md text-center">
+                                        <i class="fas fa-plus-circle mr-1 sm:mr-2"></i> Subscribe
                                     </button>
                                     @endif
                                 @elseif ($account->type === 'rizqmall' && $isExpired)
@@ -315,8 +331,8 @@
                                         fpx: {{ $fpx }},
                                         final: {{ $fullPrice }}
                                     })"
-                                    class="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-xl text-sm font-semibold transition-colors shadow-md">
-                                    <i class="fas fa-sync-alt mr-2"></i> Renew Subscription
+                                    class="flex-1 sm:flex-none px-3 sm:px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-xl text-xs sm:text-sm font-semibold transition-colors shadow-md text-center">
+                                    <i class="fas fa-sync-alt mr-1 sm:mr-2"></i> Renew
                                 </button>
                                 @else
                                 <button x-data
@@ -328,16 +344,16 @@
                                         fpx: {{ $fpx }},
                                         final: {{ $fullPrice }}
                                     })"
-                                    class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-semibold transition-colors shadow-md">
-                                    <i class="fas fa-plus-circle mr-2"></i> Subscribe
+                                    class="flex-1 sm:flex-none px-3 sm:px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs sm:text-sm font-semibold transition-colors shadow-md text-center">
+                                    <i class="fas fa-plus-circle mr-1 sm:mr-2"></i> Subscribe
                                 </button>
                                 @endif
                             @else
                                 @if ($account->type === 'rizqmall')
-                                <form method="POST" action="{{ route('rizqmall.redirect') }}" class="inline">
+                                <form method="POST" action="{{ route('rizqmall.redirect') }}" class="flex-1 sm:flex-none">
                                     @csrf
-                                    <button type="submit" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-xl text-sm font-semibold transition-colors shadow-md">
-                                        <i class="fas fa-external-link-alt mr-2"></i> Go to Store
+                                    <button type="submit" class="w-full px-3 sm:px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-xl text-xs sm:text-sm font-semibold transition-colors shadow-md">
+                                        <i class="fas fa-external-link-alt mr-1 sm:mr-2"></i> Go to Store
                                     </button>
                                 </form>
                                 @endif
@@ -373,17 +389,17 @@
                     console.error(err);
                 });
         }
-    }" x-show="store" x-cloak class="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-100 dark:border-gray-700 mb-8">
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+    }" x-show="store" x-cloak class="bg-white dark:bg-gray-800 rounded-2xl p-4 sm:p-6 border border-gray-100 dark:border-gray-700 mb-6 sm:mb-8">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
+            <h3 class="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
                 <i class="fas fa-users text-indigo-600 dark:text-indigo-400 mr-2"></i>
                 <span x-text="store?.name"></span> Members
             </h3>
-            <div class="flex gap-3 text-sm" x-show="stats">
-                <span class="px-3 py-1.5 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 rounded-lg font-medium">
+            <div class="flex gap-2 sm:gap-3 text-xs sm:text-sm" x-show="stats">
+                <span class="px-2 sm:px-3 py-1 sm:py-1.5 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 rounded-lg font-medium">
                     Total: <span class="font-bold" x-text="stats?.total_members || 0"></span>
                 </span>
-                <span class="px-3 py-1.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-lg font-medium">
+                <span class="px-2 sm:px-3 py-1 sm:py-1.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-lg font-medium">
                     New: <span class="font-bold" x-text="stats?.new_this_month || 0"></span>
                 </span>
             </div>
@@ -398,37 +414,37 @@
             <p class="text-gray-500 dark:text-gray-400">No members found.</p>
         </div>
 
-        <div x-show="!loading && members.length > 0" class="overflow-x-auto">
-            <table id="membersTable" class="w-full">
+        <div x-show="!loading && members.length > 0" class="overflow-x-auto -mx-4 sm:mx-0">
+            <table id="membersTable" class="w-full min-w-[600px]">
                 <thead>
-                    <tr class="text-left text-sm font-semibold text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
+                    <tr class="text-left text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
                         <th class="pb-3 px-4">Customer</th>
                         <th class="pb-3 px-4">Join Method</th>
-                        <th class="pb-3 px-4">Joined Date</th>
+                        <th class="pb-3 px-4 hidden sm:table-cell">Joined Date</th>
                         <th class="pb-3 px-4">Status</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
                     <template x-for="member in members" :key="member.id">
                         <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                            <td class="py-4 px-4">
-                                <div class="flex items-center gap-3">
+                            <td class="py-3 sm:py-4 px-4">
+                                <div class="flex items-center gap-2 sm:gap-3">
                                     <template x-if="member.customer_avatar">
-                                        <img :src="member.customer_avatar" class="w-10 h-10 rounded-xl object-cover">
+                                        <img :src="member.customer_avatar" class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl object-cover flex-shrink-0">
                                     </template>
                                     <template x-if="!member.customer_avatar">
-                                        <div class="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center">
-                                            <span class="text-white font-semibold" x-text="member.customer_name ? member.customer_name.charAt(0) : 'U'"></span>
+                                        <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl gradient-primary flex items-center justify-center flex-shrink-0">
+                                            <span class="text-white font-semibold text-xs sm:text-sm" x-text="member.customer_name ? member.customer_name.charAt(0) : 'U'"></span>
                                         </div>
                                     </template>
-                                    <div>
-                                        <p class="font-medium text-gray-900 dark:text-white" x-text="member.customer_name"></p>
-                                        <p class="text-sm text-gray-500 dark:text-gray-400" x-text="member.customer_email"></p>
+                                    <div class="min-w-0">
+                                        <p class="font-medium text-gray-900 dark:text-white text-sm truncate" x-text="member.customer_name"></p>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400 truncate" x-text="member.customer_email"></p>
                                     </div>
                                 </div>
                             </td>
-                            <td class="py-4 px-4">
-                                <span class="px-3 py-1 text-xs font-medium rounded-lg"
+                            <td class="py-3 sm:py-4 px-4">
+                                <span class="px-2 sm:px-3 py-1 text-xs font-medium rounded-lg"
                                     :class="{
                                         'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400': member.join_method === 'qr_scan',
                                         'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400': member.join_method === 'referral' || member.join_method === 'ref_code',
@@ -437,9 +453,9 @@
                                     x-text="member.join_method === 'qr_scan' ? 'QR Scan' : (member.join_method === 'referral' || member.join_method === 'ref_code' ? 'Referral' : member.join_method)">
                                 </span>
                             </td>
-                            <td class="py-4 px-4 text-sm text-gray-600 dark:text-gray-400" x-text="member.joined_at_human"></td>
-                            <td class="py-4 px-4">
-                                <span class="px-3 py-1 text-xs font-medium rounded-lg"
+                            <td class="py-3 sm:py-4 px-4 text-xs sm:text-sm text-gray-600 dark:text-gray-400 hidden sm:table-cell" x-text="member.joined_at_human"></td>
+                            <td class="py-3 sm:py-4 px-4">
+                                <span class="px-2 sm:px-3 py-1 text-xs font-medium rounded-lg"
                                     :class="{
                                         'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400': member.status === 'active',
                                         'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400': member.status === 'inactive'
@@ -455,41 +471,41 @@
     </div>
 
     {{-- Users / Referrals Table --}}
-    <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-100 dark:border-gray-700">
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 sm:p-6 border border-gray-100 dark:border-gray-700">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
+            <h3 class="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
                 <i class="fas fa-users text-indigo-600 dark:text-indigo-400 mr-2"></i>
                 @if (auth()->user()->hasRole('Admin')) All Users @else Your Referrals @endif
             </h3>
         </div>
 
         {{-- Search form --}}
-        <form method="GET" action="{{ route('dashboard') }}" class="mb-6">
-            <div class="flex gap-2">
+        <form method="GET" action="{{ route('dashboard') }}" class="mb-4 sm:mb-6">
+            <div class="flex flex-col sm:flex-row gap-2">
                 <div class="relative flex-1">
                     <input type="text" name="search" value="{{ request('search') }}"
-                        placeholder="Search by name, email, or serial number..."
-                        class="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white">
+                        placeholder="Search by name, email, or serial..."
+                        class="w-full pl-10 pr-4 py-2.5 sm:py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white">
                     <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
                 </div>
-                <button type="submit" class="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-medium transition-colors">
+                <button type="submit" class="px-4 sm:px-6 py-2.5 sm:py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-medium transition-colors text-sm sm:text-base">
                     Search
                 </button>
             </div>
         </form>
 
-        <div class="overflow-x-auto">
-            <table id="usersTable" class="w-full">
+        <div class="overflow-x-auto -mx-4 sm:mx-0">
+            <table id="usersTable" class="w-full min-w-[800px]">
                 <thead>
-                    <tr class="text-left text-sm font-semibold text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
-                        <th class="pb-3 px-4">RM No</th>
-                        <th class="pb-3 px-4">SB No</th>
-                        <th class="pb-3 px-4">Name</th>
-                        <th class="pb-3 px-4">Email</th>
-                        <th class="pb-3 px-4">Phone</th>
-                        <th class="pb-3 px-4">Referrer</th>
+                    <tr class="text-left text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
+                        <th class="pb-3 px-3 sm:px-4">RM No</th>
+                        <th class="pb-3 px-3 sm:px-4">SB No</th>
+                        <th class="pb-3 px-3 sm:px-4">Name</th>
+                        <th class="pb-3 px-3 sm:px-4">Email</th>
+                        <th class="pb-3 px-3 sm:px-4 hidden lg:table-cell">Phone</th>
+                        <th class="pb-3 px-3 sm:px-4 hidden md:table-cell">Referrer</th>
                         @if (auth()->user()->hasRole('Admin'))
-                        <th class="pb-3 px-4 no-export">Action</th>
+                        <th class="pb-3 px-3 sm:px-4 no-export">Action</th>
                         @endif
                     </tr>
                 </thead>
@@ -500,22 +516,22 @@
                         $sandbox = $u->accounts->firstWhere('type', 'sandbox');
                     @endphp
                     <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                        <td class="py-4 px-4">
-                            <span class="px-2 py-1 text-xs font-semibold rounded-lg {{ $rizqmall && $rizqmall->serial_number ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' }}">
-                                {{ $rizqmall->serial_number ?? 'inactive' }}
+                        <td class="py-3 sm:py-4 px-3 sm:px-4">
+                            <span class="px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold rounded-lg {{ $rizqmall && $rizqmall->serial_number ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' }}">
+                                {{ $rizqmall && $rizqmall->serial_number ? $rizqmall->serial_number : 'N/A' }}
                             </span>
                         </td>
-                        <td class="py-4 px-4">
-                            <span class="px-2 py-1 text-xs font-semibold rounded-lg {{ $sandbox && $sandbox->serial_number ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' }}">
-                                {{ $sandbox->serial_number ?? 'inactive' }}
+                        <td class="py-3 sm:py-4 px-3 sm:px-4">
+                            <span class="px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold rounded-lg {{ $sandbox && $sandbox->serial_number ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' }}">
+                                {{ $sandbox && $sandbox->serial_number ? $sandbox->serial_number : 'N/A' }}
                             </span>
                         </td>
-                        <td class="py-4 px-4">
-                            <div class="flex items-center gap-2">
-                                <span class="user-name-display font-medium text-gray-900 dark:text-white">{{ $u->profile?->full_name ?? $u->name }}</span>
-                                <button class="edit-name-btn p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                        <td class="py-3 sm:py-4 px-3 sm:px-4">
+                            <div class="flex items-center gap-1 sm:gap-2">
+                                <span class="user-name-display font-medium text-gray-900 dark:text-white text-xs sm:text-sm truncate max-w-[100px] sm:max-w-none">{{ $u->profile?->full_name ?? $u->name }}</span>
+                                <button class="edit-name-btn p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors flex-shrink-0"
                                     data-user-id="{{ $u->id }}">
-                                    <i class="fas fa-pencil-alt text-xs"></i>
+                                    <i class="fas fa-pencil-alt text-[10px] sm:text-xs"></i>
                                 </button>
                             </div>
                             <form action="{{ route('admin.users.updateName', $u->id) }}" method="POST"
@@ -523,22 +539,24 @@
                                 @csrf
                                 @method('PUT')
                                 <input type="text" name="name" value="{{ $u->profile?->full_name ?? $u->name }}"
-                                    class="flex-1 px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-indigo-500">
-                                <button type="submit" class="p-1.5 bg-green-500 hover:bg-green-600 text-white rounded-lg">
-                                    <i class="fas fa-check text-xs"></i>
+                                    class="flex-1 px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-indigo-500 min-w-0">
+                                <button type="submit" class="p-1 sm:p-1.5 bg-green-500 hover:bg-green-600 text-white rounded-lg flex-shrink-0">
+                                    <i class="fas fa-check text-[10px] sm:text-xs"></i>
                                 </button>
-                                <button type="button" class="cancel-edit-name-btn p-1.5 bg-gray-400 hover:bg-gray-500 text-white rounded-lg">
-                                    <i class="fas fa-times text-xs"></i>
+                                <button type="button" class="cancel-edit-name-btn p-1 sm:p-1.5 bg-gray-400 hover:bg-gray-500 text-white rounded-lg flex-shrink-0">
+                                    <i class="fas fa-times text-[10px] sm:text-xs"></i>
                                 </button>
                             </form>
                         </td>
-                        <td class="py-4 px-4 text-sm text-gray-600 dark:text-gray-400">{{ $u->email }}</td>
-                        <td class="py-4 px-4">
-                            <div class="flex items-center gap-2">
-                                <span class="user-phone-display text-sm text-gray-600 dark:text-gray-400">{{ $u->profile?->phone ?? '-' }}</span>
-                                <button class="edit-phone-btn p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                        <td class="py-3 sm:py-4 px-3 sm:px-4 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                            <span class="truncate block max-w-[120px] sm:max-w-none">{{ $u->email }}</span>
+                        </td>
+                        <td class="py-3 sm:py-4 px-3 sm:px-4 hidden lg:table-cell">
+                            <div class="flex items-center gap-1 sm:gap-2">
+                                <span class="user-phone-display text-xs sm:text-sm text-gray-600 dark:text-gray-400">{{ $u->profile?->phone ?? '-' }}</span>
+                                <button class="edit-phone-btn p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors flex-shrink-0"
                                     data-phone-id="{{ $u->id }}">
-                                    <i class="fas fa-pencil-alt text-xs"></i>
+                                    <i class="fas fa-pencil-alt text-[10px] sm:text-xs"></i>
                                 </button>
                             </div>
                             <form action="{{ route('admin.users.updatePhone', $u->id) }}" method="POST"
@@ -546,16 +564,16 @@
                                 @csrf
                                 @method('PUT')
                                 <input type="text" name="phone" value="{{ $u->profile?->phone ?? '-' }}"
-                                    class="flex-1 px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-indigo-500">
-                                <button type="submit" class="p-1.5 bg-green-500 hover:bg-green-600 text-white rounded-lg">
-                                    <i class="fas fa-check text-xs"></i>
+                                    class="flex-1 px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-indigo-500 min-w-0">
+                                <button type="submit" class="p-1 sm:p-1.5 bg-green-500 hover:bg-green-600 text-white rounded-lg flex-shrink-0">
+                                    <i class="fas fa-check text-[10px] sm:text-xs"></i>
                                 </button>
-                                <button type="button" class="cancel-edit-phone-btn p-1.5 bg-gray-400 hover:bg-gray-500 text-white rounded-lg">
-                                    <i class="fas fa-times text-xs"></i>
+                                <button type="button" class="cancel-edit-phone-btn p-1 sm:p-1.5 bg-gray-400 hover:bg-gray-500 text-white rounded-lg flex-shrink-0">
+                                    <i class="fas fa-times text-[10px] sm:text-xs"></i>
                                 </button>
                             </form>
                         </td>
-                        <td class="py-4 px-4 text-sm text-gray-600 dark:text-gray-400">
+                        <td class="py-3 sm:py-4 px-3 sm:px-4 text-xs sm:text-sm text-gray-600 dark:text-gray-400 hidden md:table-cell">
                             @if (auth()->user()->hasRole('Admin'))
                                 {{ $u->referral?->parent?->name ?? '-' }}
                             @else
@@ -563,10 +581,10 @@
                             @endif
                         </td>
                         @if (auth()->user()->hasRole('Admin'))
-                        <td class="py-4 px-4 no-export">
+                        <td class="py-3 sm:py-4 px-3 sm:px-4 no-export">
                             <button data-user="{{ $u->id }}"
-                                class="view-details px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors">
-                                <i class="fas fa-eye mr-1"></i> View
+                                class="view-details px-2 sm:px-4 py-1.5 sm:py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-medium rounded-lg transition-colors whitespace-nowrap">
+                                <i class="fas fa-eye sm:mr-1"></i> <span class="hidden sm:inline">View</span>
                             </button>
                         </td>
                         @endif
@@ -577,7 +595,7 @@
         </div>
 
         {{-- Pagination --}}
-        <div class="mt-6">
+        <div class="mt-4 sm:mt-6">
             {{ $users->links() }}
         </div>
     </div>

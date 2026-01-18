@@ -116,8 +116,8 @@
             </div>
             <div class="space-y-4">
                 @php
-                $activeCount = $accounts->filter(fn($a) => $a->active)->count();
-                $pendingCount = $accounts->filter(fn($a) => !$a->active)->count();
+                    $activeCount = $accounts->filter(fn($a) => $a->active)->count();
+                    $pendingCount = $accounts->filter(fn($a) => !$a->active)->count();
                 @endphp
                 <div class="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 rounded-xl">
                     <div class="flex items-center gap-3">
@@ -151,149 +151,149 @@
         @endif
 
         @php
-        $today = now();
-        $logos = [
-        'rizqmall' => asset('rizqmall.jpeg'),
-        'sandbox' => asset('sandboxlogo.png'),
-        ];
+            $today = now();
+            $logos = [
+                'rizqmall' => asset('rizqmall.jpeg'),
+                'sandbox' => asset('sandboxlogo.png'),
+            ];
         @endphp
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             @foreach ($accounts as $account)
-            @php
-            if ($account->type === 'sandbox remaja' && $account->account_type_id == 3) {
-            continue;
-            }
+                @php
+                    if ($account->type === 'sandbox remaja' && $account->account_type_id == 3) {
+                        continue;
+                    }
 
-            $subscription = isset($subscriptions[$account->account_type_id])
-            ? $subscriptions[$account->account_type_id]->sortByDesc('created_at')->first()
-            : null;
+                    $subscription = isset($subscriptions[$account->account_type_id])
+                        ? $subscriptions[$account->account_type_id]->sortByDesc('created_at')->first()
+                        : null;
 
-            $indicatorColor = 'bg-red-500';
-            $indicatorText = 'inactive';
-            $indicatorBg = 'bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400';
-            $expiryText = '';
-            $serialText = '';
-            $showButton = true;
-            $isExpired = false;
+                    $indicatorColor = 'bg-red-500';
+                    $indicatorText = 'inactive';
+                    $indicatorBg = 'bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400';
+                    $expiryText = '';
+                    $serialText = '';
+                    $showButton = true;
+                    $isExpired = false;
 
-            if ($account) {
-            $expires = $account->expires_at ? \Carbon\Carbon::parse($account->expires_at) : null;
+                    if ($account) {
+                        $expires = $account->expires_at ? \Carbon\Carbon::parse($account->expires_at) : null;
 
-            if ($account->type === 'rizqmall' && $expires && $expires->isPast()) {
-            $indicatorColor = 'bg-orange-500';
-            $indicatorText = 'expired';
-            $indicatorBg = 'bg-orange-100 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400';
-            $expiryText = 'Expired on ' . $expires->toFormattedDateString();
-            $isExpired = true;
-            $showButton = true;
-            if ($account->serial_number) {
-            $serialText = $account->serial_number;
-            }
-            } elseif ($account->active && (!$expires || $expires->isFuture())) {
-            $indicatorColor = 'bg-green-500';
-            $indicatorText = 'active';
-            $indicatorBg = 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400';
-            $showButton = false;
-            if ($expires) {
-            $expiryText = 'Valid until ' . $expires->toFormattedDateString();
-            }
-            if ($account->serial_number) {
-            $serialText = $account->serial_number;
-            }
-            } elseif (
-            $account->type === 'sandbox' &&
-            $subscription &&
-            $subscription->installments_paid > 0 &&
-            $subscription->installments_paid < $subscription->installments_total
-                ) {
-                $indicatorColor = 'bg-yellow-500';
-                $indicatorText = 'pending';
-                $indicatorBg = 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400';
-                }
-                }
+                        if ($account->type === 'rizqmall' && $expires && $expires->isPast()) {
+                            $indicatorColor = 'bg-orange-500';
+                            $indicatorText = 'expired';
+                            $indicatorBg = 'bg-orange-100 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400';
+                            $expiryText = 'Expired on ' . $expires->toFormattedDateString();
+                            $isExpired = true;
+                            $showButton = true;
+                            if ($account->serial_number) {
+                                $serialText = $account->serial_number;
+                            }
+                        } elseif ($account->active && (!$expires || $expires->isFuture())) {
+                            $indicatorColor = 'bg-green-500';
+                            $indicatorText = 'active';
+                            $indicatorBg = 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400';
+                            $showButton = false;
+                            if ($expires) {
+                                $expiryText = 'Valid until ' . $expires->toFormattedDateString();
+                            }
+                            if ($account->serial_number) {
+                                $serialText = $account->serial_number;
+                            }
+                        } elseif (
+                            $account->type === 'sandbox' &&
+                            $subscription &&
+                            $subscription->installments_paid > 0 &&
+                            $subscription->installments_paid < $subscription->installments_total
+                        ) {
+                            $indicatorColor = 'bg-yellow-500';
+                            $indicatorText = 'pending';
+                            $indicatorBg = 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400';
+                        }
+                    }
 
-                $basePrice = $account->type === 'sandbox' ? 300 : 20;
-                $tax = round($basePrice * 0.08, 2);
-                $fpx = 1.0;
+                    $basePrice = $account->type === 'sandbox' ? 300 : 20;
+                    $tax = round($basePrice * 0.08, 2);
+                    $fpx = 1.0;
 
-                $showProgress = $account->type === 'sandbox' && $subscription && $subscription->installments_paid > 0 && $subscription->installments_paid < $subscription->installments_total;
+                    $showProgress = $account->type === 'sandbox' && $subscription && $subscription->installments_paid > 0 && $subscription->installments_paid < $subscription->installments_total;
 
                     if ($showProgress) {
-                    $perInstallmentBase = round($basePrice / $subscription->installments_total, 2);
-                    $paidBase = round($subscription->installments_paid * $perInstallmentBase, 2);
-                    $progressPercent = ($subscription->installments_paid / $subscription->installments_total) * 100;
-                    $nextAmount = round(($basePrice + $basePrice * 0.08) / $subscription->installments_total + $fpx, 2);
+                        $perInstallmentBase = round($basePrice / $subscription->installments_total, 2);
+                        $paidBase = round($subscription->installments_paid * $perInstallmentBase, 2);
+                        $progressPercent = ($subscription->installments_paid / $subscription->installments_total) * 100;
+                        $nextAmount = round(($basePrice + $basePrice * 0.08) / $subscription->installments_total + $fpx, 2);
                     } else {
-                    $perInstallmentBase = 0;
-                    $paidBase = 0;
-                    $progressPercent = 0;
-                    $nextAmount = round($basePrice + $tax + $fpx, 2);
+                        $perInstallmentBase = 0;
+                        $paidBase = 0;
+                        $progressPercent = 0;
+                        $nextAmount = round($basePrice + $tax + $fpx, 2);
                     }
 
                     $fullPrice = round($basePrice + $tax + $fpx, 2);
-                    @endphp
+                @endphp
 
-                    <div class="flex items-start gap-4 p-5 bg-gray-50 dark:bg-gray-700/50 rounded-2xl border border-gray-100 dark:border-gray-600">
-                        <div class="flex-shrink-0">
-                            <img src="{{ $logos[$account->type] }}" alt="{{ ucfirst($account->type) }} Logo"
-                                class="w-14 h-14 rounded-xl border-2 border-white dark:border-gray-600 shadow-md object-cover">
+                <div class="flex items-start gap-4 p-5 bg-gray-50 dark:bg-gray-700/50 rounded-2xl border border-gray-100 dark:border-gray-600">
+                    <div class="flex-shrink-0">
+                        <img src="{{ $logos[$account->type] }}" alt="{{ ucfirst($account->type) }} Logo"
+                            class="w-14 h-14 rounded-xl border-2 border-white dark:border-gray-600 shadow-md object-cover">
+                    </div>
+
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-start justify-between mb-2">
+                            <div>
+                                <h4 class="font-semibold text-gray-900 dark:text-white text-lg">
+                                    {{ ucfirst($account->type) }}
+                                    @if ($account->type === 'sandbox') Malaysia @endif
+                                </h4>
+                                @if ($serialText)
+                                <p class="text-sm font-mono text-indigo-600 dark:text-indigo-400">{{ $serialText }}</p>
+                                @endif
+                            </div>
+                            <span class="px-3 py-1 text-xs font-semibold rounded-full {{ $indicatorBg }}">
+                                {{ ucfirst($indicatorText) }}
+                            </span>
                         </div>
 
-                        <div class="flex-1 min-w-0">
-                            <div class="flex items-start justify-between mb-2">
-                                <div>
-                                    <h4 class="font-semibold text-gray-900 dark:text-white text-lg">
-                                        {{ ucfirst($account->type) }}
-                                        @if ($account->type === 'sandbox') Malaysia @endif
-                                    </h4>
-                                    @if ($serialText)
-                                    <p class="text-sm font-mono text-indigo-600 dark:text-indigo-400">{{ $serialText }}</p>
-                                    @endif
-                                </div>
-                                <span class="px-3 py-1 text-xs font-semibold rounded-full {{ $indicatorBg }}">
-                                    {{ ucfirst($indicatorText) }}
-                                </span>
+                        @if ($expiryText)
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">{{ $expiryText }}</p>
+                        @endif
+
+                        @if ($showProgress)
+                        <div class="mb-3">
+                            <div class="flex justify-between text-sm mb-1">
+                                <span class="text-gray-600 dark:text-gray-400">Payment Progress</span>
+                                <span class="font-medium text-gray-900 dark:text-white">{{ $subscription->installments_paid }}/{{ $subscription->installments_total }}</span>
                             </div>
-
-                            @if ($expiryText)
-                            <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">{{ $expiryText }}</p>
-                            @endif
-
-                            @if ($showProgress)
-                            <div class="mb-3">
-                                <div class="flex justify-between text-sm mb-1">
-                                    <span class="text-gray-600 dark:text-gray-400">Payment Progress</span>
-                                    <span class="font-medium text-gray-900 dark:text-white">{{ $subscription->installments_paid }}/{{ $subscription->installments_total }}</span>
-                                </div>
-                                <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2.5">
-                                    <div class="bg-gradient-to-r from-indigo-500 to-purple-500 h-2.5 rounded-full transition-all duration-300"
-                                        style="width: {{ $progressPercent }}%"></div>
-                                </div>
-                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                    RM {{ number_format($paidBase, 2) }} paid / RM {{ number_format($basePrice, 2) }} total
-                                </p>
+                            <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2.5">
+                                <div class="bg-gradient-to-r from-indigo-500 to-purple-500 h-2.5 rounded-full transition-all duration-300"
+                                    style="width: {{ $progressPercent }}%"></div>
                             </div>
-                            @endif
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                RM {{ number_format($paidBase, 2) }} paid / RM {{ number_format($basePrice, 2) }} total
+                            </p>
+                        </div>
+                        @endif
 
-                            <div class="flex flex-wrap gap-2">
-                                @if ($showButton)
+                        <div class="flex flex-wrap gap-2">
+                            @if ($showButton)
                                 @if ($account->type === 'sandbox')
-                                @if ($showProgress)
-                                <button x-data
-                                    @click="$dispatch('open-pay-next-modal', {
+                                    @if ($showProgress)
+                                    <button x-data
+                                        @click="$dispatch('open-pay-next-modal', {
                                             subscriptionId: {{ $subscription->id }},
                                             base: {{ $perInstallmentBase }},
                                             fullFinal: {{ $fullPrice }},
                                             paidCount: {{ $subscription->installments_paid }},
                                             totalInstallments: {{ $subscription->installments_total }}
                                         })"
-                                    class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-semibold transition-colors shadow-md">
-                                    <i class="fas fa-credit-card mr-2"></i> Pay Next Installment
-                                </button>
-                                @else
-                                <button x-data
-                                    @click="$dispatch('open-installment-modal', {
+                                        class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-semibold transition-colors shadow-md">
+                                        <i class="fas fa-credit-card mr-2"></i> Pay Next Installment
+                                    </button>
+                                    @else
+                                    <button x-data
+                                        @click="$dispatch('open-installment-modal', {
                                             plan: '{{ $account->type }}',
                                             label: '{{ ucfirst($account->type) }}',
                                             base: {{ $basePrice }},
@@ -301,10 +301,10 @@
                                             fpx: {{ $fpx }},
                                             final: {{ $fullPrice }}
                                         })"
-                                    class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-semibold transition-colors shadow-md">
-                                    <i class="fas fa-plus-circle mr-2"></i> Subscribe
-                                </button>
-                                @endif
+                                        class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-semibold transition-colors shadow-md">
+                                        <i class="fas fa-plus-circle mr-2"></i> Subscribe
+                                    </button>
+                                    @endif
                                 @elseif ($account->type === 'rizqmall' && $isExpired)
                                 <button x-data
                                     @click="$dispatch('open-modal', {
@@ -332,7 +332,7 @@
                                     <i class="fas fa-plus-circle mr-2"></i> Subscribe
                                 </button>
                                 @endif
-                                @else
+                            @else
                                 @if ($account->type === 'rizqmall')
                                 <form method="POST" action="{{ route('rizqmall.redirect') }}" class="inline">
                                     @csrf
@@ -341,11 +341,11 @@
                                     </button>
                                 </form>
                                 @endif
-                                @endif
-                            </div>
+                            @endif
                         </div>
                     </div>
-                    @endforeach
+                </div>
+            @endforeach
         </div>
     </div>
 
@@ -496,8 +496,8 @@
                 <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
                     @foreach ($users as $u)
                     @php
-                    $rizqmall = $u->accounts->firstWhere('type', 'rizqmall');
-                    $sandbox = $u->accounts->firstWhere('type', 'sandbox');
+                        $rizqmall = $u->accounts->firstWhere('type', 'rizqmall');
+                        $sandbox = $u->accounts->firstWhere('type', 'sandbox');
                     @endphp
                     <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                         <td class="py-4 px-4">
@@ -557,9 +557,9 @@
                         </td>
                         <td class="py-4 px-4 text-sm text-gray-600 dark:text-gray-400">
                             @if (auth()->user()->hasRole('Admin'))
-                            {{ $u->referral?->parent?->name ?? '-' }}
+                                {{ $u->referral?->parent?->name ?? '-' }}
                             @else
-                            {{ $u->referral?->parent_id === auth()->id() ? 'YOU' : $u->referral?->parent?->name }}
+                                {{ $u->referral?->parent_id === auth()->id() ? 'YOU' : $u->referral?->parent?->name }}
                             @endif
                         </td>
                         @if (auth()->user()->hasRole('Admin'))
@@ -683,37 +683,6 @@
 
     @push('scripts')
     <script>
-        $(document).ready(function() {
-            // Check if tables exist before initializing to avoid errors
-            if ($('#usersTable').length) {
-                $('#usersTable').DataTable({
-                    order: [
-                        [1, 'desc']
-                    ], // Default sort
-                    responsive: true,
-                    columnDefs: [{
-                            targets: 'no-sort',
-                            orderable: false
-                        },
-                        {
-                            targets: 'no-export',
-                            exportable: false
-                        }
-                    ]
-                });
-            }
-
-            if ($('#membersTable').length) {
-                $('#membersTable').DataTable({
-                    order: [
-                        [2, 'desc']
-                    ], // Sort by joined date
-                    responsive: true
-                });
-            }
-        });
-    </script>
-    <script>
         // Copy referral link
         function copyToClipboard() {
             const input = document.getElementById('referralLink');
@@ -731,7 +700,7 @@
                 .catch(err => console.error("Failed to copy:", err));
         }
 
-        @if(auth() -> user() -> hasRole('Admin'))
+        @if (auth()->user()->hasRole('Admin'))
         // Location Modal Functions
         function openLocationModal() {
             document.getElementById('locationModal').classList.remove('hidden');

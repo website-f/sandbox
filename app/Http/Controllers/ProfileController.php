@@ -198,6 +198,30 @@ public function updateProfile(Request $request)
     return back()->with('success', 'Pewaris added successfully!');
 }
 
+public function destroyPewaris(Pewaris $pewaris)
+{
+    $user = auth()->user();
+
+    // Only allow deleting own pewaris
+    if ($pewaris->user_id !== $user->id) {
+        return back()->with('error', 'Unauthorized action.');
+    }
+
+    // If there's a linked user, we should handle that too
+    if ($pewaris->linked_user_id) {
+        // Optional: You may want to delete or deactivate the linked user
+        // For now, we'll just unlink them
+        $linkedUser = $pewaris->linkedUser;
+        if ($linkedUser) {
+            // Deactivate the linked user's accounts instead of deleting
+            $linkedUser->accounts()->update(['active' => false]);
+        }
+    }
+
+    $pewaris->delete();
+
+    return back()->with('success', 'Pewaris deleted successfully!');
+}
 
 public function redirectToRizqmall(Request $request)
     {

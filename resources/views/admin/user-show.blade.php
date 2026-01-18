@@ -1,1338 +1,634 @@
-<x-app-layout>
-<style>
-    #referral-tree ul, #sandbox-tree ul {
-        list-style-type: none;
-        margin-left: 20px;
-        position: relative;
-    }
+<x-admin-layout>
+    <x-slot name="pageTitle">User Details</x-slot>
+    <x-slot name="breadcrumb">View and manage user profile and accounts</x-slot>
 
-    #referral-tree ul::before, #sandbox-tree ul::before {
-        content: '';
-        border-left: 1px solid #ccc;
-        position: absolute;
-        top: 0;
-        bottom: 0;
-        left: 0;
-    }
-
-    #referral-tree li, #sandbox-tree li {
-        margin: 0;
-        padding: 0 0 0 20px;
-        line-height: 1.5em;
-        position: relative;
-    }
-
-    #referral-tree li::before, #sandbox-tree li::before {
-        content: '';
-        border-top: 1px solid #ccc;
-        position: absolute;
-        top: 0.8em;
-        left: 0;
-        width: 20px;
-    }
-</style>
-    <x-slot name="header">
-        <h2 class="font-extrabold text-2xl text-gray-900">User Details</h2>
-    </x-slot>
-
-    <div class="py-6 sm:py-12">
-        <div class="max-w-7xl sm:max-w-6xl mx-auto bg-white shadow rounded-2xl p-4 sm:p-6">
-            <div class="flex flex-col sm:flex-row items-start gap-4 sm:gap-6">
-                <div class="flex-shrink-0 mx-auto sm:mx-0">
-                    <div class="h-20 w-20 bg-gray-100 rounded-full flex items-center justify-center text-2xl text-gray-500">
-                        {{ strtoupper(substr($user->name,0,1)) }}
-                    </div>
+    {{-- Header / Summary Card --}}
+    <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-100 dark:border-gray-700 mb-6">
+        <div class="flex flex-col md:flex-row items-center md:items-start gap-6">
+            {{-- User Avatar --}}
+            <div class="flex-shrink-0">
+                @if($user->photo)
+                <img src="{{ asset('storage/' . $user->photo) }}" class="w-24 h-24 rounded-2xl object-cover shadow-lg ring-4 ring-gray-50 dark:ring-gray-700">
+                @else
+                <div class="w-24 h-24 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center shadow-lg ring-4 ring-gray-50 dark:ring-gray-700">
+                    <span class="text-3xl font-bold text-white">{{ substr($user->name, 0, 1) }}</span>
                 </div>
-
-                <div class="flex-1 w-full">
-                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                        <div class="w-full break-words">
-                            <div class="flex items-center gap-2">
-                                <h3 id="userNameDisplay" class="text-xl font-semibold">
-                                    {{ $user->profile?->full_name ?? $user->name }}
-                                </h3>
-                                <button id="editUserNameBtn" class="text-gray-500 hover:text-indigo-600">
-                                    ✏️
-                                </button>
-                            </div>
-                            
-                            <form id="editUserNameForm" action="{{ route('admin.users.updateName', $user->id) }}" method="POST" class="hidden flex items-center gap-2">
-                                @csrf
-                                @method('PUT')
-                                <input type="text" name="name" id="userNameInput" class="border rounded px-2 py-1 text-sm w-48"
-                                       value="{{ $user->profile?->full_name ?? $user->name }}" required>
-                                <button type="submit" class="px-2 py-1 bg-green-600 text-white rounded text-sm">✅</button>
-                                <button type="button" id="cancelEditUserNameBtn" class="px-2 py-1 bg-gray-300 rounded text-sm">❌</button>
-                            </form>
-                            
-                            @if($user->checkBlacklist())
-                                <span class="px-2 py-1 bg-red-500 text-white text-xs rounded">Blacklisted</span>
-                            @endif
-
-                            <p class="text-sm text-gray-500">{{ $user->email }}</p>
-                            <p class="text-sm text-gray-500 mt-1">
-                                Phone: {{ $user->profile?->phone ?? '-' }} • NRIC: {{ $user->profile?->nric ?? '-' }}
-                            </p>
-                        </div>
-
-                        <div class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-                             <button id="toggleAdminBtn"
-                                     class="px-3 py-2 rounded-lg text-sm font-semibold {{ $user->hasRole('Admin') ? 'bg-red-500' : 'bg-indigo-600' }} text-white">
-                                 {{ $user->hasRole('Admin') ? 'Remove Admin' : 'Make Admin' }}
-                             </button>
-                         
-                             @unless($user->checkBlacklist())
-                                 <button id="addBlacklistBtn"
-                                         class="px-3 py-2 rounded-lg text-sm font-semibold bg-gray-800 text-white">
-                                     Add to Blacklist
-                                 </button>
-                             @endunless
-                         
-                             <a href="{{ route('admin.users.index') }}" class="px-3 py-2 rounded-lg border">Back</a>
-                         
-                             @if($user->checkBlacklist())
-                                 <span class="px-2 py-1 bg-red-500 text-white text-xs rounded">Blacklisted</span>
-                             @endif
-                         </div>
-
-
-                        <!-- Modal -->
-                            <div id="blacklistModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
-                                <div class="bg-white rounded-lg p-6 w-96">
-                                    <h3 class="text-lg font-semibold mb-4">Confirm Blacklist</h3>
-                                    <p>Are you sure you want to add <span class="font-medium">{{ $user->email }}</span> to the blacklist?</p>
-                                    <div class="mt-4 flex justify-end gap-2">
-                                        <button id="cancelBlacklist" class="px-3 py-2 bg-gray-200 rounded">Cancel</button>
-                                        <button id="confirmBlacklist" class="px-3 py-2 bg-red-500 text-white rounded">Confirm</button>
-                                    </div>
-                                </div>
-                            </div>
-                    </div>
-
-                    <p class="mt-4 text-sm text-gray-600">Joined: {{ $user->created_at?->format('d M Y H:i') ?? '-' }}</p>
-                </div>
+                @endif
             </div>
 
-            {{-- Tabs --}}
-            <div class="mt-6">
-                <nav class="flex space-x-2 border-b overflow-x-auto whitespace-nowrap">
-                    <button data-tab="overview" class="py-3 px-4 -mb-px border-b-2 border-indigo-600 text-indigo-600">Overview</button>
-                    <button data-tab="accounts" class="py-3 px-4 text-gray-600">Accounts</button>
-                    <button data-tab="bank" class="py-3 px-4 text-gray-600">Bank Details</button>
-                    <button data-tab="wallet" class="py-3 px-4 text-gray-600">Wallet & Payments</button>
-                    <button data-tab="collection" class="py-3 px-4 text-gray-600">Collection/Tabung</button>
-                    <button data-tab="referrals" class="py-3 px-4 text-gray-600">Referrals</button>
-                    <button data-tab="sandbox" class="py-3 px-4 text-gray-600">Sandbox Tree</button>
-                    <button data-tab="edit" class="py-3 px-4 text-gray-600">Edit / Audit</button>
-                </nav>
+            {{-- User Info --}}
+            <div class="flex-1 text-center md:text-left w-full">
+                <div class="flex flex-col md:flex-row justify-between items-center mb-2">
+                    <h2 class="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                        {{ $user->profile?->full_name ?? $user->name }}
+                        @if($user->checkBlacklist())
+                        <span class="px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-xs font-bold uppercase rounded-lg">Blacklisted</span>
+                        @endif
+                    </h2>
 
-                <div class="mt-6">
-                    {{-- OVERVIEW --}}
-                    <div data-panel="overview" class="tab-panel">
-                        <div class="grid md:grid-cols-2 gap-6">
-                            {{-- Profile --}}
-                            <div class="p-4 border rounded-lg">
-    <div class="flex justify-between items-center mb-2">
-        <h4 class="font-semibold">Profile</h4>
-        <button id="editProfileBtn" class="text-gray-500 hover:text-indigo-600">
-            ✏️ Edit
-        </button>
+                    <div class="flex gap-2 mt-4 md:mt-0">
+                        <a href="{{ route('admin.users.index') }}" class="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                            <i class="fas fa-arrow-left mr-2"></i> Back
+                        </a>
+
+                        <form action="{{ route('admin.users.toggleAdmin', $user->id) }}" method="POST" class="inline">
+                            @csrf
+                            <input type="hidden" name="role" value="{{ $user->hasRole('Admin') ? 'User' : 'Admin' }}">
+                            <button type="submit" class="px-4 py-2 {{ $user->hasRole('Admin') ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 hover:bg-red-200' : 'bg-indigo-600 text-white hover:bg-indigo-700' }} rounded-xl text-sm font-medium transition-colors shadow-sm">
+                                <i class="fas {{ $user->hasRole('Admin') ? 'fa-user-minus' : 'fa-user-shield' }} mr-2"></i>
+                                {{ $user->hasRole('Admin') ? 'Remove Admin' : 'Make Admin' }}
+                            </button>
+                        </form>
+
+                        <a href="{{ route('admin.users.edit', $user->id) }}" class="px-4 py-2 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 rounded-xl text-sm font-medium hover:bg-yellow-200 dark:hover:bg-yellow-600 transition-colors shadow-sm">
+                            <i class="fas fa-edit mr-2"></i> Edit
+                        </a>
+
+                        @unless($user->checkBlacklist())
+                        <button onclick="document.getElementById('blacklistModal').classList.remove('hidden')" class="px-4 py-2 bg-gray-800 dark:bg-gray-900 text-white rounded-xl text-sm font-medium hover:bg-black transition-colors shadow-sm">
+                            <i class="fas fa-ban mr-2"></i> Blacklist
+                        </button>
+                        @endunless
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm mt-4">
+                    <div class="flex items-center text-gray-600 dark:text-gray-400">
+                        <i class="fas fa-envelope w-5 text-center mr-2"></i>
+                        {{ $user->email }}
+                    </div>
+                    <div class="flex items-center text-gray-600 dark:text-gray-400">
+                        <i class="fas fa-phone w-5 text-center mr-2"></i>
+                        {{ $user->profile?->phone ?? 'Not set' }}
+                    </div>
+                    <div class="flex items-center text-gray-600 dark:text-gray-400">
+                        <i class="fas fa-id-card w-5 text-center mr-2"></i>
+                        {{ $user->profile?->nric ?? 'Not set' }}
+                    </div>
+                    <div class="flex items-center text-gray-600 dark:text-gray-400">
+                        <i class="fas fa-calendar w-5 text-center mr-2"></i>
+                        Joined {{ $user->created_at->format('d M Y') }}
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-    
-    {{-- Display Mode --}}
-    <div id="profileDisplay">
-        <dl class="text-sm text-gray-700 space-y-1">
-            <div><span class="font-medium">Full name:</span> <span id="display-full_name">{{ $user->profile?->full_name ?? '-' }}</span></div>
-            <div><span class="font-medium">NRIC:</span> <span id="display-nric">{{ $user->profile?->nric ?? '-' }}</span></div>
-            <div><span class="font-medium">DOB:</span> <span id="display-dob">{{ $user->profile?->dob ?? '-' }}</span></div>
-            <div><span class="font-medium">Phone:</span> <span id="display-phone">{{ $user->profile?->phone ?? '-' }}</span></div>
-            <div><span class="font-medium">Address:</span> <span id="display-home_address">{!! nl2br(e($user->profile?->home_address ?? '-')) !!}</span></div>
-            <div><span class="font-medium">Country:</span> <span id="display-country">{{ $user->profile?->country ?? '-' }}</span></div>
-            <div><span class="font-medium">State:</span> <span id="display-state">{{ $user->profile?->state ?? '-' }}</span></div>
-            <div><span class="font-medium">City:</span> <span id="display-city">{{ $user->profile?->city ?? '-' }}</span></div>
-        </dl>
-    </div>
 
-    {{-- Edit Mode --}}
-    <form id="editProfileForm" action="{{ route('admin.users.updateProfile', $user->id) }}" method="POST" class="hidden space-y-3">
-        @csrf
-        @method('PUT')
-        
-        <div>
-            <label class="block text-xs font-medium text-gray-600 mb-1">Full Name</label>
-            <input type="text" name="full_name" id="input-full_name" 
-                   class="border rounded px-2 py-1 text-sm w-full"
-                   value="{{ $user->profile?->full_name ?? '' }}">
+    {{-- Tabs --}}
+    <div x-data="{ activeTab: 'overview' }" class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden">
+        {{-- Tab Headers --}}
+        <div class="border-b border-gray-200 dark:border-gray-700 overflow-x-auto scroller-hide">
+            <nav class="flex">
+                <button @click="activeTab = 'overview'"
+                    :class="{ 'border-indigo-500 text-indigo-600 dark:text-indigo-400': activeTab === 'overview', 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400': activeTab !== 'overview' }"
+                    class="px-6 py-4 text-sm font-medium border-b-2 whitespace-nowrap transition-colors">
+                    Overview
+                </button>
+                <button @click="activeTab = 'accounts'"
+                    :class="{ 'border-indigo-500 text-indigo-600 dark:text-indigo-400': activeTab === 'accounts', 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400': activeTab !== 'accounts' }"
+                    class="px-6 py-4 text-sm font-medium border-b-2 whitespace-nowrap transition-colors">
+                    Accounts
+                </button>
+                <button @click="activeTab = 'wallet'"
+                    :class="{ 'border-indigo-500 text-indigo-600 dark:text-indigo-400': activeTab === 'wallet', 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400': activeTab !== 'wallet' }"
+                    class="px-6 py-4 text-sm font-medium border-b-2 whitespace-nowrap transition-colors">
+                    Wallet & Payments
+                </button>
+                <button @click="activeTab = 'collection'"
+                    :class="{ 'border-indigo-500 text-indigo-600 dark:text-indigo-400': activeTab === 'collection', 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400': activeTab !== 'collection' }"
+                    class="px-6 py-4 text-sm font-medium border-b-2 whitespace-nowrap transition-colors">
+                    Collection/Tabung
+                </button>
+                <button @click="activeTab = 'bank'"
+                    :class="{ 'border-indigo-500 text-indigo-600 dark:text-indigo-400': activeTab === 'bank', 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400': activeTab !== 'bank' }"
+                    class="px-6 py-4 text-sm font-medium border-b-2 whitespace-nowrap transition-colors">
+                    Bank
+                </button>
+                <button @click="activeTab = 'audit'"
+                    :class="{ 'border-indigo-500 text-indigo-600 dark:text-indigo-400': activeTab === 'audit', 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400': activeTab !== 'audit' }"
+                    class="px-6 py-4 text-sm font-medium border-b-2 whitespace-nowrap transition-colors">
+                    Audit
+                </button>
+                <button @click="activeTab = 'referrals'"
+                    :class="{ 'border-indigo-500 text-indigo-600 dark:text-indigo-400': activeTab === 'referrals', 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400': activeTab !== 'referrals' }"
+                    class="px-6 py-4 text-sm font-medium border-b-2 whitespace-nowrap transition-colors">
+                    Referrals
+                </button>
+            </nav>
         </div>
 
-        <div>
-            <label class="block text-xs font-medium text-gray-600 mb-1">NRIC</label>
-            <input type="text" name="nric" id="input-nric" 
-                   class="border rounded px-2 py-1 text-sm w-full"
-                   value="{{ $user->profile?->nric ?? '' }}">
-        </div>
-
-        <div>
-            <label class="block text-xs font-medium text-gray-600 mb-1">Date of Birth</label>
-            <input type="date" name="dob" id="input-dob" 
-                   class="border rounded px-2 py-1 text-sm w-full"
-                   value="{{ $user->profile?->dob ?? '' }}">
-        </div>
-
-        <div>
-            <label class="block text-xs font-medium text-gray-600 mb-1">Phone</label>
-            <input type="text" name="phone" id="input-phone" 
-                   class="border rounded px-2 py-1 text-sm w-full"
-                   value="{{ $user->profile?->phone ?? '' }}">
-        </div>
-
-        <div>
-            <label class="block text-xs font-medium text-gray-600 mb-1">Address</label>
-            <textarea name="home_address" id="input-home_address" 
-                      class="border rounded px-2 py-1 text-sm w-full" rows="2">{{ $user->profile?->home_address ?? '' }}</textarea>
-        </div>
-
-        <div>
-            <label class="block text-xs font-medium text-gray-600 mb-1">Country</label>
-            <select name="country" id="input-country" 
-                    class="border rounded px-2 py-1 text-sm w-full">
-                <option value="">-- Select Country --</option>
-            </select>
-        </div>
-
-        <div id="state-wrapper-edit" class="hidden">
-            <label class="block text-xs font-medium text-gray-600 mb-1">State</label>
-            <select name="state" id="input-state" 
-                    class="border rounded px-2 py-1 text-sm w-full">
-                <option value="">-- Select State --</option>
-            </select>
-        </div>
-
-        <div id="city-wrapper-edit" class="hidden">
-            <label class="block text-xs font-medium text-gray-600 mb-1">City</label>
-            <select name="city" id="input-city" 
-                    class="border rounded px-2 py-1 text-sm w-full">
-                <option value="">-- Select City --</option>
-            </select>
-        </div>
-
-        <div class="flex gap-2 pt-2">
-            <button type="submit" class="px-3 py-1 bg-green-600 text-white rounded text-sm">✅ Save</button>
-            <button type="button" id="cancelEditProfileBtn" class="px-3 py-1 bg-gray-300 rounded text-sm">❌ Cancel</button>
-        </div>
-    </form>
-</div>
-
-                            {{-- Business / Education --}}
-                            <div class="p-4 border rounded-lg space-y-3">
-                                <div>
-                                    <h4 class="font-semibold mb-2">Businesses</h4>
-                                    @forelse(($user->businesses ?? collect([])) as $b)
-                                        <div class="text-sm text-gray-700 mb-2">
-                                            <div class="font-medium">{{ $b->company_name ?? '-' }} ({{ $b->ssm_no ?? '' }})</div>
-                                            <div class="text-xs text-gray-500">{{ $b->industry ?? '-' }} • {{ $b->business_model ?? '-' }}</div>
-                                        </div>
-                                    @empty
-                                        <div class="text-sm text-gray-500">No businesses recorded.</div>
-                                    @endforelse
+        {{-- Tab Contents --}}
+        <div class="p-6">
+            {{-- OVERVIEW TAB --}}
+            <div x-show="activeTab === 'overview'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0">
+                <div class="grid md:grid-cols-2 gap-6">
+                    {{-- Profile Details --}}
+                    <div class="space-y-6">
+                        <div class="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-5">
+                            <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Personal Information</h3>
+                            <dl class="space-y-3 text-sm">
+                                <div class="flex justify-between">
+                                    <dt class="text-gray-500 dark:text-gray-400">Full Name</dt>
+                                    <dd class="font-medium text-gray-900 dark:text-white">{{ $user->profile?->full_name ?? '-' }}</dd>
                                 </div>
-
-                                <div>
-                                    <h4 class="font-semibold mb-2">Education / Courses</h4>
-                                    <div class="text-sm text-gray-700">
-                                        <div>Primary: {{ $user->educations?->first()?->primary ?? '-' }}</div>
-                                        <div>Secondary: {{ $user->educations?->first()?->secondary ?? '-' }}</div>
-                                        <div>Higher: {{ $user->educations?->first()?->higher ?? '-' }}</div>
-                                    </div>
-
-                                    @if(($user->courses ?? collect([]))->count())
-                                        <div class="mt-2">
-                                            <h5 class="text-sm font-medium">Courses</h5>
-                                            <ul class="text-sm text-gray-700 list-disc ml-5">
-                                                @foreach(($user->courses ?? collect([])) as $course)
-                                                    <li>{{ $course->title ?? '-' }} — {{ $course->provider ?? '-' }} ({{ $course->year ?? '-' }})</li>
-                                                @endforeach
-                                            </ul>
-                                        </div>
-                                    @else
-                                        <div class="text-sm text-gray-500">No courses recorded.</div>
-                                    @endif
+                                <div class="flex justify-between">
+                                    <dt class="text-gray-500 dark:text-gray-400">NRIC</dt>
+                                    <dd class="font-medium text-gray-900 dark:text-white">{{ $user->profile?->nric ?? '-' }}</dd>
                                 </div>
-                            </div>
+                                <div class="flex justify-between">
+                                    <dt class="text-gray-500 dark:text-gray-400">Date of Birth</dt>
+                                    <dd class="font-medium text-gray-900 dark:text-white">{{ $user->profile?->dob ?? '-' }}</dd>
+                                </div>
+                                <div class="flex justify-between">
+                                    <dt class="text-gray-500 dark:text-gray-400">Phone</dt>
+                                    <dd class="font-medium text-gray-900 dark:text-white">{{ $user->profile?->phone ?? '-' }}</dd>
+                                </div>
+                            </dl>
                         </div>
 
-                        {{-- Next of kin & affiliations --}}
-                        <div class="mt-6 grid md:grid-cols-2 gap-6">
-                            <div class="p-4 border rounded-lg">
-                                <h4 class="font-semibold mb-2">Next of Kin</h4>
-                                @forelse(($user->nextOfKins ?? collect([])) as $nok)
-                                    <div class="text-sm text-gray-700 mb-2">
-                                        <div class="font-medium">{{ $nok->name ?? '-' }} ({{ $nok->relationship ?? '-' }})</div>
-                                        <div class="text-xs text-gray-500">{{ $nok->phone ?? '-' }} • {{ $nok->address ?? '-' }}</div>
+                        <div class="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-5">
+                            <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Address</h3>
+                            <dl class="space-y-3 text-sm">
+                                <div>
+                                    <dt class="text-gray-500 dark:text-gray-400 mb-1">Home Address</dt>
+                                    <dd class="font-medium text-gray-900 dark:text-white">{!! nl2br(e($user->profile?->home_address ?? '-')) !!}</dd>
+                                </div>
+                                <div class="grid grid-cols-2 gap-4 pt-2">
+                                    <div>
+                                        <dt class="text-gray-500 dark:text-gray-400">City</dt>
+                                        <dd class="font-medium text-gray-900 dark:text-white">{{ $user->profile?->city ?? '-' }}</dd>
                                     </div>
-                                @empty
-                                    <div class="text-sm text-gray-500">No next-of-kin recorded.</div>
-                                @endforelse
-                            </div>
-
-                            <div class="p-4 border rounded-lg">
-                                <h4 class="font-semibold mb-2">Affiliations</h4>
-                                @forelse(($user->affiliations ?? collect([])) as $a)
-                                    <div class="text-sm text-gray-700 mb-2">
-                                        <div class="font-medium">{{ $a->organization ?? '-' }}</div>
-                                        <div class="text-xs text-gray-500">{{ $a->position ?? '-' }}</div>
+                                    <div>
+                                        <dt class="text-gray-500 dark:text-gray-400">State</dt>
+                                        <dd class="font-medium text-gray-900 dark:text-white">{{ $user->profile?->state ?? '-' }}</dd>
                                     </div>
-                                @empty
-                                    <div class="text-sm text-gray-500">No affiliations recorded.</div>
-                                @endforelse
-                            </div>
+                                    <div>
+                                        <dt class="text-gray-500 dark:text-gray-400">Country</dt>
+                                        <dd class="font-medium text-gray-900 dark:text-white">{{ $user->profile?->country ?? '-' }}</dd>
+                                    </div>
+                                </div>
+                            </dl>
                         </div>
                     </div>
 
-                    {{-- ACCOUNTS --}}
-                    <div data-panel="accounts" class="tab-panel hidden">
-                        <div class="grid md:grid-cols-2 gap-6">
-                            @forelse(($user->accounts ?? collect([])) as $account)
-                                <div class="p-4 border rounded-lg {{ $account->active ? 'border-green-200 bg-green-50' : 'border-gray-200' }}">
-                                    <div class="flex justify-between items-start">
-                                        <div>
-                                            <h4 class="font-semibold capitalize flex items-center gap-2">
-                                                {{ $account->type ?? '-' }} Account
-                                                @if($account->active)
-                                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">Active</span>
-                                                @else
-                                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600">Inactive</span>
-                                                @endif
-                                            </h4>
-                                            <p class="text-sm text-gray-600 mt-2">
-                                                <span class="font-medium">Serial:</span>
-                                                <span id="serial-{{ $account->id }}" class="font-mono {{ $account->serial_number ? 'text-indigo-600' : 'text-gray-400' }}">
-                                                    {{ $account->serial_number ?? 'Not assigned' }}
-                                                </span>
-                                            </p>
-                                            <p class="text-sm text-gray-600">
-                                                <span class="font-medium">Status:</span>
-                                                <span id="status-{{ $account->id }}">{{ $account->active ? 'Active' : 'Inactive' }}</span>
-                                            </p>
-                                            <p class="text-sm text-gray-600" id="expires-row-{{ $account->id }}" style="{{ $account->expires_at ? '' : 'display:none;' }}">
-                                                <span class="font-medium">Expires:</span>
-                                                <span id="expires-{{ $account->id }}">{{ $account->expires_at?->format('d M Y') ?? '-' }}</span>
-                                            </p>
-                                        </div>
-
-                                        <div class="space-y-2 text-right">
-                                            <button data-account-id="{{ $account->id }}"
-                                                    class="toggle-account-btn px-3 py-1.5 rounded text-sm font-medium transition-colors
-                                                           {{ $account->active ? 'bg-red-100 text-red-700 hover:bg-red-200' : 'bg-green-600 text-white hover:bg-green-700' }}">
-                                                {{ $account->active ? 'Deactivate' : 'Activate' }}
-                                            </button>
-
-                                            <button data-account-id="{{ $account->id }}"
-                                                    class="edit-serial-btn px-3 py-1.5 rounded bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition-colors">
-                                                Edit Serial
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    {{-- inline serial edit form (hidden) --}}
-                                    <div id="serial-edit-{{ $account->id }}" class="mt-3 hidden">
-                                        <div class="flex items-center gap-2">
-                                            <input type="text" id="serial-input-{{ $account->id }}"
-                                                   class="border rounded p-2 flex-1 font-mono text-sm"
-                                                   value="{{ $account->serial_number ?? '' }}"
-                                                   placeholder="e.g., RM2601070001">
-                                            <button data-account-id="{{ $account->id }}" class="save-serial-btn px-3 py-2 bg-green-600 text-white rounded text-sm font-medium hover:bg-green-700">Save</button>
-                                            <button onclick="document.getElementById('serial-edit-{{ $account->id }}').classList.add('hidden')" class="px-3 py-2 bg-gray-200 rounded text-sm">Cancel</button>
-                                        </div>
-                                        <div id="serial-error-{{ $account->id }}" class="text-red-500 text-sm mt-1"></div>
-                                        <p class="text-xs text-gray-500 mt-1">Format: RM/SB + YYMMDD + 4-digit number (e.g., RM2601070001)</p>
-                                    </div>
-                                </div>
+                    {{-- Next of Kin --}}
+                    <div class="space-y-6">
+                        <div class="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-5">
+                            <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Next of Kin</h3>
+                            @forelse(($user->nextOfKins ?? collect([])) as $nok)
+                            <div class="mb-3 pb-3 border-b border-gray-200 dark:border-gray-600 last:border-0 last:mb-0 last:pb-0">
+                                <p class="font-semibold text-gray-900 dark:text-white">{{ $nok->name }} <span class="text-xs font-normal text-gray-500">({{ $nok->relationship }})</span></p>
+                                <p class="text-sm text-gray-600 dark:text-gray-400">{{ $nok->phone }}</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">{{ $nok->address }}</p>
+                            </div>
                             @empty
-                                <p class="text-sm text-gray-500">No accounts recorded.</p>
+                            <p class="text-sm text-gray-500 italic">No next of kin recorded.</p>
                             @endforelse
                         </div>
                     </div>
+                </div>
+            </div>
 
-                    <div data-panel="bank" class="tab-panel hidden">
-                        <div class="grid md:grid-cols-2 gap-6">
-                            <div class="p-4 border rounded-lg">
-                                <h4 class="font-semibold mb-2">Bank Details</h4>
-                                <dl class="text-sm text-gray-700">
-                                    <div><span class="font-medium">Bank Name:</span> {{ $user->bank?->bank_name ?? '-' }}</div>
-                                    <div><span class="font-medium">Account Number:</span> {{ $user->bank?->account_number ?? '-' }}</div>
-                                    <div><span class="font-medium">Account Holder:</span> {{ $user->bank?->account_holder ?? '-' }}</div>
-                                    
-                                </dl>
-                            </div>
-                        </div>
+            {{-- ACCOUNTS TAB --}}
+            <div x-show="activeTab === 'accounts'" x-cloak x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0">
+                @php
+                $accountTypes = $user->accounts->pluck('type')->map(fn($t) => strtolower(trim($t ?? '')))->toArray();
+                $hasRizqmall = in_array('rizqmall', $accountTypes);
+                $hasSandbox = in_array('sandbox', $accountTypes);
+                @endphp
+
+                <div class="mb-6 p-5 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800 rounded-xl flex flex-col md:flex-row items-center justify-between gap-4">
+                    <div>
+                        <h4 class="font-bold text-indigo-900 dark:text-indigo-300">Account Status</h4>
+                        <p class="text-sm text-indigo-700 dark:text-indigo-400 mt-1">
+                            @if($hasRizqmall && $hasSandbox)
+                            All required accounts (RizqMall & Sandbox) are active.
+                            @else
+                            Missing:
+                            @if(!$hasRizqmall) <span class="font-bold">RizqMall</span> @endif
+                            @if(!$hasRizqmall && !$hasSandbox) & @endif
+                            @if(!$hasSandbox) <span class="font-bold">Sandbox</span> @endif
+                            @endif
+                        </p>
                     </div>
+                    <div class="flex gap-3">
+                        @if(!$hasRizqmall)
+                        <button onclick="window.createAccount('rizqmall')" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold transition-colors shadow-sm">
+                            <i class="fas fa-plus mr-2"></i> Add RizqMall
+                        </button>
+                        @endif
+                        @if(!$hasSandbox)
+                        <button onclick="window.createAccount('sandbox')" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-semibold transition-colors shadow-sm">
+                            <i class="fas fa-plus mr-2"></i> Add Sandbox
+                        </button>
+                        @endif
+                    </div>
+                </div>
 
-                    {{-- WALLET & PAYMENTS --}}
-                    <div data-panel="wallet" class="tab-panel hidden">
-                        <div class="grid md:grid-cols-2 gap-6">
-                            <div class="p-4 border rounded-lg">
-                                <h4 class="font-semibold mb-2">Wallet</h4>
-                                <p class="text-2xl font-bold">{{ number_format(($user->wallet?->balance ?? 0) / 100, 2) }} RM</p>
+                <div class="grid md:grid-cols-2 gap-6">
+                    @forelse(($user->accounts ?? collect([])) as $account)
+                    <div class="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-5 border {{ $account->active ? 'border-green-200 dark:border-green-800' : 'border-red-200 dark:border-red-800' }}">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <h4 class="font-bold text-lg text-gray-900 dark:text-white capitalize flex items-center gap-2">
+                                    {{ $account->type }} Account
+                                    <span class="px-2 py-0.5 rounded text-xs {{ $account->active ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' }}">
+                                        {{ $account->active ? 'Active' : 'Inactive' }}
+                                    </span>
+                                </h4>
+                                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 font-mono">{{ $account->serial_number ?? 'No Serial' }}</p>
+                            </div>
 
-                                <div class="mt-4">
-                                    <h5 class="font-semibold">Transactions (latest)</h5>
-                                    <ul class="text-sm mt-2">
-                                        @forelse(($walletTransactions ?? collect([])) as $t)
-                                            <li class="py-2 border-b flex justify-between">
-                                                <span>{{ $t->type ?? '-' }} — {{ $t->description ?? '-' }}</span>
-                                                <span>{{ number_format(($t->amount ?? 0) / 100, 2) }}</span>
-                                            </li>
-                                        @empty
-                                            <li class="text-sm text-gray-500">No transactions.</li>
-                                        @endforelse
-                                    </ul>
+                        </div>
+
+                        <div class="space-y-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+                            {{-- Edit Serial Form --}}
+                            <div x-data="{ editing: false, serial: '{{ $account->serial_number ?? '' }}' }" class="mb-3">
+                                <button x-show="!editing" @click="editing = true" class="text-xs font-semibold text-indigo-600 hover:text-indigo-500 dark:text-indigo-400">Change Serial Number</button>
+                                <div x-show="editing" class="flex items-center gap-2 mt-2">
+                                    <input type="text" x-model="serial" class="w-full text-sm border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white" placeholder="Enter Serial">
+                                    <button @click="updateSerial({{ $account->id }}, serial); editing = false;" class="p-1.5 bg-green-500 text-white rounded-lg hover:bg-green-600"><i class="fas fa-check"></i></button>
+                                    <button @click="editing = false" class="p-1.5 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"><i class="fas fa-times"></i></button>
                                 </div>
                             </div>
 
-                            <div class="p-4 border rounded-lg">
-                                <h4 class="font-semibold mb-2">Payments (latest)</h4>
-                                <ul class="text-sm">
-                                    @forelse(($payments ?? collect([])) as $p)
-                                        <li class="py-2 border-b">
-                                            <div class="flex justify-between">
-                                                <div>
-                                                    <div class="font-medium">{{ $p->provider ?? '-' }} — {{ $p->status ?? '-' }}</div>
-                                                    <div class="text-xs text-gray-500">{{ $p->created_at?->format('d M Y H:i') ?? '-' }}</div>
-                                                </div>
-                                                <div class="text-sm">{{ number_format(($p->amount ?? 0) / 100, 2) }}</div>
-                                            </div>
-                                        </li>
-                                    @empty
-                                        <li class="text-sm text-gray-500">No payments found.</li>
-                                    @endforelse
-                                </ul>
+                            <form action="{{ route('admin.users.toggleAccountActive', [$user->id, $account->id]) }}" method="POST">
+                                @csrf
+                                <button type="submit" class="w-full py-2 rounded-lg text-sm font-semibold transition-colors {{ $account->active ? 'bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/40' : 'bg-green-50 text-green-600 hover:bg-green-100 dark:bg-green-900/20 dark:text-green-400 dark:hover:bg-green-900/40' }}">
+                                    {{ $account->active ? 'Deactivate Account' : 'Activate Account' }}
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    @empty
+                    <div class="col-span-2 text-center py-8 text-gray-500">No accounts found.</div>
+                    @endforelse
+                </div>
+            </div>
+
+            {{-- WALLET TAB --}}
+            <div x-show="activeTab === 'wallet'" x-cloak x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0">
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div class="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl p-6 text-white shadow-lg">
+                        <p class="text-indigo-100 text-sm font-medium mb-1">Current Balance</p>
+                        <h3 class="text-4xl font-bold">RM {{ number_format(($user->wallet->balance ?? 0) / 100, 2) }}</h3>
+                        <div class="mt-6 flex gap-3">
+                            <button class="flex-1 py-2 bg-white/20 hover:bg-white/30 rounded-xl text-sm font-semibold backdrop-blur-sm transition-colors">
+                                <i class="fas fa-plus mr-1"></i> Topup
+                            </button>
+                            <button class="flex-1 py-2 bg-white/20 hover:bg-white/30 rounded-xl text-sm font-semibold backdrop-blur-sm transition-colors">
+                                <i class="fas fa-minus mr-1"></i> Deduct
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-50 dark:bg-gray-700/50 rounded-2xl p-6 h-64 overflow-y-auto custom-scrollbar">
+                        <h4 class="font-bold text-gray-900 dark:text-white mb-4">Recent Transactions</h4>
+                        <ul class="space-y-4">
+                            @forelse(($user->wallet?->transactions()->latest()->take(10)->get() ?? collect([])) as $tx)
+                            <li class="flex justify-between items-center">
+                                <div>
+                                    <p class="text-sm font-medium text-gray-900 dark:text-white">{{ $tx->description }}</p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">{{ $tx->created_at->format('d M Y, h:i A') }}</p>
+                                </div>
+                                <span class="font-bold text-sm {{ $tx->type === 'credit' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400' }}">
+                                    {{ $tx->type === 'credit' ? '+' : '-' }} RM {{ number_format($tx->amount / 100, 2) }}
+                                </span>
+                            </li>
+                            @empty
+                            <li class="text-center text-gray-500 py-4 text-sm">No transactions yet.</li>
+                            @endforelse
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            {{-- COLLECTION TAB --}}
+            <div x-show="activeTab === 'collection'" x-cloak x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0">
+                <div class="overflow-x-auto bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 mb-6">
+                    <table class="w-full text-sm text-left">
+                        <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
+                            <tr>
+                                <th class="px-6 py-3">Type</th>
+                                <th class="px-6 py-3">Balance</th>
+                                <th class="px-6 py-3">Pending</th>
+                                <th class="px-6 py-3">Redeemed</th>
+                                <th class="px-6 py-3">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                            @foreach($user->collections as $collection)
+                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                                <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">
+                                    {{ ucfirst(str_replace('_', ' ', $collection->type)) }}
+                                </td>
+                                <td class="px-6 py-4 font-bold text-gray-900 dark:text-white">
+                                    RM {{ number_format($collection->balance / 100, 2) }}
+                                </td>
+                                <td class="px-6 py-4 text-gray-500 dark:text-gray-400">
+                                    RM {{ number_format($collection->pending_balance / 100, 2) }}
+                                </td>
+                                <td class="px-6 py-4">
+                                    @if($collection->is_redeemed)
+                                    <span class="px-2 py-1 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 rounded text-xs font-semibold">Yes</span>
+                                    @else
+                                    <span class="px-2 py-1 bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-400 rounded text-xs font-semibold">No</span>
+                                    @endif
+                                </td>
+                                <td class="px-6 py-4">
+                                    @if(!$collection->is_redeemed)
+                                    <form action="{{ route('admin.users.collection.redeem', [$user->id, $collection->type]) }}" method="POST">
+                                        @csrf
+                                        <button class="text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 font-semibold text-xs transition-colors">
+                                            Redeem
+                                        </button>
+                                    </form>
+                                    @else
+                                    <span class="text-gray-400 text-xs text-center block">-</span>
+                                    @endif
+                                </td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+
+                {{-- Add Transaction Button --}}
+                <div class="text-right mb-4">
+                    <button onclick="document.getElementById('transactionModal').classList.remove('hidden')"
+                        class="px-4 py-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-xl text-sm font-medium hover:opacity-90 transition shadow-lg">
+                        <i class="fas fa-plus mr-2"></i> Add Transaction
+                    </button>
+                </div>
+
+                {{-- Collection Transactions Table --}}
+                <div class="overflow-x-auto bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700">
+                    <table class="w-full text-sm text-left">
+                        <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
+                            <tr>
+                                <th class="px-6 py-3">Date</th>
+                                <th class="px-6 py-3">Collection</th>
+                                <th class="px-6 py-3">Amount</th>
+                                <th class="px-6 py-3">Description</th>
+                                <th class="px-6 py-3">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                            @php
+                            $colTransactions = $user->collections->flatMap(function($collection) {
+                            return $collection->transactions ?? collect();
+                            })->sortByDesc('created_at');
+                            @endphp
+                            @forelse($colTransactions as $tx)
+                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                                <td class="px-6 py-4 text-gray-600 dark:text-gray-300 whitespace-nowrap">
+                                    {{ $tx->created_at->format('d M Y') }}<br>
+                                    <span class="text-xs text-gray-400">{{ $tx->created_at->format('h:i A') }}</span>
+                                </td>
+                                <td class="px-6 py-4 text-gray-900 dark:text-white font-medium capitalize">
+                                    {{ str_replace('_', ' ', $tx->collection->type) }}
+                                </td>
+                                <td class="px-6 py-4 font-bold {{ $tx->type == 'credit' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400' }}">
+                                    {{ $tx->type == 'credit' ? '+' : '-' }} RM {{ number_format($tx->amount / 100, 2) }}
+                                </td>
+                                <td class="px-6 py-4 text-gray-600 dark:text-gray-300">
+                                    {{ $tx->description }}
+                                    @if($tx->slip_path)
+                                    <a href="{{ Storage::url($tx->slip_path) }}" target="_blank" class="block text-indigo-500 hover:underline text-xs mt-1">View Slip</a>
+                                    @endif
+                                </td>
+                                <td class="px-6 py-4">
+                                    <form action="{{ route('admin.collection-transactions.destroy', $tx->id) }}" method="POST" onsubmit="return confirm('Are you sure?')">
+                                        @csrf
+                                        <button class="text-red-500 hover:text-red-700 dark:hover:text-red-400 transition-colors">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            @empty
+                            <tr>
+                                <td colspan="5" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                                    No transactions found.
+                                </td>
+                            </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            {{-- BANK TAB --}}
+            <div x-show="activeTab === 'bank'" x-cloak x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0">
+                <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-6">
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-6">User Bank Details</h3>
+                    <div class="grid md:grid-cols-2 gap-8">
+                        <div class="relative overflow-hidden p-6 rounded-2xl bg-gradient-to-tr from-gray-900 to-gray-800 text-white shadow-xl">
+                            <div class="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-white/10 rounded-full blur-xl"></div>
+                            <div class="flex justify-between items-start mb-8">
+                                <div>
+                                    <p class="text-xs text-gray-400 uppercase tracking-wider">Bank Name</p>
+                                    <p class="text-xl font-bold tracking-wide">{{ $user->bank?->bank_name ?? 'NOT SET' }}</p>
+                                </div>
+                                <i class="fas fa-university text-2xl text-gray-500"></i>
+                            </div>
+                            <div class="mb-6">
+                                <p class="text-xs text-gray-400 uppercase tracking-wider">Account Number</p>
+                                <p class="text-2xl font-mono tracking-widest">{{ $user->bank?->account_number ?? '0000 0000 0000' }}</p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-400 uppercase tracking-wider">Account Holder</p>
+                                <p class="text-lg font-semibold truncate">{{ $user->bank?->account_holder ?? $user->name }}</p>
+                            </div>
+                        </div>
+
+                        <div class="space-y-4">
+                            <div class="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-dashed border-gray-200 dark:border-gray-600">
+                                <h4 class="font-bold text-sm text-gray-700 dark:text-gray-300 mb-2">Verification Status</h4>
+                                <div class="flex items-center gap-2">
+                                    @if($user->bank)
+                                    <i class="fas fa-check-circle text-green-500"></i>
+                                    <span class="text-sm text-green-700 dark:text-green-400 font-medium">Bank details added</span>
+                                    @else
+                                    <i class="fas fa-exclamation-circle text-yellow-500"></i>
+                                    <span class="text-sm text-yellow-700 dark:text-yellow-400 font-medium">No bank details</span>
+                                    @endif
+                                </div>
+                            </div>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">
+                                To update these details, please use the <strong>Edit</strong> button at the top of the page.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- AUDIT TAB --}}
+            <div x-show="activeTab === 'audit'" x-cloak x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0">
+                <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-6 flex flex-col items-center justify-center min-h-[300px]">
+                    <div class="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-4">
+                        <i class="fas fa-clipboard-list text-2xl text-gray-400"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white">Audit Logs</h3>
+                    <p class="text-gray-500 dark:text-gray-400 text-sm mt-2 text-center max-w-md">
+                        Detailed activity logs for this user (login history, profile updates, account changes) will typically appear here.
+                    </p>
+                    <div class="mt-8 w-full max-w-2xl">
+                        <div class="border-l-2 border-gray-200 dark:border-gray-700 pl-4 space-y-6">
+                            <div class="relative">
+                                <div class="absolute -left-[21px] top-1 w-3 h-3 bg-indigo-500 rounded-full border-2 border-white dark:border-gray-800"></div>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 uppercase font-bold mb-1">Created At</p>
+                                <p class="text-sm font-medium text-gray-900 dark:text-white">User account created</p>
+                                <p class="text-xs text-gray-400 mt-1">{{ $user->created_at->format('d M Y, h:i A') }}</p>
+                            </div>
+                            <div class="relative">
+                                <div class="absolute -left-[21px] top-1 w-3 h-3 bg-gray-300 dark:bg-gray-600 rounded-full border-2 border-white dark:border-gray-800"></div>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 uppercase font-bold mb-1">Updated At</p>
+                                <p class="text-sm font-medium text-gray-900 dark:text-white">Last profile update</p>
+                                <p class="text-xs text-gray-400 mt-1">{{ $user->updated_at->format('d M Y, h:i A') }}</p>
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
 
-                    <div data-panel="collection" class="tab-panel hidden">
-    <!-- Success/Error Messages -->
-    @if(session('success'))
-        <div class="mb-4 p-4 bg-green-50 border-l-4 border-green-500 text-green-700 rounded">
-            {{ session('success') }}
-        </div>
-    @endif
-
-    @if(session('error'))
-        <div class="mb-4 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded">
-            {{ session('error') }}
-        </div>
-    @endif
-
-    <!-- Collections Table -->
-    <div class="bg-white rounded-lg shadow-sm overflow-hidden mb-8">
-        <div class="px-6 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 border-b border-gray-200">
-            <h3 class="text-lg font-semibold text-white">Collection Balances</h3>
-        </div>
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Balance</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pending</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Limit</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Redeemed</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    @foreach($user->collections as $collection)
-                    <tr class="hover:bg-gray-50 transition">
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800">
-                                {{ ucfirst(str_replace('_', ' ', $collection->type)) }}
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
-                            RM {{ number_format($collection->balance / 100, 2) }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                            RM {{ number_format($collection->pending_balance / 100, 2) }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                            {{ $collection->limit ? 'RM ' . number_format($collection->limit / 100, 2) : 'N/A' }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            @if($collection->is_redeemed)
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                    Yes
-                                </span>
-                            @else
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                    No
-                                </span>
-                            @endif
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm">
-                            @if(!$collection->is_redeemed)
-                                <form action="{{ route('admin.users.collection.redeem', [$user->id, $collection->type]) }}" method="POST">
-                                    @csrf
-                                    <button type="submit" class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition">
-                                        Redeem
-                                    </button>
-                                </form>
-                            @else
-                                <button disabled class="inline-flex items-center px-4 py-2 bg-gray-300 text-gray-500 text-sm font-medium rounded-md cursor-not-allowed">
-                                    Redeemed
-                                </button>
-                            @endif
-                        </td>
-                    </tr>
-                    @endforeach
-                </tbody>
-            </table>
+            {{-- REFERRALS TAB --}}
+            <div x-show="activeTab === 'referrals'" x-cloak x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-bold text-gray-900 dark:text-white">Referral Tree</h3>
+                    <button class="px-3 py-1.5 bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 rounded-lg text-xs font-semibold hover:bg-indigo-200 dark:hover:bg-indigo-900/50 transition-colors">
+                        Load Full Tree
+                    </button>
+                </div>
+                <div id="referral-tree" class="p-6 bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 h-96 overflow-auto custom-scrollbar">
+                    {{-- Content loaded via JS --}}
+                    <div class="text-center text-gray-500 mt-10">Tree visualization will be loaded here...</div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- Transaction History Section -->
-    <div class="bg-white rounded-lg shadow-sm overflow-hidden">
-        <div class="px-6 py-4 bg-gradient-to-r from-purple-600 to-pink-600 border-b border-gray-200 flex justify-between items-center">
-            <h3 class="text-lg font-semibold text-white">Transaction History</h3>
-            <button onclick="openTransactionModal()" class="inline-flex items-center px-4 py-2 bg-white text-purple-600 text-sm font-medium rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition">
-                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-                </svg>
-                Add Transaction
-            </button>
-        </div>
-        
-        <div class="overflow-x-auto">
-            @php
-               $allTransactions = $user->collections->flatMap(function($collection) {
-    return $collection->transactions;
-})->sortByDesc(function($transaction) {
-    return $transaction->transaction_date ?? $transaction->created_at;
-});
-            @endphp
-
-            @if($allTransactions->count() > 0)
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Collection</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Slip</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created By</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                        @foreach($allTransactions as $transaction)
-                        <tr class="hover:bg-gray-50 transition">
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                {{ $transaction->transaction_date ? $transaction->transaction_date->format('d M Y, h:i A') : $transaction->created_at->format('d M Y, h:i A') }}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                                    {{ ucfirst(str_replace('_', ' ', $transaction->collection->type)) }}
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                @if($transaction->type === 'credit')
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                        <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v3.586L7.707 9.293a1 1 0 00-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 10.586V7z" clip-rule="evenodd"/>
-                                        </svg>
-                                        Credit
-                                    </span>
-                                @else
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                        <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v3.586l-1.293-1.293a1 1 0 00-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 10.586V7z" clip-rule="evenodd"/>
-                                        </svg>
-                                        Debit
-                                    </span>
-                                @endif
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold {{ $transaction->type === 'credit' ? 'text-green-600' : 'text-red-600' }}">
-                                {{ $transaction->type === 'credit' ? '+' : '-' }} RM {{ number_format($transaction->amount / 100, 2) }}
-                            </td>
-                            <td class="px-6 py-4 text-sm text-gray-600 max-w-xs truncate">
-                                {{ $transaction->description ?: 'N/A' }}
-                                @if($transaction->admin_notes)
-                                    <span class="block text-xs text-gray-400 italic mt-1">{{ $transaction->admin_notes }}</span>
-                                @endif
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                @if($transaction->slip_path)
-                                    <a href="{{ Storage::url($transaction->slip_path) }}" target="_blank" class="text-indigo-600 hover:text-indigo-900 font-medium">
-                                        View Slip
-                                    </a>
-                                @else
-                                    <span class="text-gray-400">No slip</span>
-                                @endif
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                                {{ $transaction->creator->name ?? 'System' }}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                <form action="{{ route('admin.collection-transactions.destroy', $transaction->id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this transaction {{$transaction->id}}? This will reverse the amount.')">
-                                    @csrf
-                                    <button type="submit" class="text-red-600 hover:text-red-900 font-medium">
-                                        Delete
-                                    </button>
-                                </form>
-                            </td>
-                        </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            @else
-                <div class="px-6 py-12 text-center">
-                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                    </svg>
-                    <h3 class="mt-2 text-sm font-medium text-gray-900">No transactions</h3>
-                    <p class="mt-1 text-sm text-gray-500">Get started by adding a new transaction.</p>
-                </div>
-            @endif
+    {{-- Modals --}}
+    {{-- Blacklist Modal --}}
+    <div id="blacklistModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center hidden z-50 p-4">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-sm p-6">
+            <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Confirm Blacklist</h3>
+            <p class="text-gray-500 dark:text-gray-400 text-sm mb-6">Are you sure you want to blacklist <span class="font-bold text-gray-900 dark:text-white">{{ $user->name }}</span>?</p>
+            <div class="flex gap-3">
+                <button onclick="document.getElementById('blacklistModal').classList.add('hidden')" class="flex-1 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">Cancel</button>
+                <form action="{{ route('admin.users.addToBlacklist', $user->id) }}" method="POST" class="flex-1">
+                    @csrf
+                    <button type="submit" class="w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl font-medium shadow-lg transition-colors">Confirm</button>
+                </form>
+            </div>
         </div>
     </div>
-</div>
 
-<!-- Transaction Modal -->
-<div id="transactionModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-75 overflow-y-auto h-full w-full z-50">
-    <div class="relative top-20 mx-auto p-5 border w-full max-w-2xl shadow-2xl rounded-lg bg-white">
-        <div class="flex justify-between items-center pb-4 border-b">
-            <h3 class="text-2xl font-bold text-gray-900">Add New Transaction</h3>
-            <button onclick="closeTransactionModal()" class="text-gray-400 hover:text-gray-600 transition">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                </svg>
-            </button>
-        </div>
-
-        <form action="{{ route('admin.collection-transactions.store', $user->id) }}" method="POST" enctype="multipart/form-data" class="mt-6">
-            @csrf
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <!-- Collection Type -->
-                <div>
-                    <label for="collection_type" class="block text-sm font-medium text-gray-700 mb-2">Collection Type *</label>
-                    <select name="collection_type" id="collection_type" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
-                        <option value="">Select Collection</option>
-                        <option value="geran_asas">Geran Asas</option>
-                        <option value="tabung_usahawan">Tabung Usahawan</option>
-                        <option value="had_pembiayaan">Had Pembiayaan</option>
-                    </select>
-                    @error('collection_type')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                <!-- Transaction Type -->
-                <div>
-                    <label for="transaction_type" class="block text-sm font-medium text-gray-700 mb-2">Transaction Type *</label>
-                    <select name="transaction_type" id="transaction_type" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
-                        <option value="">Select Type</option>
-                        <option value="credit">Credit (Add)</option>
-                        <option value="debit">Debit (Deduct)</option>
-                    </select>
-                    @error('transaction_type')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                <!-- Amount -->
-                <div>
-                    <label for="amount" class="block text-sm font-medium text-gray-700 mb-2">Amount (RM) *</label>
-                    <input type="number" name="amount" id="amount" step="0.01" min="0.01" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" placeholder="0.00">
-                    @error('amount')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                <!-- Transaction Date -->
-                <div>
-                    <label for="transaction_date" class="block text-sm font-medium text-gray-700 mb-2">Transaction Date *</label>
-                    <input type="datetime-local" name="transaction_date" id="transaction_date" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
-                    @error('transaction_date')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
-            </div>
-
-            <!-- Description -->
-            <div class="mt-6">
-                <label for="description" class="block text-sm font-medium text-gray-700 mb-2">Description</label>
-                <textarea name="description" id="description" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" placeholder="Enter transaction description..."></textarea>
-                @error('description')
-                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                @enderror
-            </div>
-
-            <!-- Admin Notes -->
-            <div class="mt-6">
-                <label for="admin_notes" class="block text-sm font-medium text-gray-700 mb-2">Admin Notes (Internal)</label>
-                <textarea name="admin_notes" id="admin_notes" rows="2" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" placeholder="Internal notes for admin reference..."></textarea>
-                @error('admin_notes')
-                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                @enderror
-            </div>
-
-            <!-- File Upload -->
-            <div class="mt-6">
-                <label for="slip" class="block text-sm font-medium text-gray-700 mb-2">Upload Slip/Receipt</label>
-                <div class="flex items-center justify-center w-full">
-                    <label for="slip" class="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition">
-                        <div class="flex flex-col items-center justify-center pt-5 pb-6">
-                            <svg class="w-10 h-10 mb-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
-                            </svg>
-                            <p class="mb-2 text-sm text-gray-500"><span class="font-semibold">Click to upload</span> or drag and drop</p>
-                            <p class="text-xs text-gray-500">PNG, JPG, PDF (MAX. 5MB)</p>
-                        </div>
-                        <input id="slip" name="slip" type="file" class="hidden" accept=".jpg,.jpeg,.png,.pdf"/>
-                    </label>
-                </div>
-                @error('slip')
-                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                @enderror
-            </div>
-
-            <!-- Form Actions -->
-            <div class="mt-8 flex justify-end space-x-3 pt-6 border-t">
-                <button type="button" onclick="closeTransactionModal()" class="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium transition">
-                    Cancel
-                </button>
-                <button type="submit" class="px-6 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 font-medium transition shadow-md">
-                    Add Transaction
+    {{-- Transaction Modal --}}
+    <div id="transactionModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto custom-scrollbar p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white">Add Transaction</h3>
+                <button onclick="document.getElementById('transactionModal').classList.add('hidden')" class="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300">
+                    <i class="fas fa-times text-xl"></i>
                 </button>
             </div>
-        </form>
-    </div>
-</div>
 
-                    {{-- REFERRAL TREES --}}
-                    {{-- REFERRAL TREES --}}
-                    <div data-panel="referrals" class="tab-panel hidden">
-                        <h4 class="font-semibold mb-3">Referral Tree (registered referrals)</h4>
-                    
-                        <div id="referral-tree"
-                             class="p-4 border rounded min-h-[160px] text-sm text-gray-700 
-                                    overflow-auto max-h-[500px] w-full"
-                             style="white-space: nowrap;">
-                        </div>
-                    
-                        <p class="text-xs text-gray-500 mt-2">Top 10 under this user are shown by default.</p>
-                        <button id="expand-referral"
-                                class="mt-3 px-3 py-1 bg-indigo-600 text-white rounded">
-                            Load full tree
-                        </button>
+            <form action="{{ route('admin.collection-transactions.store', $user->id) }}" method="POST" enctype="multipart/form-data" class="space-y-4">
+                @csrf
+                <div class="grid md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Collection Type</label>
+                        <select name="collection_type" required class="w-full rounded-xl border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500">
+                            <option value="">Select...</option>
+                            <option value="geran_asas">Geran Asas</option>
+                            <option value="tabung_usahawan">Tabung Usahawan</option>
+                            <option value="had_pembiayaan">Had Pembiayaan</option>
+                        </select>
                     </div>
-
-
-                    <div data-panel="sandbox" class="tab-panel hidden">
-    <h4 class="font-semibold mb-3">Sandbox Referral Tree</h4>
-    <div id="sandbox-tree" 
-         class="p-4 border rounded min-h-[160px] text-sm text-gray-700 overflow-auto max-h-[500px] w-full"
-         style="white-space: nowrap;">
-    </div>
-    
-    <div class="mt-3 flex gap-2">
-        <button id="expand-sandbox" 
-                class="px-3 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700">
-            Load full sandbox tree
-        </button>
-        
-        <button id="sync-sandbox" 
-                class="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700">
-            Sync Rewards
-        </button>
-    </div>
-    
-    <div id="sync-message" class="mt-2 text-sm hidden"></div>
-</div>
-
-                    {{-- EDIT / AUDIT --}}
-                    <div data-panel="edit" class="tab-panel hidden">
-                        <h4 class="font-semibold mb-3">Edit User</h4>
-                        <form id="edit-user-form" method="POST" action="{{ route('admin.users.store') }}">
-                            <p class="text-sm text-gray-500">For editing profile, businesses and other fields, go to the edit page.</p>
-                            <a href="{{ route('admin.users.edit', $user) ?? '#' }}" class="mt-3 inline-block px-3 py-2 bg-indigo-600 text-white rounded">Go to Edit</a>
-                        </form>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Type</label>
+                        <select name="transaction_type" required class="w-full rounded-xl border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500">
+                            <option value="credit">Credit (+)</option>
+                            <option value="debit">Debit (-)</option>
+                        </select>
                     </div>
                 </div>
-            </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Amount (RM)</label>
+                    <input type="number" step="0.01" name="amount" required class="w-full rounded-xl border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500" placeholder="0.00">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Date</label>
+                    <input type="datetime-local" name="transaction_date" required class="w-full rounded-xl border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+                    <textarea name="description" rows="2" class="w-full rounded-xl border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500"></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Upload Slip</label>
+                    <input type="file" name="slip" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 dark:file:bg-indigo-900/30 dark:file:text-indigo-400">
+                </div>
+
+                <div class="flex justify-end pt-4">
+                    <button type="submit" class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-medium shadow-lg transition-colors">Save Transaction</button>
+                </div>
+            </form>
         </div>
     </div>
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-    const editBtn = document.getElementById('editProfileBtn');
-    const displayDiv = document.getElementById('profileDisplay');
-    const form = document.getElementById('editProfileForm');
-    const cancelBtn = document.getElementById('cancelEditProfileBtn');
 
-    let locationData = {};
-    const currentCountry = "{{ $user->profile?->country ?? '' }}";
-    const currentState = "{{ $user->profile?->state ?? '' }}";
-    const currentCity = "{{ $user->profile?->city ?? '' }}";
-
-    // Load location data
-    $.getJSON("{{ asset('select.json') }}", function(response) {
-        locationData = response;
-        
-        // Populate countries
-        $.each(locationData, function(country) {
-            const selected = country === currentCountry ? 'selected' : '';
-            $("#input-country").append(`<option value="${country}" ${selected}>${country}</option>`);
-        });
-
-        // If Malaysia is selected, show states
-        if (currentCountry === "Malaysia") {
-            $("#state-wrapper-edit").removeClass("hidden");
-            const states = locationData["Malaysia"] || {};
-            $.each(states, function(state) {
-                const selected = state === currentState ? 'selected' : '';
-                $("#input-state").append(`<option value="${state}" ${selected}>${state}</option>`);
-            });
-
-            // If state is selected, show cities
-            if (currentState) {
-                const cities = locationData["Malaysia"][currentState] || [];
-                if (cities.length > 0) {
-                    $("#city-wrapper-edit").removeClass("hidden");
-                    $.each(cities, function(i, city) {
-                        const selected = city === currentCity ? 'selected' : '';
-                        $("#input-city").append(`<option value="${city}" ${selected}>${city}</option>`);
-                    });
-                }
-            }
-        }
-    });
-
-    // Country change handler
-    $("#input-country").on("change", function() {
-        let country = $(this).val();
-        let states = locationData[country] || {};
-
-        $("#input-state").empty().append(new Option("-- Select State --", ""));
-        $("#input-city").empty().append(new Option("-- Select City --", ""));
-        $("#city-wrapper-edit").addClass("hidden");
-
-        if (country === "Malaysia") {
-            $("#state-wrapper-edit").removeClass("hidden");
-            $.each(states, function(state) {
-                $("#input-state").append(new Option(state, state));
-            });
-        } else {
-            $("#state-wrapper-edit").addClass("hidden");
-            $("#city-wrapper-edit").addClass("hidden");
-        }
-    });
-
-    // State change handler
-    $("#input-state").on("change", function() {
-        let country = $("#input-country").val();
-        let state = $(this).val();
-        let cities = locationData[country][state] || [];
-
-        $("#input-city").empty().append(new Option("-- Select City --", ""));
-
-        if (cities.length > 0) {
-            $("#city-wrapper-edit").removeClass("hidden");
-            $.each(cities, function(i, city) {
-                $("#input-city").append(new Option(city, city));
-            });
-        } else {
-            $("#city-wrapper-edit").addClass("hidden");
-        }
-    });
-
-    // Edit button
-    editBtn.addEventListener('click', () => {
-        displayDiv.classList.add('hidden');
-        form.classList.remove('hidden');
-    });
-
-    // Cancel button
-    cancelBtn.addEventListener('click', () => {
-        form.classList.add('hidden');
-        displayDiv.classList.remove('hidden');
-    });
-
-    // Form submission
-    form.addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        const formData = new FormData(this);
-        const submitBtn = this.querySelector('button[type="submit"]');
-        submitBtn.disabled = true;
-        submitBtn.textContent = 'Saving...';
-
-        fetch(this.action, {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-            }
-        })
-        .then(r => r.json())
-        .then(data => {
-            if (data.success) {
-                // Update display values
-                document.getElementById('display-full_name').textContent = data.profile.full_name || '-';
-                document.getElementById('display-nric').textContent = data.profile.nric || '-';
-                document.getElementById('display-dob').textContent = data.profile.dob || '-';
-                document.getElementById('display-phone').textContent = data.profile.phone || '-';
-                document.getElementById('display-home_address').innerHTML = (data.profile.home_address || '-').replace(/\n/g, '<br>');
-                document.getElementById('display-country').textContent = data.profile.country || '-';
-                document.getElementById('display-state').textContent = data.profile.state || '-';
-                document.getElementById('display-city').textContent = data.profile.city || '-';
-
-                // Switch back to display mode
-                form.classList.add('hidden');
-                displayDiv.classList.remove('hidden');
-
-                // Show success message
-                const alert = document.createElement('div');
-                alert.className = 'fixed top-5 right-5 bg-green-500 text-white px-4 py-2 rounded shadow-lg z-50';
-                alert.textContent = 'Profile updated successfully!';
-                document.body.appendChild(alert);
-                setTimeout(() => alert.remove(), 3000);
-            } else {
-                alert(data.message || 'Failed to update profile');
-            }
-        })
-        .catch(err => {
-            console.error(err);
-            alert('An error occurred while updating the profile');
-        })
-        .finally(() => {
-            submitBtn.disabled = false;
-            submitBtn.textContent = '✅ Save';
-        });
-    });
-});
-</script>
-<script>
-    // tab behavior
-    document.querySelectorAll('[data-tab]').forEach(btn=>{
-        btn.addEventListener('click', () => {
-            document.querySelectorAll('[data-tab]').forEach(b=>b.classList.remove('border-indigo-600','text-indigo-600'));
-            btn.classList.add('border-indigo-600','text-indigo-600');
-
-            const tab = btn.getAttribute('data-tab');
-            document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.add('hidden'));
-            document.querySelector('[data-panel="'+tab+'"]').classList.remove('hidden');
-        });
-    });
-    // open first tab
-    document.querySelector('[data-tab="overview"]').click();
-
-    // toggle admin via AJAX
-    document.getElementById('toggleAdminBtn').addEventListener('click', function(){
-        const btn = this;
-        btn.disabled = true;
-        fetch("{{ route('admin.users.toggleAdminAjax', $user) }}", {
-            method: 'POST',
-            headers: {'Content-Type':'application/json','X-CSRF-TOKEN':'{{ csrf_token() }}'},
-            body: JSON.stringify({})
-        }).then(r=>r.json()).then(resp=>{
-            if(resp.ok){
-                if(resp.is_admin){
-                    btn.textContent = 'Remove Admin';
-                    btn.classList.remove('bg-indigo-600');
-                    btn.classList.add('bg-red-500');
-                } else {
-                    btn.textContent = 'Make Admin';
-                    btn.classList.remove('bg-red-500');
-                    btn.classList.add('bg-indigo-600');
-                }
-            } else {
-                alert('Failed');
-            }
-        }).finally(()=>btn.disabled = false);
-    });
-
-    // account toggle & serial edit
-    document.querySelectorAll('.toggle-account-btn').forEach(b=>{
-        b.addEventListener('click', function(){
-            const accId = this.dataset.accountId;
-            const url = "{{ url('admin/users') }}/{{ $user->id }}/account/"+accId+"/toggle-active";
-            const btn = this;
-            const card = btn.closest('.border.rounded-lg');
-            btn.disabled = true;
-            btn.textContent = 'Processing...';
-            fetch(url, {method:'POST', headers:{'X-CSRF-TOKEN':'{{ csrf_token() }}'}})
-                .then(r=>r.json()).then(data=>{
-                    if(data.ok){
-                        const statusEl = document.getElementById('status-'+accId);
-                        const serialEl = document.getElementById('serial-'+accId);
-                        const expiresEl = document.getElementById('expires-'+accId);
-                        const expiresRow = document.getElementById('expires-row-'+accId);
-
-                        statusEl.textContent = data.active ? 'Active' : 'Inactive';
-                        btn.textContent = data.active ? 'Deactivate' : 'Activate';
-
-                        // Update button styling based on status
-                        if(data.active){
-                            btn.className = 'toggle-account-btn px-3 py-1.5 rounded text-sm font-medium transition-colors bg-red-100 text-red-700 hover:bg-red-200';
-                            card.classList.remove('border-gray-200');
-                            card.classList.add('border-green-200', 'bg-green-50');
-                        } else {
-                            btn.className = 'toggle-account-btn px-3 py-1.5 rounded text-sm font-medium transition-colors bg-green-600 text-white hover:bg-green-700';
-                            card.classList.remove('border-green-200', 'bg-green-50');
-                            card.classList.add('border-gray-200');
-                        }
-
-                        // Update status badge in header
-                        const header = card.querySelector('h4');
-                        const badge = header.querySelector('span');
-                        if(badge){
-                            if(data.active){
-                                badge.className = 'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800';
-                                badge.textContent = 'Active';
-                            } else {
-                                badge.className = 'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600';
-                                badge.textContent = 'Inactive';
-                            }
-                        }
-
-                        // Update serial number if returned
-                        if(data.serial && serialEl){
-                            serialEl.textContent = data.serial;
-                            serialEl.classList.remove('text-gray-400');
-                            serialEl.classList.add('text-indigo-600');
-                            // Also update the input field if exists
-                            const serialInput = document.getElementById('serial-input-'+accId);
-                            if(serialInput) serialInput.value = data.serial;
-                        }
-
-                        // Update expiry date if returned
-                        if(data.expires_at && expiresEl){
-                            expiresEl.textContent = data.expires_at;
-                            if(expiresRow) expiresRow.style.display = '';
-                        }
-
-                        // Show success toast
-                        const toast = document.createElement('div');
-                        toast.className = 'fixed top-5 right-5 bg-green-500 text-white px-4 py-2 rounded shadow-lg z-50';
-                        toast.textContent = data.active ? 'Account activated successfully!' : 'Account deactivated';
-                        document.body.appendChild(toast);
-                        setTimeout(() => toast.remove(), 3000);
+    @push('scripts')
+    <script>
+        function updateSerial(accountId, newSerial) {
+            // Placeholder for AJAX call to update serial
+            // Implementing basic fetch logic
+            fetch(`/admin/users/{{ $user->id }}/account/${accountId}/update-serial`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify({
+                        serial_number: newSerial
+                    })
+                }).then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Serial updated!');
+                        location.reload();
                     } else {
-                        alert('Failed to toggle account status');
-                    }
-                }).catch(err=>{
-                    console.error(err);
-                    alert('Request failed');
-                }).finally(()=>{
-                    btn.disabled = false;
-                    // Reset button text if it's still "Processing..."
-                    if(btn.textContent === 'Processing...'){
-                        const statusEl = document.getElementById('status-'+accId);
-                        btn.textContent = statusEl.textContent === 'Active' ? 'Deactivate' : 'Activate';
+                        alert('Error updating serial');
                     }
                 });
-        });
-    });
-
-    document.querySelectorAll('.edit-serial-btn').forEach(b=>{
-        b.addEventListener('click', function(){
-            const id = this.dataset.accountId;
-            document.getElementById('serial-edit-'+id).classList.remove('hidden');
-        });
-    });
-
-    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-
-    document.querySelectorAll('.save-serial-btn').forEach(b=>{
-        b.addEventListener('click', function(){
-            const id = this.dataset.accountId;
-            const val = document.getElementById('serial-input-'+id).value.trim();
-            const err = document.getElementById('serial-error-'+id);
-            const btn = this;
-            const originalText = btn.textContent;
-
-            if(!val){
-                err.textContent = 'Serial cannot be empty';
-                return;
-            }
-
-            btn.disabled = true;
-            btn.textContent = 'Saving...';
-            err.textContent = '';
-
-            fetch("{{ url('admin/users') }}/{{ $user->id }}/account/"+id+"/update-serial", {
-                method:'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken,
-                },
-                body: JSON.stringify({ serial_number: val })
-            }).then(r=>{
-                if(!r.ok){
-                    return r.json().then(data => { throw new Error(data.message || 'Server error'); });
-                }
-                return r.json();
-            }).then(resp=>{
-                if(resp.ok){
-                    const serialEl = document.getElementById('serial-'+id);
-                    serialEl.textContent = resp.serial;
-                    serialEl.classList.remove('text-gray-400');
-                    serialEl.classList.add('text-indigo-600');
-                    document.getElementById('serial-edit-'+id).classList.add('hidden');
-                    err.textContent = '';
-
-                    // Show success toast
-                    const toast = document.createElement('div');
-                    toast.className = 'fixed top-5 right-5 bg-green-500 text-white px-4 py-2 rounded shadow-lg z-50';
-                    toast.textContent = 'Serial number updated successfully!';
-                    document.body.appendChild(toast);
-                    setTimeout(() => toast.remove(), 3000);
-                } else {
-                    err.textContent = resp.error || 'Failed to update serial number';
-                }
-            }).catch(e=>{
-                err.textContent = e.message || 'Request failed';
-            }).finally(()=>{
-                btn.disabled = false;
-                btn.textContent = originalText;
-            });
-        });
-    });
-
-   function renderTreeElement(nodes, depth, max, isLast = false) {
-    const ul = document.createElement('ul');
-    ul.className = 'ml-4';
-    nodes.slice(0, max).forEach((n, idx) => {
-        const li = document.createElement('li');
-        const isLastChild = idx === Math.min(nodes.length, max) - 1;
-        const prefix = isLastChild ? '└── ' : '├── ';
-        
-        li.innerHTML = `<div class="py-1">
-            <span class="text-gray-400">${prefix}</span>
-            <span class="font-medium">${n.name}</span> 
-            <span class="text-xs text-gray-500">(${n.user_id})</span>
-        </div>`;
-        
-        if(n.children && n.children.length) {
-            li.appendChild(renderTreeElement(n.children, depth+1, max, isLastChild));
         }
-        ul.appendChild(li);
-    });
-    return ul;
-}
 
-function renderTree(node, depth=0, max=10){
-    if(!node) return;
-    const ul = document.createElement('ul');
-    ul.className = 'ml-4';
-    (Array.isArray(node) ? node : [node]).slice(0, max).forEach(n=>{
-        const li = document.createElement('li');
-        li.innerHTML = `<div class="py-1">
-            <span class="font-medium">${n.name}</span> 
-            <span class="text-xs text-gray-500">(${n.user_id})</span>
-        </div>`;
-        if(n.children && n.children.length) {
-            li.appendChild(renderTreeElement(n.children, depth+1, max));
+        window.createAccount = function(type) {
+            if (!confirm(`Create ${type} account for this user?`)) return;
+            // Place logic to create account via fetch or form submission
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '{{ route("admin.users.createAccount", $user->id) }}';
+
+            const csrf = document.createElement('input');
+            csrf.type = 'hidden';
+            csrf.name = '_token';
+            csrf.value = '{{ csrf_token() }}';
+            form.appendChild(csrf);
+
+            const typeInput = document.createElement('input');
+            typeInput.type = 'hidden';
+            typeInput.name = 'type';
+            typeInput.value = type;
+            form.appendChild(typeInput);
+
+            document.body.appendChild(form);
+            form.submit();
         }
-        ul.appendChild(li);
-    });
-    return ul;
-}
-
-    // fetch referrals
-    document.getElementById('expand-referral').addEventListener('click', function(){
-        const c = document.getElementById('referral-tree');
-        c.innerHTML = 'Loading...';
-        fetch("{{ route('admin.users.referralTree', $user) }}")
-            .then(r=>r.json())
-            .then(d=>{
-                c.innerHTML = '';
-                if(!d.tree) { c.innerText = 'No referrals'; return;}
-                const treeDom = renderTree(d.tree, 0, 10);
-                if(treeDom) c.appendChild(treeDom);
-            }).catch(()=> c.innerText = 'Failed to load');
-    });
-
-    // sandbox tree
-    document.getElementById('expand-sandbox').addEventListener('click', function(){
-        const c = document.getElementById('sandbox-tree');
-        c.innerHTML = 'Loading...';
-        fetch("{{ route('admin.users.sandboxReferralTree', $user) }}")
-            .then(r=>r.json())
-            .then(d=>{
-                c.innerHTML = '';
-                if(!d.tree) { c.innerText = 'No sandbox referrals'; return;}
-                const treeDom = renderTree(d.tree, 0, 10);
-                if(treeDom) c.appendChild(treeDom);
-            }).catch(()=> c.innerText = 'Failed to load');
-    });
-
-    // lazy: load top-10 for referrals on panel open
-    document.querySelector('[data-tab="referrals"]').addEventListener('click', ()=>document.getElementById('expand-referral').click());
-    document.querySelector('[data-tab="sandbox"]').addEventListener('click', ()=>document.getElementById('expand-sandbox').click());
-</script>
-
-<!-- ADD TO BLACKLIST -->
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const addBtn = document.getElementById('addBlacklistBtn');
-    const modal = document.getElementById('blacklistModal');
-    const cancelBtn = document.getElementById('cancelBlacklist');
-    const confirmBtn = document.getElementById('confirmBlacklist');
-
-    // Open modal
-    addBtn?.addEventListener('click', () => {
-        modal.classList.remove('hidden');
-    });
-
-    // Cancel modal
-    cancelBtn?.addEventListener('click', () => {
-        modal.classList.add('hidden');
-    });
-
-    // Confirm blacklist
-    confirmBtn?.addEventListener('click', function() {
-        const btn = this;
-        btn.disabled = true;
-        btn.textContent = 'Adding...'; // loading effect
-
-        fetch("{{ route('admin.users.addToBlacklist', $user) }}", {
-            method: 'POST',
-            headers: {
-                'Content-Type':'application/json',
-                'X-CSRF-TOKEN':'{{ csrf_token() }}'
-            },
-            body: JSON.stringify({})
-        })
-        .then(r => r.json())
-        .then(resp => {
-            if(resp.ok) {
-                // close modal
-                modal.classList.add('hidden');
-
-                // show Tailwind alert
-                const alertDiv = document.createElement('div');
-                alertDiv.className = 'fixed top-5 right-5 bg-green-500 text-white px-4 py-2 rounded shadow-lg z-50';
-                alertDiv.textContent = 'User added to blacklist!';
-                document.body.appendChild(alertDiv);
-
-                // fade out alert after 3s
-                setTimeout(() => alertDiv.remove(), 3000);
-
-                // reload page after short delay so badge/button updates
-                setTimeout(() => location.reload(), 1000);
-
-            } else {
-                alert(resp.error || 'Failed to add to blacklist');
-            }
-        })
-        .catch(() => alert('Request failed'))
-        .finally(() => {
-            btn.disabled = false;
-            btn.textContent = 'Confirm';
-        });
-    });
-});
-</script>
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-    const editBtn = document.getElementById('editUserNameBtn');
-    const displayName = document.getElementById('userNameDisplay');
-    const form = document.getElementById('editUserNameForm');
-    const cancelBtn = document.getElementById('cancelEditUserNameBtn');
-    const input = document.getElementById('userNameInput');
-
-    editBtn.addEventListener('click', () => {
-        displayName.parentElement.classList.add('hidden');
-        form.classList.remove('hidden');
-        input.focus();
-    });
-
-    cancelBtn.addEventListener('click', () => {
-        form.classList.add('hidden');
-        displayName.parentElement.classList.remove('hidden');
-        input.value = displayName.textContent.trim();
-    });
-
-    // Sync sandbox rewards
-document.getElementById('sync-sandbox').addEventListener('click', function() {
-    const btn = this;
-    const msg = document.getElementById('sync-message');
-    
-    btn.disabled = true;
-    btn.textContent = 'Syncing...';
-    msg.className = 'mt-2 text-sm hidden';
-    
-    fetch("{{ route('admin.users.syncSandboxRewards', $user) }}", {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-        }
-    })
-    .then(r => r.json())
-    .then(d => {
-        btn.disabled = false;
-        btn.textContent = 'Sync Rewards';
-        
-        if (d.success) {
-            msg.className = 'mt-2 text-sm p-3 bg-green-50 border border-green-200 rounded text-green-800';
-            msg.innerHTML = `
-                <strong>✓ Success:</strong> ${d.message}<br>
-                <span class="text-xs">Geran Asas Balance: RM ${(d.geran_balance / 100).toFixed(2)} | 
-                Pending: RM ${(d.pending_balance / 100).toFixed(2)}</span>
-            `;
-        } else {
-            msg.className = 'mt-2 text-sm p-3 bg-red-50 border border-red-200 rounded text-red-800';
-            msg.innerHTML = `<strong>✗ Error:</strong> ${d.message}`;
-        }
-        msg.classList.remove('hidden');
-        
-        // Refresh the tree to show updated data
-        document.getElementById('expand-sandbox').click();
-    })
-    .catch(err => {
-        btn.disabled = false;
-        btn.textContent = 'Sync Rewards';
-        msg.className = 'mt-2 text-sm p-3 bg-red-50 border border-red-200 rounded text-red-800';
-        msg.textContent = 'Sync failed. Please try again.';
-        msg.classList.remove('hidden');
-    });
-});
-});
-</script>
-<script>
-function openTransactionModal() {
-    document.getElementById('transactionModal').classList.remove('hidden');
-    document.body.style.overflow = 'hidden';
-}
-
-function closeTransactionModal() {
-    document.getElementById('transactionModal').classList.add('hidden');
-    document.body.style.overflow = 'auto';
-}
-
-// Close modal when clicking outside
-document.getElementById('transactionModal')?.addEventListener('click', function(e) {
-    if (e.target === this) {
-        closeTransactionModal();
-    }
-});
-
-// File upload preview
-document.getElementById('slip')?.addEventListener('change', function(e) {
-    const fileName = e.target.files[0]?.name;
-    if (fileName) {
-        const label = e.target.parentElement;
-        label.querySelector('p').innerHTML = `<span class="font-semibold text-indigo-600">${fileName}</span>`;
-    }
-});
-</script>
-
-
-</x-app-layout>
+    </script>
+    @endpush
+</x-admin-layout>

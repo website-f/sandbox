@@ -49,7 +49,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/referrals/qr', [ReferralController::class, 'qr'])->name('referrals.qr');
 
     Route::get('/admin/users', [UserRoleController::class, 'index'])->name('admin.users.index');
-    Route::post('/admin/users/{user}/toggle-admin', [UserRoleController::class, 'toggleAdmin'])->name('admin.users.toggleAdmin');
+    Route::post('/admin/users/{user}/toggle-role', [UserRoleController::class, 'toggleAdmin'])->name('admin.users.toggleAdmin');
     Route::get('/admin/user/{id}/details', [UserRoleController::class, 'details'])
         ->name('admin.user.details');
     Route::post('/admin/users/{user}/assign-referral', [UserRoleController::class, 'assignReferral'])
@@ -93,6 +93,8 @@ Route::middleware('auth')->group(function () {
         Route::post('{user}/toggle-admin', [UserRoleController::class, 'toggleAdminAjax'])->name('toggleAdminAjax');
         Route::post('{user}/account/{account}/toggle-active', [UserRoleController::class, 'toggleAccountActive'])->name('toggleAccountActive');
         Route::post('{user}/account/{account}/update-serial', [UserRoleController::class, 'updateAccountSerial'])->name('updateAccountSerial');
+        Route::post('{user}/account/create', [UserRoleController::class, 'createAccount'])->name('createAccount');
+        Route::get('{user}/accounts/check', [UserRoleController::class, 'checkAccounts'])->name('checkAccounts');
 
         // referral trees
         Route::get('{user}/referrals/tree', [UserRoleController::class, 'referralTree'])->name('referralTree');
@@ -129,6 +131,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/profile/course', [ProfileController::class, 'updateCourse'])->name('profile.course');
     Route::post('/profile/nextofkin', [ProfileController::class, 'updateNextOfKin'])->name('profile.nextofkin');
     Route::post('/profile/pewaris/store', [ProfileController::class, 'storePewaris'])->name('profile.pewaris.store');
+    Route::delete('/profile/pewaris/{pewaris}', [ProfileController::class, 'destroyPewaris'])->name('profile.pewaris.destroy');
     Route::post('/profile/affiliation', [ProfileController::class, 'updateAffiliation'])->name('profile.affiliation');
 
     // RizqMall SSO Redirects

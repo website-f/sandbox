@@ -3,46 +3,88 @@
     <x-slot name="breadcrumb">Track your savings and manage your collections</x-slot>
 
     @php
+    // Collection names based on sandbox type
     $tabungNames = [
-    'geran_asas' => 'Geran Asas',
-    'tabung_usahawan' => 'Tabung Usahawan',
-    'had_pembiayaan' => 'Had Pembiayaan',
+        // Usahawan
+        'geran_asas' => 'Geran Asas',
+        'tabung_usahawan' => 'Tabung Usahawan',
+        'had_pembiayaan' => 'Had Pembiayaan',
+        // Remaja
+        'biasiswa_pemula' => 'Biasiswa Pemula',
+        'had_biasiswa' => 'Had Biasiswa',
+        'dana_usahawan_muda' => 'Dana Usahawan Muda',
+        // Awam
+        'modal_pemula' => 'Modal Pemula',
+        'had_pembiayaan_hutang' => 'Had Pembiayaan Hutang',
+        'khairat_kematian' => 'Khairat Kematian',
     ];
 
     $tabungIcons = [
-    'geran_asas' => 'fa-gift',
-    'tabung_usahawan' => 'fa-briefcase',
-    'had_pembiayaan' => 'fa-hand-holding-usd',
+        // Usahawan
+        'geran_asas' => 'fa-gift',
+        'tabung_usahawan' => 'fa-briefcase',
+        'had_pembiayaan' => 'fa-hand-holding-usd',
+        // Remaja
+        'biasiswa_pemula' => 'fa-graduation-cap',
+        'had_biasiswa' => 'fa-book',
+        'dana_usahawan_muda' => 'fa-rocket',
+        // Awam
+        'modal_pemula' => 'fa-seedling',
+        'had_pembiayaan_hutang' => 'fa-money-check-alt',
+        'khairat_kematian' => 'fa-heart',
     ];
 
     $tabungColors = [
-    'geran_asas' => ['bg' => 'bg-purple-100 dark:bg-purple-900/30', 'text' => 'text-purple-600 dark:text-purple-400', 'gradient' => 'from-purple-500 to-indigo-500'],
-    'tabung_usahawan' => ['bg' => 'bg-blue-100 dark:bg-blue-900/30', 'text' => 'text-blue-600 dark:text-blue-400', 'gradient' => 'from-blue-500 to-cyan-500'],
-    'had_pembiayaan' => ['bg' => 'bg-green-100 dark:bg-green-900/30', 'text' => 'text-green-600 dark:text-green-400', 'gradient' => 'from-green-500 to-emerald-500'],
+        // Usahawan
+        'geran_asas' => ['bg' => 'bg-purple-100 dark:bg-purple-900/30', 'text' => 'text-purple-600 dark:text-purple-400', 'gradient' => 'from-purple-500 to-indigo-500'],
+        'tabung_usahawan' => ['bg' => 'bg-blue-100 dark:bg-blue-900/30', 'text' => 'text-blue-600 dark:text-blue-400', 'gradient' => 'from-blue-500 to-cyan-500'],
+        'had_pembiayaan' => ['bg' => 'bg-green-100 dark:bg-green-900/30', 'text' => 'text-green-600 dark:text-green-400', 'gradient' => 'from-green-500 to-emerald-500'],
+        // Remaja
+        'biasiswa_pemula' => ['bg' => 'bg-pink-100 dark:bg-pink-900/30', 'text' => 'text-pink-600 dark:text-pink-400', 'gradient' => 'from-pink-500 to-rose-500'],
+        'had_biasiswa' => ['bg' => 'bg-orange-100 dark:bg-orange-900/30', 'text' => 'text-orange-600 dark:text-orange-400', 'gradient' => 'from-orange-500 to-amber-500'],
+        'dana_usahawan_muda' => ['bg' => 'bg-cyan-100 dark:bg-cyan-900/30', 'text' => 'text-cyan-600 dark:text-cyan-400', 'gradient' => 'from-cyan-500 to-teal-500'],
+        // Awam
+        'modal_pemula' => ['bg' => 'bg-emerald-100 dark:bg-emerald-900/30', 'text' => 'text-emerald-600 dark:text-emerald-400', 'gradient' => 'from-emerald-500 to-green-500'],
+        'had_pembiayaan_hutang' => ['bg' => 'bg-violet-100 dark:bg-violet-900/30', 'text' => 'text-violet-600 dark:text-violet-400', 'gradient' => 'from-violet-500 to-purple-500'],
+        'khairat_kematian' => ['bg' => 'bg-red-100 dark:bg-red-900/30', 'text' => 'text-red-600 dark:text-red-400', 'gradient' => 'from-red-500 to-rose-500'],
     ];
+
+    // Determine the starter collection based on sandbox type
+    $starterCollection = match($sandboxType ?? 'usahawan') {
+        'remaja' => 'biasiswa_pemula',
+        'awam' => 'modal_pemula',
+        default => 'geran_asas',
+    };
+
+    // Get the withdrawable collections based on sandbox type
+    $withdrawableTypes = match($sandboxType ?? 'usahawan') {
+        'remaja' => ['had_biasiswa', 'dana_usahawan_muda'],
+        'awam' => ['had_pembiayaan_hutang', 'khairat_kematian'],
+        default => ['tabung_usahawan', 'had_pembiayaan'],
+    };
     @endphp
 
     {{-- Tabung Cards --}}
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
         @foreach($collections as $type => $collection)
         @php
-        // Check if Geran Asas is fully redeemed
-        $geranAsasRedeemed = $collections['geran_asas']->is_redeemed == 1;
+        // Check if starter collection is fully redeemed
+        $starterRedeemed = isset($collections[$starterCollection]) && $collections[$starterCollection]->is_redeemed == 1;
 
-        // Can withdraw for Usahawan / Pembiayaan only if Geran Asas is redeemed
+        // Can withdraw for non-starter collections only if starter is redeemed
         $canWithdraw = false;
-        if (in_array($type, ['tabung_usahawan','had_pembiayaan'])) {
-        $canWithdraw = $collection->balance > 0 && $geranAsasRedeemed;
+        if (in_array($type, $withdrawableTypes)) {
+            $canWithdraw = $collection->balance > 0 && $starterRedeemed;
         }
 
-        // For progress display (Geran Asas)
+        // For progress display (starter collection)
         $progress = 0;
         $progressMax = 60000; // RM600 in cents
         $progressPercent = 0;
 
-        if ($type === 'geran_asas') {
-        $progress = $collection->pending_balance;
-        $progressPercent = min(100, ($progress / $progressMax) * 100);
+        if ($type === $starterCollection) {
+            $progress = $collection->pending_balance;
+            $progressPercent = min(100, ($progress / $progressMax) * 100);
         }
 
         $colors = $tabungColors[$type] ?? ['bg' => 'bg-gray-100', 'text' => 'text-gray-600', 'gradient' => 'from-gray-500 to-gray-600'];
@@ -70,8 +112,8 @@
 
             {{-- Card Body --}}
             <div class="p-4 sm:p-6">
-                {{-- Geran Asas Progress & Status --}}
-                @if($type === 'geran_asas')
+                {{-- Starter Collection Progress & Status --}}
+                @if($type === $starterCollection)
                 @if($collection->is_redeemed == 1)
                 {{-- Already redeemed --}}
                 <div class="p-3 sm:p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl mb-3 sm:mb-4">
@@ -81,7 +123,7 @@
                         </div>
                         <div class="min-w-0">
                             <p class="font-semibold text-green-700 dark:text-green-400 text-sm sm:text-base">Redeemed Successfully</p>
-                            <p class="text-[10px] sm:text-xs text-green-600 dark:text-green-500">Your Geran Asas has been claimed and activated</p>
+                            <p class="text-[10px] sm:text-xs text-green-600 dark:text-green-500">Your {{ $tabungNames[$type] }} has been claimed and activated</p>
                         </div>
                     </div>
                 </div>
@@ -106,7 +148,7 @@
                         </div>
                         <div class="min-w-0">
                             <p class="font-semibold text-yellow-800 dark:text-yellow-400 text-sm sm:text-base">Completed!</p>
-                            <p class="text-[10px] sm:text-xs text-yellow-700 dark:text-yellow-500">Contact administrator to claim your Geran Asas rewards</p>
+                            <p class="text-[10px] sm:text-xs text-yellow-700 dark:text-yellow-500">Contact administrator to claim your {{ $tabungNames[$type] }} rewards</p>
                         </div>
                     </div>
                 </div>
@@ -127,19 +169,19 @@
                 @endif
                 @endif
 
-                {{-- Withdraw button for Tabung Usahawan & Had Pembiayaan --}}
+                {{-- Withdraw button for non-starter collections --}}
                 @if($canWithdraw)
                 <button class="w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl text-white font-semibold bg-gradient-to-r {{ $colors['gradient'] }} hover:opacity-90 transition-opacity shadow-lg text-sm sm:text-base">
                     <i class="fas fa-money-bill-wave mr-2"></i> Withdraw
                 </button>
-                @elseif(in_array($type, ['tabung_usahawan','had_pembiayaan']) && !$geranAsasRedeemed)
+                @elseif(in_array($type, $withdrawableTypes) && !$starterRedeemed)
                 <div class="p-3 sm:p-4 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl">
                     <div class="flex items-center gap-2 sm:gap-3">
                         <div class="w-8 h-8 sm:w-10 sm:h-10 bg-gray-200 dark:bg-gray-600 rounded-full flex items-center justify-center flex-shrink-0">
                             <i class="fas fa-lock text-gray-500 dark:text-gray-400 text-sm sm:text-base"></i>
                         </div>
                         <div class="min-w-0">
-                            <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Complete Geran Asas to unlock withdrawals</p>
+                            <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Complete {{ $tabungNames[$starterCollection] }} to unlock withdrawals</p>
                         </div>
                     </div>
                 </div>
@@ -164,7 +206,7 @@
                     <tr class="text-left text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
                         <th class="pb-3 px-3 sm:px-4">Date</th>
                         <th class="pb-3 px-3 sm:px-4">Tabung</th>
-                        <th class="pb-3 px-3 sm:px-4 hidden sm:table-cell">Description</th>
+                        <th class="pb-3 px-3 sm:px-4">Description</th>
                         <th class="pb-3 px-3 sm:px-4 text-right">Amount</th>
                     </tr>
                 </thead>
@@ -172,16 +214,16 @@
                     @php
                     $allTransactions = collect();
                     foreach ($collections as $type => $col) {
-                    foreach ($col->transactions as $tx) {
-                    $tx->tabung_type = $tabungNames[$type] ?? $type;
-                    $tx->tabung_key = $type;
-                    $allTransactions->push($tx);
-                    }
+                        foreach ($col->transactions as $tx) {
+                            $tx->tabung_type = $tabungNames[$type] ?? $type;
+                            $tx->tabung_key = $type;
+                            $allTransactions->push($tx);
+                        }
                     }
                     $allTransactions = $allTransactions->sortByDesc('created_at');
                     @endphp
 
-                    @forelse($allTransactions as $tx)
+                    @foreach($allTransactions as $tx)
                     @php
                     $colors = $tabungColors[$tx->tabung_key] ?? ['bg' => 'bg-gray-100', 'text' => 'text-gray-600'];
                     @endphp
@@ -202,7 +244,7 @@
                                 {{ $tx->tabung_type }}
                             </span>
                         </td>
-                        <td class="py-3 sm:py-4 px-3 sm:px-4 text-xs sm:text-sm text-gray-700 dark:text-gray-300 hidden sm:table-cell">
+                        <td class="py-3 sm:py-4 px-3 sm:px-4 text-xs sm:text-sm text-gray-700 dark:text-gray-300">
                             {{ $tx->description }}
                         </td>
                         <td class="py-3 sm:py-4 px-3 sm:px-4 text-right text-xs sm:text-sm font-bold {{ $tx->type === 'credit' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400' }}">
@@ -219,10 +261,15 @@
     <script>
         $(document).ready(function() {
             $('#collectionTable').DataTable({
-                order: [
-                    [0, 'desc']
-                ], // Sort by date desc
-                pageLength: 10
+                order: [[0, 'desc']], // Sort by date desc
+                pageLength: 10,
+                responsive: true,
+                columnDefs: [
+                    { targets: 2, visible: window.innerWidth >= 640 } // Description column
+                ],
+                language: {
+                    emptyTable: "No transactions yet"
+                }
             });
         });
     </script>

@@ -3,6 +3,7 @@
 // app/Http/Controllers/Auth/RegisterPlusController.php
 namespace App\Http\Controllers\Auth;
 
+use Carbon\Carbon;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\Account;
@@ -10,6 +11,8 @@ use App\Models\AccountType;
 use App\Models\Profile;
 use App\Models\Referral;
 use App\Models\Blacklist;
+use App\Models\Collection;
+use App\Models\CollectionType;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
@@ -53,11 +56,29 @@ class RegisterPlusController extends Controller
             'country' => 'nullable|string|max:100',
             'state'   => 'nullable|string|max:100',
             'city'    => 'nullable|string|max:100',
+
+            // Date of birth: required for sandbox type validation
+            'dob' => 'required|date|before:today',
+
+            // Sandbox type: required, must be one of the valid types
+            'sandbox_type' => 'required|in:usahawan,remaja,awam',
         ], [
             // Custom error messages (optional)
             'name.regex'  => 'The name may only contain letters, spaces, apostrophes, dots, and hyphens.',
             'phone.regex' => 'The phone number format is invalid.',
         ]);
+
+        // Age validation for Remaja type (must be 11-20 years old)
+        if ($data['sandbox_type'] === 'remaja') {
+            $dob = Carbon::parse($data['dob']);
+            $age = $dob->age;
+
+            if ($age < 11 || $age > 20) {
+                return back()->withErrors([
+                    'sandbox_type' => 'Sandbox Remaja is only available for users aged 11-20 years old. Your age: ' . $age . ' years.',
+                ])->withInput();
+            }
+        }
 
         $blacklistQuery = Blacklist::where('email', $data['email'])
             ->orWhere('name', $data['name'])
@@ -77,14 +98,16 @@ class RegisterPlusController extends Controller
     
         // --- User creation ---
         $user = User::create([
-            'name'     => $data['name'],
-            'email'    => $data['email'],
-            'password' => Hash::make($data['password']),
+            'name'         => $data['name'],
+            'email'        => $data['email'],
+            'password'     => Hash::make($data['password']),
+            'sandbox_type' => $data['sandbox_type'],
         ]);
 
         Profile::create([
             'user_id'   => $user->id,
             'full_name' => $user->name,
+            'dob'       => $data['dob'],
             'phone'     => $data['phone'] ?? null,
             'country'   => $data['country'] ?? null,
             'state'     => $data['state'] ?? null,
@@ -126,18 +149,34 @@ class RegisterPlusController extends Controller
         $role = Role::where('name', 'Entrepreneur')->first();
         $user->roles()->attach($role);
     
-        // create inactive accounts with proper account_type_id
+        // create inactive accounts with proper account_type_id and subtype
         $accountTypes = AccountType::whereIn('name', ['rizqmall', 'sandbox'])->get()->keyBy('name');
-        
-        foreach (['rizqmall', 'sandbox'] as $type) {
-            Account::create([
-                'user_id' => $user->id,
-                'type' => $type,
-                'account_type_id' => $accountTypes[$type]->id ?? null,
-                'active' => false
-            ]);
-        }
-    
+
+        // Create RizqMall account
+        Account::create([
+            'user_id' => $user->id,
+            'type' => Account::TYPE_RIZQMALL,
+            'account_type_id' => $accountTypes['rizqmall']->id ?? null,
+            'active' => false,
+        ]);
+
+        // Create Sandbox account with subtype
+        Account::create([
+            'user_id' => $user->id,
+            'type' => Account::TYPE_SANDBOX,
+            'subtype' => $data['sandbox_type'],
+            'account_type_id' => $accountTypes['sandbox']->id ?? null,
+            'active' => false,
+        ]);
+
+        // Create collections for this user's sandbox type
+        $collectionAccountType = match($data['sandbox_type']) {
+            'remaja' => CollectionType::ACCOUNT_SANDBOX_REMAJA,
+            'awam' => CollectionType::ACCOUNT_SANDBOX_AWAM,
+            default => CollectionType::ACCOUNT_SANDBOX_USAHAWAN,
+        };
+        Collection::createForUser($user->id, $collectionAccountType);
+
         // referral handling
         if (!empty($data['ref'])) {
             $referrerRef = Referral::where('ref_code',$data['ref'])->first();

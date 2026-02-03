@@ -244,9 +244,31 @@
                             <div class="flex items-start justify-between mb-2">
                                 <div>
                                     <h4 class="font-semibold text-gray-900 dark:text-white text-lg">
-                                        {{ ucfirst($account->type) }}
-                                        @if ($account->type === 'sandbox') Malaysia @endif
+                                        @if ($account->type === 'sandbox')
+                                            @php
+                                                $sandboxSubtype = $account->subtype ?? Auth::user()->sandbox_type ?? 'usahawan';
+                                                $subtypeLabel = match($sandboxSubtype) {
+                                                    'remaja' => 'Remaja',
+                                                    'awam' => 'Awam',
+                                                    default => 'Usahawan',
+                                                };
+                                            @endphp
+                                            Sandbox {{ $subtypeLabel }}
+                                        @else
+                                            {{ ucfirst($account->type) }}
+                                        @endif
                                     </h4>
+                                    @if ($account->type === 'sandbox')
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                                        @if ($sandboxSubtype === 'remaja')
+                                            <i class="fas fa-graduation-cap mr-1 text-pink-500"></i> Young Entrepreneur Program
+                                        @elseif ($sandboxSubtype === 'awam')
+                                            <i class="fas fa-users mr-1 text-emerald-500"></i> General Public Program
+                                        @else
+                                            <i class="fas fa-briefcase mr-1 text-indigo-500"></i> Entrepreneur Program
+                                        @endif
+                                    </p>
+                                    @endif
                                     @if ($serialText)
                                     <p class="text-sm font-mono text-indigo-600 dark:text-indigo-400">{{ $serialText }}</p>
                                     @endif

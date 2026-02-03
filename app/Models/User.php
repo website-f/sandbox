@@ -16,6 +16,8 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'referral_code',
+        'sandbox_type',
         'rizqmall_activated_at',
         'rizqmall_stores_quota',
         'last_rizqmall_sync',
@@ -144,5 +146,50 @@ class User extends Authenticatable
     public function collectionByType(string $type)
     {
         return $this->collections()->where('type', $type)->first();
+    }
+
+    /**
+     * Get the user's active sandbox account
+     */
+    public function sandboxAccount()
+    {
+        return $this->accounts()->where('type', Account::TYPE_SANDBOX)->first();
+    }
+
+    /**
+     * Get the sandbox type (usahawan, remaja, awam)
+     * First check the sandbox account subtype, then fallback to user's sandbox_type field
+     */
+    public function getSandboxSubtype(): string
+    {
+        $sandboxAccount = $this->sandboxAccount();
+        if ($sandboxAccount && $sandboxAccount->subtype) {
+            return $sandboxAccount->subtype;
+        }
+        return $this->sandbox_type ?? Account::SUBTYPE_USAHAWAN;
+    }
+
+    /**
+     * Get display name for sandbox type
+     */
+    public function getSandboxDisplayName(): string
+    {
+        return match ($this->getSandboxSubtype()) {
+            Account::SUBTYPE_REMAJA => 'Sandbox Remaja',
+            Account::SUBTYPE_AWAM => 'Sandbox Awam',
+            default => 'Sandbox Usahawan',
+        };
+    }
+
+    /**
+     * Get the collection account type for this user's sandbox
+     */
+    public function getCollectionAccountType(): string
+    {
+        return match ($this->getSandboxSubtype()) {
+            Account::SUBTYPE_REMAJA => CollectionType::ACCOUNT_SANDBOX_REMAJA,
+            Account::SUBTYPE_AWAM => CollectionType::ACCOUNT_SANDBOX_AWAM,
+            default => CollectionType::ACCOUNT_SANDBOX_USAHAWAN,
+        };
     }
 }

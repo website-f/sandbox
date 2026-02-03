@@ -191,6 +191,35 @@
         @endforeach
     </div>
 
+    {{-- Hutang Section - Only for Sandbox Awam --}}
+    @if(($sandboxType ?? 'usahawan') === 'awam')
+    <div class="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 rounded-2xl p-6 sm:p-8 mb-6 sm:mb-8 shadow-xl">
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="text-center sm:text-left">
+                <div class="flex items-center justify-center sm:justify-start gap-3 mb-2">
+                    <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                        <i class="fas fa-file-invoice-dollar text-white text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-xl sm:text-2xl font-bold text-white">Rekod Hutang</h3>
+                        <p class="text-white/80 text-sm">Debt Records</p>
+                    </div>
+                </div>
+                <p class="text-white/90 text-sm sm:text-base max-w-md">
+                    Rekod dan urus hutang anda sebelum pendaftaran untuk manfaat Had Pembiayaan Hutang.
+                    <br class="hidden sm:block">
+                    <span class="text-white/70">Record and manage your debts before registration for Had Pembiayaan Hutang benefits.</span>
+                </p>
+            </div>
+            <a href="{{ route('hutang.index') }}"
+               class="inline-flex items-center gap-3 px-8 py-4 bg-white text-indigo-600 rounded-2xl font-bold text-lg shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 whitespace-nowrap">
+                <i class="fas fa-list-alt text-xl"></i>
+                <span>Lihat Hutang / View Debts</span>
+            </a>
+        </div>
+    </div>
+    @endif
+
     {{-- Consolidated Transaction History --}}
     <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 sm:p-6 border border-gray-100 dark:border-gray-700">
         <div class="flex items-center justify-between mb-4 sm:mb-6">

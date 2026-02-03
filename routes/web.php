@@ -17,6 +17,7 @@ use App\Http\Controllers\UserImportController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\Auth\RegisterPlusController;
 use App\Http\Controllers\CollectionTransactionController;
+use App\Http\Controllers\HutangController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 
 
@@ -114,6 +115,16 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/wallet', [WalletController::class, 'index'])->name('wallet.users.index');
     Route::get('/collection', [CollectionController::class, 'index'])->name('collection.index');
+
+    // Hutang (Debt) routes - Sandbox Awam only
+    Route::prefix('hutang')->name('hutang.')->group(function () {
+        Route::get('/', [HutangController::class, 'index'])->name('index');
+        Route::post('/store', [HutangController::class, 'store'])->name('store');
+        Route::post('/{hutang}/toggle-settled', [HutangController::class, 'toggleSettled'])->name('toggle-settled');
+        Route::delete('/{hutang}', [HutangController::class, 'destroy'])->name('destroy');
+        Route::post('/{hutang}/documents', [HutangController::class, 'addDocuments'])->name('add-documents');
+        Route::delete('/document/{document}', [HutangController::class, 'deleteDocument'])->name('delete-document');
+    });
 });
 
 Route::get('/login', function () {

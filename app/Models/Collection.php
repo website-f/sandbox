@@ -228,6 +228,15 @@ class Collection extends Model
     }
 
     /**
+     * Fallback collection type codes for each sandbox account type
+     */
+    private const FALLBACK_TYPES = [
+        CollectionType::ACCOUNT_SANDBOX_USAHAWAN => ['geran_asas', 'tabung_usahawan', 'had_pembiayaan'],
+        CollectionType::ACCOUNT_SANDBOX_REMAJA => ['biasiswa_pemula', 'had_biasiswa', 'dana_usahawan_muda'],
+        CollectionType::ACCOUNT_SANDBOX_AWAM => ['modal_pemula', 'had_pembiayaan_hutang', 'khairat_kematian'],
+    ];
+
+    /**
      * Create collections for a user based on their sandbox account type
      */
     public static function createForUser(int $userId, string $sandboxAccountType): array
@@ -235,21 +244,43 @@ class Collection extends Model
         $collectionTypes = CollectionType::forAccountType($sandboxAccountType);
         $created = [];
 
-        foreach ($collectionTypes as $collectionType) {
-            $collection = self::firstOrCreate(
-                [
-                    'user_id' => $userId,
-                    'type' => $collectionType->code,
-                ],
-                [
-                    'collection_type_id' => $collectionType->id,
-                    'balance' => 0,
-                    'pending_balance' => 0,
-                    'limit' => $collectionType->limit,
-                    'is_redeemed' => false,
-                ]
-            );
-            $created[] = $collection;
+        // If collection types exist in database, use them
+        if ($collectionTypes->isNotEmpty()) {
+            foreach ($collectionTypes as $collectionType) {
+                $collection = self::firstOrCreate(
+                    [
+                        'user_id' => $userId,
+                        'type' => $collectionType->code,
+                    ],
+                    [
+                        'collection_type_id' => $collectionType->id,
+                        'balance' => 0,
+                        'pending_balance' => 0,
+                        'limit' => $collectionType->limit,
+                        'is_redeemed' => false,
+                    ]
+                );
+                $created[] = $collection;
+            }
+        } else {
+            // Fallback: use hardcoded collection types if database is empty
+            $fallbackTypes = self::FALLBACK_TYPES[$sandboxAccountType] ?? self::FALLBACK_TYPES[CollectionType::ACCOUNT_SANDBOX_USAHAWAN];
+
+            foreach ($fallbackTypes as $typeCode) {
+                $collection = self::firstOrCreate(
+                    [
+                        'user_id' => $userId,
+                        'type' => $typeCode,
+                    ],
+                    [
+                        'balance' => 0,
+                        'pending_balance' => 0,
+                        'limit' => null,
+                        'is_redeemed' => false,
+                    ]
+                );
+                $created[] = $collection;
+            }
         }
 
         return $created;

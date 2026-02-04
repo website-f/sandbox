@@ -351,7 +351,7 @@
                                         final: {{ $fullPrice }}
                                     })"
                                     class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-semibold transition-colors shadow-md">
-                                    <i class="fas fa-plus-circle mr-2"></i> Subscribe
+                                    <i class="fas fa-plus-circle mr-2"></i> {{ $account->type === 'rizqmall' ? 'Join Member' : 'Subscribe' }}
                                 </button>
                                 @endif
                                 @else

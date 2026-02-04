@@ -10,6 +10,7 @@ use App\Models\Account;
 use App\Models\Pewaris;
 use App\Models\BankDetail;
 use App\Models\AccountType;
+use App\Models\Subscription;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -19,17 +20,49 @@ use App\Models\{Profile,Business,Education,Course,NextOfKin,Affiliation};
 
 class ProfileController extends Controller
 {
+    /**
+     * Display the user's profile (read-only view)
+     */
     public function index()
     {
         $userId = Auth::id();
+        $user = Auth::user();
+
+        // Get user's accounts
+        $accounts = $user->accounts()->get();
+
+        // Get user's subscription history
+        $subscriptions = Subscription::where('user_id', $userId)
+            ->orderBy('created_at', 'desc')
+            ->get();
 
         return view('profile.index', [
+            'profile'       => Profile::firstOrCreate(['user_id' => $userId]),
+            'business'      => Business::firstOrCreate(['user_id' => $userId]),
+            'education'     => Education::firstOrCreate(['user_id' => $userId]),
+            'bank'          => BankDetail::firstOrCreate(['user_id' => $userId]),
+            'courses'       => Course::where('user_id', $userId)->get(),
+            'pewaris'       => Pewaris::where('user_id', $userId)->get(),
+            'affiliation'   => Affiliation::firstOrCreate(['user_id' => $userId]),
+            'accounts'      => $accounts,
+            'subscriptions' => $subscriptions,
+        ]);
+    }
+
+    /**
+     * Display the profile edit form
+     */
+    public function edit()
+    {
+        $userId = Auth::id();
+
+        return view('profile.edit', [
             'profile'      => Profile::firstOrCreate(['user_id' => $userId]),
             'business'     => Business::firstOrCreate(['user_id' => $userId]),
             'education'    => Education::firstOrCreate(['user_id' => $userId]),
-            'bank'    => BankDetail::firstOrCreate(['user_id' => $userId]),
+            'bank'         => BankDetail::firstOrCreate(['user_id' => $userId]),
             'courses'      => Course::where('user_id', $userId)->get(),
-            'pewaris' => Pewaris::where('user_id', $userId)->get(),
+            'pewaris'      => Pewaris::where('user_id', $userId)->get(),
             'affiliation'  => Affiliation::firstOrCreate(['user_id' => $userId]),
         ]);
     }

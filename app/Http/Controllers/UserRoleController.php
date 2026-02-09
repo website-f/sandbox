@@ -630,6 +630,32 @@ class UserRoleController extends Controller
         return redirect()->route('admin.users.show', $user)->with('success', 'User updated.');
     }
 
+    /**
+     * Reset user password to default "password123"
+     */
+    public function resetPassword(Request $request, User $user)
+    {
+        if (!auth()->user()->hasRole('Admin')) {
+            if ($request->wantsJson()) {
+                return response()->json(['ok' => false, 'error' => 'Unauthorized'], 403);
+            }
+            abort(403);
+        }
+
+        $user->update([
+            'password' => Hash::make('password123'),
+        ]);
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'ok' => true,
+                'message' => "Password for {$user->name} has been reset to 'password123'",
+            ]);
+        }
+
+        return back()->with('success', "Password for {$user->name} has been reset to 'password123'");
+    }
+
     public function blacklists()
     {
         $blacklists = Blacklist::latest()->get();

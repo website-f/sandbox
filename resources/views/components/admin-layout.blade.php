@@ -452,11 +452,25 @@
                     <span x-show="sidebarOpen" x-transition class="ml-3">User Management</span>
                 </a>
 
+                <a href="{{ route('admin.finance') }}"
+                    class="menu-item {{ request()->routeIs('admin.finance') ? 'active' : '' }}">
+                    <i class="fas fa-coins"></i>
+                    <span x-show="sidebarOpen" x-transition class="ml-3">Finance</span>
+                </a>
+
                 <a href="{{ route('admin.users.blacklists') }}"
                     class="menu-item {{ request()->routeIs('admin.users.blacklists') ? 'active' : '' }}">
                     <i class="fas fa-ban"></i>
                     <span x-show="sidebarOpen" x-transition class="ml-3">Blacklist</span>
                 </a>
+
+                <form action="{{ route('rizqmall.admin-redirect') }}" method="POST" class="block">
+                    @csrf
+                    <button type="submit" class="menu-item w-full text-left">
+                        <i class="fas fa-gear"></i>
+                        <span x-show="sidebarOpen" x-transition class="ml-3">RizqMall Settings</span>
+                    </button>
+                </form>
                 @endif
             </nav>
 

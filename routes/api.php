@@ -11,7 +11,7 @@ use App\Http\Controllers\SsoController;
 */
 
 // Middleware to verify API key from RizqMall
-Route::middleware(['api'])->prefix('rizqmall')->group(function () {
+Route::middleware(['api', 'api.key'])->prefix('rizqmall')->group(function () {
 
     // SSO Token validation
     Route::post('/validate-token', [SsoController::class, 'validateToken']);
@@ -44,4 +44,9 @@ Route::middleware(['api'])->prefix('rizqmall')->group(function () {
 
     // Link RizqMall customer as member under vendor in referral system
     Route::post('/link-member', [\App\Http\Controllers\Api\UserApiController::class, 'linkMemberToVendor']);
+
+    // Wallet endpoints (RizqMall integration)
+    Route::get('/wallet/{userId}', [\App\Http\Controllers\Api\WalletApiController::class, 'balance']);
+    Route::post('/wallet/{userId}/debit', [\App\Http\Controllers\Api\WalletApiController::class, 'debit']);
+    Route::post('/wallet/{userId}/credit', [\App\Http\Controllers\Api\WalletApiController::class, 'credit']);
 });

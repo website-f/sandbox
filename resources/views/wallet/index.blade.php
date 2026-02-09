@@ -34,9 +34,22 @@
                 </div>
             </div>
 
-            <button class="w-full py-3 sm:py-4 bg-green-500 hover:bg-green-600 text-white rounded-xl font-bold transition-colors shadow-lg text-sm sm:text-base">
-                <i class="fas fa-plus-circle mr-2"></i> Topup Wallet
-            </button>
+            <form method="POST" action="{{ route('wallet.topup') }}" class="w-full space-y-3">
+                @csrf
+                <div>
+                    <label class="text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300">Topup Amount (RM)</label>
+                    <input type="number" name="amount" step="1" min="1" required
+                        class="mt-2 w-full rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-500"
+                        placeholder="Enter amount in RM">
+                    @error('amount')
+                        <p class="text-xs text-red-500 mt-1">{{ $message }}</p>
+                    @enderror
+                </div>
+                <button type="submit" class="w-full py-3 sm:py-4 bg-green-500 hover:bg-green-600 text-white rounded-xl font-bold transition-colors shadow-lg text-sm sm:text-base">
+                    <i class="fas fa-plus-circle mr-2"></i> Topup via ToyyibPay
+                </button>
+                <p class="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400">Topups use the RizqMall ToyyibPay account.</p>
+            </form>
         </div>
 
         {{-- Quick Stats --}}

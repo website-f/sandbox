@@ -18,7 +18,11 @@ use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\Auth\RegisterPlusController;
 use App\Http\Controllers\CollectionTransactionController;
 use App\Http\Controllers\HutangController;
+use App\Http\Controllers\FinanceController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Auth\PasswordResetLinkController;
+use App\Http\Controllers\Auth\NewPasswordController;
+use App\Http\Controllers\WalletTopupController;
 
 
 Route::get('/', function () {
@@ -43,6 +47,18 @@ Route::post('/users/import', [UserImportController::class, 'import'])->name('use
 
 Route::get('/register', [RegisterPlusController::class, 'show'])->name('register'); // override Breeze’s view if needed
 Route::post('/register', [RegisterPlusController::class, 'store'])->name('register.store');
+
+// Password reset routes
+Route::middleware('guest')->group(function () {
+    Route::get('/forgot-password', [PasswordResetLinkController::class, 'create'])
+        ->name('password.request');
+    Route::post('/forgot-password', [PasswordResetLinkController::class, 'store'])
+        ->name('password.email');
+    Route::get('/reset-password/{token}', [NewPasswordController::class, 'create'])
+        ->name('password.reset');
+    Route::post('/reset-password', [NewPasswordController::class, 'store'])
+        ->name('password.store');
+});
 
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -101,6 +117,9 @@ Route::middleware('auth')->group(function () {
         Route::get('{user}/referrals/tree', [UserRoleController::class, 'referralTree'])->name('referralTree');
         Route::get('{user}/sandbox-referrals/tree', [UserRoleController::class, 'sandboxReferralTree'])->name('sandboxReferralTree');
 
+        // password reset
+        Route::post('{user}/reset-password', [UserRoleController::class, 'resetPassword'])->name('resetPassword');
+
         // reuse check routes you already have
         Route::post('check-serial', [UserRoleController::class, 'checkSerial'])->name('checkSerial');
         Route::post('check-email', [UserRoleController::class, 'checkEmail'])->name('checkEmail');
@@ -110,6 +129,10 @@ Route::middleware('auth')->group(function () {
 
     Route::post('/admin/users/{user}/delete', [UserRoleController::class, 'destroy'])
         ->name('admin.users.destroy');
+
+    // Finance overview (Admin)
+    Route::get('/admin/finance', [FinanceController::class, 'index'])->name('admin.finance');
+    Route::get('/admin/finance/export', [FinanceController::class, 'export'])->name('admin.finance.export');
 
     // Subscription actions
 
@@ -157,11 +180,20 @@ Route::middleware('auth')->group(function () {
     // Get RizqMall Store Members (Ajax)
     Route::get('/rizqmall/members', [App\Http\Controllers\SsoController::class, 'getRizqmallMembers'])
         ->name('rizqmall.members');
+
+    // Admin redirect to RizqMall settings
+    Route::post('/rizqmall/admin-redirect', [App\Http\Controllers\SsoController::class, 'adminRedirectToRizqmall'])
+        ->name('rizqmall.admin-redirect');
+
+    // Wallet topup (ToyyibPay - RizqMall account)
+    Route::post('/wallet/topup', [WalletTopupController::class, 'store'])->name('wallet.topup');
+    Route::get('/wallet/topup/return', [WalletTopupController::class, 'return'])->name('wallet.topup.return');
 });
 
 Route::post('/subscribe/{plan}', [SubscriptionController::class, 'subscribe'])->name('subscribe.plan');
 Route::post('/payment/callback', [SubscriptionController::class, 'paymentCallback'])->name('payment.callback');
 Route::get('/payment/return', [SubscriptionController::class, 'paymentReturn'])->name('payment.return');
+Route::post('/wallet/topup/callback', [WalletTopupController::class, 'callback'])->name('wallet.topup.callback');
 Route::get('/subscriptions/history', [SubscriptionController::class, 'history'])->name('subscriptions.history');
 Route::post('/subscribe/pay-next/{subscription}', [SubscriptionController::class, 'payNextInstallment'])
     ->name('subscriptions.payNext');

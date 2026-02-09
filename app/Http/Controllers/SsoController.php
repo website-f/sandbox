@@ -100,6 +100,42 @@ class SsoController extends Controller
     }
 
     /**
+     * Redirect admin to RizqMall (admin settings)
+     */
+    public function adminRedirectToRizqmall(Request $request)
+    {
+        /** @var \App\Models\User|null $user */
+        $user = Auth::user();
+
+        if (!$user) {
+            return redirect()->route('login')
+                ->with('error', 'Please login first.');
+        }
+
+        if (!$user->hasRole('Admin')) {
+            return redirect()->route('dashboard')
+                ->with('error', 'You do not have admin access.');
+        }
+
+        if (!$user->rizqmall_activated_at) {
+            $user->rizqmall_activated_at = now();
+            $user->save();
+        }
+
+        $token = $this->generateSsoToken($user, 'admin');
+
+        $rizqmallUrl = config('services.rizqmall.url', 'http://localhost:8001');
+        $redirectUrl = $rizqmallUrl . '/auth/sso?token=' . $token;
+
+        Log::info('Admin SSO redirect', [
+            'user_id' => $user->id,
+            'email' => $user->email,
+        ]);
+
+        return redirect($redirectUrl);
+    }
+
+    /**
      * Generate encrypted SSO token
      */
     private function generateSsoToken(User $user, string $userType = 'customer')
@@ -126,6 +162,7 @@ class SsoController extends Controller
             'email' => $user->email,
             'name' => $user->name,
             'user_type' => $userType,
+            'is_admin' => $user->hasRole('Admin'),
             'subscription_status' => $accountStatus,
             'subscription_expires_at' => $accountExpiresAt,
             'stores_quota' => $user->rizqmall_stores_quota ?? ($userType === 'vendor' ? 1 : 0),
@@ -183,6 +220,7 @@ class SsoController extends Controller
                     'name' => $user->name,
                     'phone' => $user->profile?->phone_number ?? null,
                     'user_type' => $payload['user_type'],
+                    'is_admin' => $payload['is_admin'] ?? false,
                     'subscription_status' => $payload['subscription_status'],
                     'subscription_expires_at' => $payload['subscription_expires_at'],
                     'stores_quota' => $payload['stores_quota'],

@@ -166,6 +166,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/profile/course', [ProfileController::class, 'updateCourse'])->name('profile.course');
     Route::post('/profile/nextofkin', [ProfileController::class, 'updateNextOfKin'])->name('profile.nextofkin');
     Route::post('/profile/pewaris/store', [ProfileController::class, 'storePewaris'])->name('profile.pewaris.store');
+    Route::post('/profile/pewaris/{pewaris}/assign-sandbox', [ProfileController::class, 'assignPewarisSandbox'])->name('profile.pewaris.assignSandbox');
     Route::delete('/profile/pewaris/{pewaris}', [ProfileController::class, 'destroyPewaris'])->name('profile.pewaris.destroy');
     Route::post('/profile/affiliation', [ProfileController::class, 'updateAffiliation'])->name('profile.affiliation');
 

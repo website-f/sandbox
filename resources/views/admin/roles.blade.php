@@ -38,7 +38,9 @@
                     @foreach($users as $user)
                     @php
                     $rizqmall = $user->accounts->find($user->accounts->where('type', 'rizqmall')->first()?->id);
-                    $sandbox = $user->accounts->find($user->accounts->where('type', 'sandbox')->first()?->id);
+                    $sandbox = $user->accounts->first(function ($account) {
+                        return in_array($account->type, ['sandbox', 'sandbox remaja', 'sandbox usahawan', 'sandbox awam'], true);
+                    });
                     @endphp
                     <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                         <td class="py-3 sm:py-4 px-3 sm:px-4 text-xs sm:text-sm">

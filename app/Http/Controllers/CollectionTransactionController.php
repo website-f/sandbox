@@ -5,8 +5,10 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Collection;
+use App\Models\CollectionType;
 use App\Models\CollectionTransaction;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
@@ -14,8 +16,21 @@ class CollectionTransactionController extends Controller
 {
     public function store(Request $request, User $user)
     {
+        $allowedTypes = CollectionType::forAccountType($user->getCollectionAccountType())
+            ->pluck('code')
+            ->values()
+            ->all();
+
+        if (empty($allowedTypes)) {
+            $allowedTypes = match ($user->getSandboxSubtype()) {
+                'remaja' => ['biasiswa_pemula', 'had_biasiswa', 'dana_usahawan_muda'],
+                'awam' => ['modal_pemula', 'had_pembiayaan_hutang', 'khairat_kematian'],
+                default => ['geran_asas', 'tabung_usahawan', 'had_pembiayaan'],
+            };
+        }
+
         $validated = $request->validate([
-            'collection_type' => 'required|in:geran_asas,tabung_usahawan,had_pembiayaan',
+            'collection_type' => ['required', Rule::in($allowedTypes)],
             'transaction_type' => 'required|in:credit,debit',
             'amount' => 'required|numeric|min:0.01',
             'description' => 'nullable|string|max:500',
@@ -28,9 +43,20 @@ class CollectionTransactionController extends Controller
         $amountInCents = (int)($validated['amount'] * 100);
 
         // Find the collection
-        $collection = Collection::where('user_id', $user->id)
-            ->where('type', $validated['collection_type'])
-            ->firstOrFail();
+        $collectionType = CollectionType::where('code', $validated['collection_type'])->first();
+        $collection = Collection::firstOrCreate(
+            [
+                'user_id' => $user->id,
+                'type' => $validated['collection_type'],
+            ],
+            [
+                'collection_type_id' => $collectionType?->id,
+                'balance' => 0,
+                'pending_balance' => 0,
+                'limit' => $collectionType?->limit,
+                'is_redeemed' => false,
+            ]
+        );
 
         DB::beginTransaction();
         

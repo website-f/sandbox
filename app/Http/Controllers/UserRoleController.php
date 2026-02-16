@@ -10,12 +10,38 @@ use App\Models\Payment;
 use App\Models\Referral;
 use App\Models\Blacklist;
 use App\Models\Collection;
+use App\Models\CollectionType;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
 class UserRoleController extends Controller
 {
+    private const LEGACY_SANDBOX_ACCOUNT_TYPES = [
+        'sandbox',
+        'sandbox remaja',
+        'sandbox usahawan',
+        'sandbox awam',
+    ];
+
+    private const COLLECTION_CODES_BY_SUBTYPE = [
+        Account::SUBTYPE_USAHAWAN => ['geran_asas', 'tabung_usahawan', 'had_pembiayaan'],
+        Account::SUBTYPE_REMAJA => ['biasiswa_pemula', 'had_biasiswa', 'dana_usahawan_muda'],
+        Account::SUBTYPE_AWAM => ['modal_pemula', 'had_pembiayaan_hutang', 'khairat_kematian'],
+    ];
+
+    private const COLLECTION_LABELS = [
+        'geran_asas' => 'Geran Asas',
+        'tabung_usahawan' => 'Tabung Usahawan',
+        'had_pembiayaan' => 'Had Pembiayaan',
+        'biasiswa_pemula' => 'Biasiswa Pemula',
+        'had_biasiswa' => 'Had Biasiswa',
+        'dana_usahawan_muda' => 'Dana Usahawan Muda',
+        'modal_pemula' => 'Modal Pemula',
+        'had_pembiayaan_hutang' => 'Had Pembiayaan Hutang',
+        'khairat_kematian' => 'Khairat Kematian',
+    ];
+
     public function index(Request $request)
     {
         // Load all users for DataTables client-side processing
@@ -211,10 +237,10 @@ class UserRoleController extends Controller
         return $code;
     }
 
-    protected function generateUniqueSerial($type)
+    protected function generateUniqueSerial($type, $subtype = null)
     {
         do {
-            $serial = Account::generateSerial($type);
+            $serial = Account::generateSerial($type, $subtype);
         } while (Account::where('serial_number', $serial)->exists());
 
         return $serial;
@@ -246,6 +272,8 @@ class UserRoleController extends Controller
      */
     public function show(User $user)
     {
+        $expectedCollectionCodes = $this->getCollectionCodesForUser($user);
+
         // Run deletion + creation in a transaction to avoid partial state
         DB::transaction(function () use ($user) {
             // 1) Remove any malformed/empty type rows for this user (NULL, empty or whitespace-only)
@@ -256,23 +284,8 @@ class UserRoleController extends Controller
                 })
                 ->delete();
 
-            // 2) Ensure the 3 default collections exist
-            $defaultTypes = ['geran_asas', 'tabung_usahawan', 'had_pembiayaan'];
-
-            foreach ($defaultTypes as $type) {
-                Collection::firstOrCreate(
-                    [
-                        'user_id' => $user->id,
-                        'type' => $type,
-                    ],
-                    [
-                        'balance' => 0,
-                        'pending_balance' => 0,
-                        'limit' => null,
-                        'is_redeemed' => 0,
-                    ]
-                );
-            }
+            // 2) Ensure the user's own sandbox-specific collections exist
+            Collection::createForUser($user->id, $user->getCollectionAccountType());
         });
 
         // 3) Eager load and rest of your logic (unchanged)
@@ -282,8 +295,10 @@ class UserRoleController extends Controller
             'bank',
             'education',
             'collections',
+            'collections.transactions.creator',
             'courses',
             'nextOfKin',
+            'pewaris.linkedUser.accounts',
             'affiliations',
             'accounts',
             'wallet',
@@ -292,11 +307,43 @@ class UserRoleController extends Controller
             'referrals',
         ]);
 
+        $displayCollections = $user->collections
+            ->filter(fn($collection) => in_array($collection->type, $expectedCollectionCodes, true))
+            ->sortBy(function ($collection) use ($expectedCollectionCodes) {
+                $position = array_search($collection->type, $expectedCollectionCodes, true);
+                return $position === false ? 999 : $position;
+            })
+            ->values();
+
+        $availableCollectionTypes = $displayCollections
+            ->map(function ($collection) {
+                return [
+                    'code' => $collection->type,
+                    'name' => $collection->display_name,
+                ];
+            })
+            ->values();
+
+        if ($availableCollectionTypes->isEmpty()) {
+            $availableCollectionTypes = collect($expectedCollectionCodes)
+                ->map(fn($code) => [
+                    'code' => $code,
+                    'name' => $this->getCollectionDisplayName($code),
+                ])
+                ->values();
+        }
+
         $walletTransactions = $user->wallet?->transactions()->latest()->limit(50)->get() ?? collect();
         $payments = \App\Models\Payment::whereHas('subscription', fn($q) => $q->where('user_id', $user->id))
             ->latest()->limit(50)->get();
 
-        return view('admin.user-show', compact('user', 'walletTransactions', 'payments'));
+        return view('admin.user-show', compact(
+            'user',
+            'walletTransactions',
+            'payments',
+            'displayCollections',
+            'availableCollectionTypes'
+        ));
     }
 
     /**
@@ -363,7 +410,7 @@ class UserRoleController extends Controller
 
         // If activating and no serial number exists, generate one
         if ($account->active && empty($account->serial_number)) {
-            $account->serial_number = Account::generateUniqueSerial($account->type);
+            $account->serial_number = Account::generateUniqueSerial($account->type, $account->subtype);
 
             // For rizqmall accounts, also set expiry date (1 year from now)
             if ($account->type === 'rizqmall' && !$account->expires_at) {
@@ -438,11 +485,17 @@ class UserRoleController extends Controller
         }
 
         $type = $request->type;
+        $sandboxSubtype = $this->normalizeSandboxSubtype($user->getSandboxSubtype());
 
         // Check if account already exists
-        $existingAccount = Account::where('user_id', $user->id)
-            ->where('type', $type)
-            ->first();
+        $existingAccountQuery = Account::where('user_id', $user->id);
+        if ($type === Account::TYPE_SANDBOX) {
+            $existingAccountQuery->whereIn('type', self::LEGACY_SANDBOX_ACCOUNT_TYPES);
+        } else {
+            $existingAccountQuery->where('type', $type);
+        }
+
+        $existingAccount = $existingAccountQuery->first();
 
         if ($existingAccount) {
             return response()->json([
@@ -451,10 +504,20 @@ class UserRoleController extends Controller
             ], 422);
         }
 
+        $accountTypeId = null;
+        if ($type === Account::TYPE_SANDBOX) {
+            $accountTypeId = \App\Models\AccountType::where('name', 'sandbox_' . $sandboxSubtype)->value('id')
+                ?? \App\Models\AccountType::where('name', 'sandbox')->value('id');
+        } elseif ($type === Account::TYPE_RIZQMALL) {
+            $accountTypeId = \App\Models\AccountType::where('name', 'rizqmall')->value('id');
+        }
+
         // Create new account
         $account = Account::create([
             'user_id' => $user->id,
             'type' => $type,
+            'subtype' => $type === Account::TYPE_SANDBOX ? $sandboxSubtype : null,
+            'account_type_id' => $accountTypeId,
             'active' => false,
             'serial_number' => null,
             'expires_at' => null,
@@ -490,7 +553,7 @@ class UserRoleController extends Controller
         $accounts = $user->accounts()->get(['id', 'type', 'active', 'serial_number', 'expires_at']);
 
         $hasRizqmall = $accounts->where('type', 'rizqmall')->isNotEmpty();
-        $hasSandbox = $accounts->where('type', 'sandbox')->isNotEmpty();
+        $hasSandbox = $accounts->contains(fn($account) => $this->isSandboxAccountType($account->type));
 
         return response()->json([
             'ok' => true,
@@ -508,7 +571,8 @@ class UserRoleController extends Controller
         }
 
         // build full tree first
-        $tree = $this->buildReferralTree($ref->id);
+        $visited = [];
+        $tree = $this->buildReferralTree($ref->id, $visited);
 
         // limit top-level children to 10
         if (isset($tree['children']) && is_array($tree['children'])) {
@@ -519,10 +583,17 @@ class UserRoleController extends Controller
     }
 
     /** helper: build referral tree from referrals table (Eloquent) */
-    protected function buildReferralTree($referralId)
+    protected function buildReferralTree($referralId, array &$visited = [])
     {
+        if (isset($visited[$referralId])) {
+            return null;
+        }
+        $visited[$referralId] = true;
+
         $ref = \App\Models\Referral::with('user')->find($referralId);
-        if (!$ref) return null;
+        if (!$ref) {
+            return null;
+        }
 
         $node = [
             'id'      => $ref->id,
@@ -535,7 +606,10 @@ class UserRoleController extends Controller
         $children = \App\Models\Referral::where('parent_id', $ref->user_id)->get();
 
         foreach ($children as $childRef) {
-            $node['children'][] = $this->buildReferralTree($childRef->id);
+            $childNode = $this->buildReferralTree($childRef->id, $visited);
+            if ($childNode) {
+                $node['children'][] = $childNode;
+            }
         }
 
         return $node;
@@ -545,11 +619,7 @@ class UserRoleController extends Controller
     public function sandboxReferralTree(User $user)
     {
         // Get all active sandbox accounts user_ids
-        $activeSandboxUserIds = \DB::table('accounts')
-            ->where('type', 'sandbox')
-            ->where('active', 1)
-            ->pluck('user_id')
-            ->toArray();
+        $activeSandboxUserIds = $this->getActiveSandboxUserIds();
 
         if (empty($activeSandboxUserIds)) {
             return response()->json(['tree' => []]);
@@ -561,7 +631,8 @@ class UserRoleController extends Controller
         }
 
         // Build filtered tree
-        $tree = $this->buildFilteredSandboxTree($ref->id, $activeSandboxUserIds);
+        $visited = [];
+        $tree = $this->buildFilteredSandboxTree($ref->id, $activeSandboxUserIds, $visited);
 
         if (!$tree) {
             return response()->json(['tree' => []]);
@@ -576,10 +647,17 @@ class UserRoleController extends Controller
     }
 
     /** helper: build sandbox referral tree - only show users with active sandbox accounts */
-    protected function buildFilteredSandboxTree($referralId, $activeSandboxUserIds)
+    protected function buildFilteredSandboxTree($referralId, $activeSandboxUserIds, array &$visited = [])
     {
+        if (isset($visited[$referralId])) {
+            return null;
+        }
+        $visited[$referralId] = true;
+
         $ref = \App\Models\Referral::with('user')->find($referralId);
-        if (!$ref) return null;
+        if (!$ref) {
+            return null;
+        }
 
         // Check if this user has an active sandbox account
         $hasActiveSandbox = in_array($ref->user_id, $activeSandboxUserIds);
@@ -590,7 +668,7 @@ class UserRoleController extends Controller
         // Recursively build children that have active sandbox accounts
         $filteredChildren = [];
         foreach ($children as $childRef) {
-            $childNode = $this->buildFilteredSandboxTree($childRef->id, $activeSandboxUserIds);
+            $childNode = $this->buildFilteredSandboxTree($childRef->id, $activeSandboxUserIds, $visited);
             if ($childNode) {
                 $filteredChildren[] = $childNode;
             }
@@ -769,11 +847,7 @@ class UserRoleController extends Controller
     {
         try {
             // Get all active sandbox accounts user_ids
-            $activeSandboxUserIds = \DB::table('accounts')
-                ->where('type', 'sandbox')
-                ->where('active', 1)
-                ->pluck('user_id')
-                ->toArray();
+            $activeSandboxUserIds = $this->getActiveSandboxUserIds();
 
             if (empty($activeSandboxUserIds)) {
                 return response()->json([
@@ -789,11 +863,31 @@ class UserRoleController extends Controller
 
             // Ensure all collections exist
             $collections = $this->ensureCollections($user);
-            $geranAsas = $collections['geran_asas'];
-            $tabungUsahawan = $collections['tabung_usahawan'];
-            $hadPembiayaan = $collections['had_pembiayaan'];
+            $collectionCodes = $this->getCollectionCodesForUser($user);
+            $starterType = $collectionCodes[0] ?? null;
+            $secondaryTypes = array_slice($collectionCodes, 1, 2);
 
-            // SYNC GERAN ASAS (6000 per referral, max 10)
+            if (!$starterType || count($secondaryTypes) < 2) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Collection mapping is incomplete for this sandbox subtype.'
+                ], 422);
+            }
+
+            $starterCollection = $collections[$starterType] ?? null;
+            $secondaryAType = $secondaryTypes[0];
+            $secondaryBType = $secondaryTypes[1];
+            $secondaryA = $collections[$secondaryAType] ?? null;
+            $secondaryB = $collections[$secondaryBType] ?? null;
+
+            if (!$starterCollection || !$secondaryA || !$secondaryB) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Required collections are missing for this user.'
+                ], 422);
+            }
+
+            // Starter collection (6000 per referral, max 10)
             if ($directSandboxCount < 10) {
                 // Still collecting - amount goes to pending
                 $expectedPending = $directSandboxCount * 6000;
@@ -804,53 +898,39 @@ class UserRoleController extends Controller
                 $expectedBalance = 60000; // 10 * 6000
             }
 
-            // Update Geran Asas balances
-            if ($geranAsas->pending_balance != $expectedPending || $geranAsas->balance != $expectedBalance) {
-                $geranAsas->pending_balance = $expectedPending;
-                $geranAsas->balance = $expectedBalance;
-                $geranAsas->save();
+            // Update starter collection balances
+            if ($starterCollection->pending_balance != $expectedPending || $starterCollection->balance != $expectedBalance) {
+                $starterCollection->pending_balance = $expectedPending;
+                $starterCollection->balance = $expectedBalance;
+                $starterCollection->save();
 
                 // Log transaction if completed
                 if ($expectedBalance > 0 && $directSandboxCount >= 10) {
-                    $geranAsas->transactions()->create([
+                    $starterCollection->transactions()->create([
                         'type' => 'credit',
                         'amount' => 60000,
-                        'description' => "Geran Asas completed (10 referrals) - Sync adjustment",
+                        'description' => $this->getCollectionDisplayName($starterType) . " completed (10 referrals) - Sync adjustment",
                     ]);
                 }
             }
 
-            // SYNC TABUNG USAHAWAN & HAD PEMBIAYAAN
+            // Sync secondary collections
             // Each referral gives 2000 split (1000 each)
             $expectedPerCollection = $directSandboxCount * 1000;
 
-            // Update Tabung Usahawan
-            if ($tabungUsahawan->balance != $expectedPerCollection) {
-                $difference = $expectedPerCollection - $tabungUsahawan->balance;
-                if ($difference > 0 && $tabungUsahawan->balance + $difference <= 50000000) {
-                    $tabungUsahawan->balance = $expectedPerCollection;
-                    $tabungUsahawan->save();
+            foreach ([$secondaryAType => $secondaryA, $secondaryBType => $secondaryB] as $type => $collection) {
+                if ($collection->balance != $expectedPerCollection) {
+                    $difference = $expectedPerCollection - $collection->balance;
+                    if ($difference > 0 && $collection->balance + $difference <= 50000000) {
+                        $collection->balance = $expectedPerCollection;
+                        $collection->save();
 
-                    $tabungUsahawan->transactions()->create([
-                        'type' => 'credit',
-                        'amount' => $difference,
-                        'description' => "Sync adjustment: {$directSandboxCount} sandbox referrals",
-                    ]);
-                }
-            }
-
-            // Update Had Pembiayaan
-            if ($hadPembiayaan->balance != $expectedPerCollection) {
-                $difference = $expectedPerCollection - $hadPembiayaan->balance;
-                if ($difference > 0 && $hadPembiayaan->balance + $difference <= 50000000) {
-                    $hadPembiayaan->balance = $expectedPerCollection;
-                    $hadPembiayaan->save();
-
-                    $hadPembiayaan->transactions()->create([
-                        'type' => 'credit',
-                        'amount' => $difference,
-                        'description' => "Sync adjustment: {$directSandboxCount} sandbox referrals",
-                    ]);
+                        $collection->transactions()->create([
+                            'type' => 'credit',
+                            'amount' => $difference,
+                            'description' => "Sync adjustment: {$directSandboxCount} sandbox referrals",
+                        ]);
+                    }
                 }
             }
 
@@ -859,18 +939,19 @@ class UserRoleController extends Controller
 
             // Response message
             $message = "Synced! {$directSandboxCount} active sandbox referrals found.\n";
-            $message .= "- Geran Asas: RM " . number_format($geranAsas->balance / 100, 2) . " (balance), RM " . number_format($geranAsas->pending_balance / 100, 2) . " (pending)\n";
-            $message .= "- Tabung Usahawan: RM " . number_format($tabungUsahawan->balance / 100, 2) . "\n";
-            $message .= "- Had Pembiayaan: RM " . number_format($hadPembiayaan->balance / 100, 2);
+            $message .= "- " . $this->getCollectionDisplayName($starterType) . ": RM " . number_format($starterCollection->balance / 100, 2)
+                . " (balance), RM " . number_format($starterCollection->pending_balance / 100, 2) . " (pending)\n";
+            $message .= "- " . $this->getCollectionDisplayName($secondaryAType) . ": RM " . number_format($secondaryA->balance / 100, 2) . "\n";
+            $message .= "- " . $this->getCollectionDisplayName($secondaryBType) . ": RM " . number_format($secondaryB->balance / 100, 2);
 
             return response()->json([
                 'success' => true,
                 'message' => $message,
                 'direct_count' => $directSandboxCount,
-                'geran_pending' => $geranAsas->pending_balance,
-                'geran_balance' => $geranAsas->balance,
-                'tabung_usahawan' => $tabungUsahawan->balance,
-                'had_pembiayaan' => $hadPembiayaan->balance
+                'starter_pending' => $starterCollection->pending_balance,
+                'starter_balance' => $starterCollection->balance,
+                $secondaryAType => $secondaryA->balance,
+                $secondaryBType => $secondaryB->balance,
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -898,39 +979,34 @@ class UserRoleController extends Controller
 
         // Ensure upline collections
         $uplineCollections = $this->ensureCollections($upline);
+        $uplineCollectionCodes = $this->getCollectionCodesForUser($upline);
+        $uplineSecondaryTypes = array_slice($uplineCollectionCodes, 1, 2);
+        if (count($uplineSecondaryTypes) < 2) {
+            return;
+        }
 
         // Upline gets 2000 (1000 each) per referral of their downline
         $expectedPerCollection = $childrenCount * 1000;
 
-        // Update Tabung Usahawan
-        $tabungUsahawan = $uplineCollections['tabung_usahawan'];
-        if ($tabungUsahawan->balance < $expectedPerCollection) {
-            $difference = $expectedPerCollection - $tabungUsahawan->balance;
-            if ($tabungUsahawan->balance + $difference <= 50000000) {
-                $tabungUsahawan->balance += $difference;
-                $tabungUsahawan->save();
-
-                $tabungUsahawan->transactions()->create([
-                    'type' => 'credit',
-                    'amount' => $difference,
-                    'description' => "Upline sync: {$childrenCount} referrals from {$user->name}",
-                ]);
+        // Update both secondary collections according to upline sandbox subtype
+        foreach ($uplineSecondaryTypes as $type) {
+            $collection = $uplineCollections[$type] ?? null;
+            if (!$collection) {
+                continue;
             }
-        }
 
-        // Update Had Pembiayaan
-        $hadPembiayaan = $uplineCollections['had_pembiayaan'];
-        if ($hadPembiayaan->balance < $expectedPerCollection) {
-            $difference = $expectedPerCollection - $hadPembiayaan->balance;
-            if ($hadPembiayaan->balance + $difference <= 50000000) {
-                $hadPembiayaan->balance += $difference;
-                $hadPembiayaan->save();
+            if ($collection->balance < $expectedPerCollection) {
+                $difference = $expectedPerCollection - $collection->balance;
+                if ($collection->balance + $difference <= 50000000) {
+                    $collection->balance += $difference;
+                    $collection->save();
 
-                $hadPembiayaan->transactions()->create([
-                    'type' => 'credit',
-                    'amount' => $difference,
-                    'description' => "Upline sync: {$childrenCount} referrals from {$user->name}",
-                ]);
+                    $collection->transactions()->create([
+                        'type' => 'credit',
+                        'amount' => $difference,
+                        'description' => "Upline sync: {$childrenCount} referrals from {$user->name}",
+                    ]);
+                }
             }
         }
 
@@ -943,19 +1019,61 @@ class UserRoleController extends Controller
      */
     private function ensureCollections(User $u): array
     {
-        return [
-            'geran_asas' => \App\Models\Collection::firstOrCreate(
-                ['user_id' => $u->id, 'type' => 'geran_asas'],
-                ['balance' => 0, 'pending_balance' => 0, 'limit' => 60000]
-            ),
-            'tabung_usahawan' => \App\Models\Collection::firstOrCreate(
-                ['user_id' => $u->id, 'type' => 'tabung_usahawan'],
-                ['balance' => 0, 'limit' => 50000000]
-            ),
-            'had_pembiayaan' => \App\Models\Collection::firstOrCreate(
-                ['user_id' => $u->id, 'type' => 'had_pembiayaan'],
-                ['balance' => 0, 'limit' => 50000000]
-            ),
-        ];
+        Collection::createForUser($u->id, $u->getCollectionAccountType());
+
+        $codes = $this->getCollectionCodesForUser($u);
+        return Collection::where('user_id', $u->id)
+            ->whereIn('type', $codes)
+            ->get()
+            ->keyBy('type')
+            ->all();
+    }
+
+    private function getActiveSandboxUserIds(): array
+    {
+        return DB::table('accounts')
+            ->whereIn('type', self::LEGACY_SANDBOX_ACCOUNT_TYPES)
+            ->where('active', 1)
+            ->pluck('user_id')
+            ->unique()
+            ->values()
+            ->toArray();
+    }
+
+    private function isSandboxAccountType(?string $type): bool
+    {
+        return in_array((string) $type, self::LEGACY_SANDBOX_ACCOUNT_TYPES, true);
+    }
+
+    private function normalizeSandboxSubtype(?string $subtype): string
+    {
+        if (!$subtype) {
+            return Account::SUBTYPE_USAHAWAN;
+        }
+
+        $normalized = strtolower(trim($subtype));
+        if (isset(self::COLLECTION_CODES_BY_SUBTYPE[$normalized])) {
+            return $normalized;
+        }
+
+        return Account::SUBTYPE_USAHAWAN;
+    }
+
+    private function getCollectionCodesForUser(User $user): array
+    {
+        $subtype = $this->normalizeSandboxSubtype($user->getSandboxSubtype());
+        $accountType = $user->getCollectionAccountType();
+
+        $codes = CollectionType::forAccountType($accountType)->pluck('code')->values()->all();
+        if (!empty($codes)) {
+            return $codes;
+        }
+
+        return self::COLLECTION_CODES_BY_SUBTYPE[$subtype] ?? self::COLLECTION_CODES_BY_SUBTYPE[Account::SUBTYPE_USAHAWAN];
+    }
+
+    private function getCollectionDisplayName(string $code): string
+    {
+        return self::COLLECTION_LABELS[$code] ?? ucwords(str_replace('_', ' ', $code));
     }
 }

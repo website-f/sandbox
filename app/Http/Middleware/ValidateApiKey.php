@@ -13,11 +13,21 @@ class ValidateApiKey
      */
     public function handle(Request $request, Closure $next)
     {
-        $apiKey = $request->header('X-API-Key') ?? $request->header('Authorization');
-        
-        // Remove "Bearer " prefix if present
-        if (str_starts_with($apiKey, 'Bearer ')) {
-            $apiKey = substr($apiKey, 7);
+        $apiKey = $request->header('X-API-Key');
+        $authorization = $request->header('Authorization');
+
+        if (is_string($apiKey)) {
+            $apiKey = trim($apiKey);
+        }
+
+        if (!$apiKey && is_string($authorization)) {
+            $authorization = trim($authorization);
+            // Support bearer token style header.
+            if (str_starts_with($authorization, 'Bearer ')) {
+                $apiKey = substr($authorization, 7);
+            } else {
+                $apiKey = $authorization;
+            }
         }
 
         $expectedKey = config('services.rizqmall.api_key');

@@ -8,13 +8,17 @@ use App\Models\Role;
 use App\Models\User;
 use App\Models\Account;
 use App\Models\Pewaris;
+use App\Models\Referral;
+use App\Models\Collection;
 use App\Models\BankDetail;
 use App\Models\AccountType;
+use App\Models\CollectionType;
 use App\Models\Subscription;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use App\Services\ReferralTreeService;
 use App\Models\{Profile,Business,Education,Course,NextOfKin,Affiliation};
 
@@ -42,7 +46,7 @@ class ProfileController extends Controller
             'education'     => Education::firstOrCreate(['user_id' => $userId]),
             'bank'          => BankDetail::firstOrCreate(['user_id' => $userId]),
             'courses'       => Course::where('user_id', $userId)->get(),
-            'pewaris'       => Pewaris::where('user_id', $userId)->get(),
+            'pewaris'       => Pewaris::with('linkedUser.accounts')->where('user_id', $userId)->get(),
             'affiliation'   => Affiliation::firstOrCreate(['user_id' => $userId]),
             'accounts'      => $accounts,
             'subscriptions' => $subscriptions,
@@ -62,7 +66,7 @@ class ProfileController extends Controller
             'education'    => Education::firstOrCreate(['user_id' => $userId]),
             'bank'         => BankDetail::firstOrCreate(['user_id' => $userId]),
             'courses'      => Course::where('user_id', $userId)->get(),
-            'pewaris'      => Pewaris::where('user_id', $userId)->get(),
+            'pewaris'      => Pewaris::with('linkedUser.accounts')->where('user_id', $userId)->get(),
             'affiliation'  => Affiliation::firstOrCreate(['user_id' => $userId]),
         ]);
     }
@@ -167,69 +171,246 @@ public function updateProfile(Request $request)
         return back()->with('success','Affiliation updated');
     }
 
- public function storePewaris(Request $request, ReferralTreeService $tree)
-{
-    $user = auth()->user();
+    public function storePewaris(Request $request, ReferralTreeService $tree)
+    {
+        $user = auth()->user();
 
-    $data = $request->validate([
-        'name' => 'nullable|string|max:255',
-        'relationship' => 'nullable|string|max:255',
-        'phone' => 'nullable|string|max:20',
-        'email' => 'nullable|email|unique:users,email',
-        'address' => 'nullable|string',
-        'dob' => 'nullable|date',
-    ]);
-
-    // Create Pewaris
-    $pewaris = Pewaris::create([
-        'user_id' => $user->id,
-        'name' => $data['name'] ?? null,
-        'relationship' => $data['relationship'] ?? null,
-        'phone' => $data['phone'] ?? null,
-        'email' => $data['email'] ?? null,
-        'address' => $data['address'] ?? null,
-        'dob' => $data['dob'] ?? null, // save DOB
-    ]);
-
-    // Only create linked user if email provided
-    if (!empty($data['email'])) {
-        $linkedUser = User::create([
-            'name' => $data['name'] ?? 'No Name',
-            'email' => $data['email'],
-            'password' => Hash::make(Str::random(12)),
+        $data = $request->validate([
+            'name' => 'nullable|string|max:255',
+            'relationship' => 'nullable|string|max:255',
+            'phone' => 'nullable|string|max:20',
+            'email' => 'nullable|email|unique:pewaris,email',
+            'address' => 'nullable|string',
+            'dob' => 'nullable|date',
         ]);
 
-        $role = Role::where('name', 'Entrepreneur')->first();
-        $linkedUser->roles()->attach($role);
+        // Create Pewaris
+        $pewaris = Pewaris::create([
+            'user_id' => $user->id,
+            'name' => $data['name'] ?? null,
+            'relationship' => $data['relationship'] ?? null,
+            'phone' => $data['phone'] ?? null,
+            'email' => $data['email'] ?? null,
+            'address' => $data['address'] ?? null,
+            'dob' => $data['dob'] ?? null,
+        ]);
 
-        // Determine accounts to create
-        $accounts = AccountType::whereIn('name', ['rizqmall', 'sandbox'])->get()->keyBy('name');
+        // Only create linked user if email provided
+        if (!empty($data['email'])) {
+            $linkedUser = User::where('email', $data['email'])->first();
+            if (!$linkedUser) {
+                $linkedUser = User::create([
+                    'name' => $data['name'] ?? 'No Name',
+                    'email' => $data['email'],
+                    'password' => Hash::make(Str::random(12)),
+                ]);
+            }
 
-        // Add sandbox remaja if under 25
-        if (!empty($data['dob']) && Carbon::parse($data['dob'])->age < 25) {
-            $accounts['sandbox remaja'] = AccountType::where('name', 'sandbox remaja')->first();
+            $role = Role::where('name', 'Entrepreneur')->first();
+            if ($role) {
+                $linkedUser->roles()->syncWithoutDetaching([$role->id]);
+            }
+
+            $defaultSubtype = (!empty($data['dob']) && Account::isEligibleForRemaja($data['dob']))
+                ? Account::SUBTYPE_REMAJA
+                : Account::SUBTYPE_AWAM;
+
+            $sandboxAccountType = AccountType::where('name', 'sandbox_' . $defaultSubtype)->first()
+                ?? AccountType::where('name', 'sandbox')->first();
+            $rizqmallAccountType = AccountType::where('name', 'rizqmall')->first();
+
+            Account::firstOrCreate(
+                ['user_id' => $linkedUser->id, 'type' => Account::TYPE_RIZQMALL],
+                [
+                    'account_type_id' => $rizqmallAccountType?->id,
+                    'active' => false,
+                ]
+            );
+
+            $legacyTypeToSubtype = [
+                'sandbox remaja' => Account::SUBTYPE_REMAJA,
+                'sandbox awam' => Account::SUBTYPE_AWAM,
+                'sandbox usahawan' => Account::SUBTYPE_USAHAWAN,
+            ];
+            $existingSandboxAccount = $linkedUser->accounts()
+                ->whereIn('type', array_merge([Account::TYPE_SANDBOX], array_keys($legacyTypeToSubtype)))
+                ->first();
+
+            if (!$existingSandboxAccount) {
+                Account::create([
+                    'user_id' => $linkedUser->id,
+                    'type' => Account::TYPE_SANDBOX,
+                    'subtype' => $defaultSubtype,
+                    'account_type_id' => $sandboxAccountType?->id,
+                    'active' => false,
+                ]);
+            } else {
+                $originalType = $existingSandboxAccount->type;
+                $resolvedSubtype = $existingSandboxAccount->subtype
+                    ?: ($legacyTypeToSubtype[$originalType] ?? $defaultSubtype);
+                $resolvedSandboxAccountType = AccountType::where('name', 'sandbox_' . $resolvedSubtype)->first()
+                    ?? AccountType::where('name', 'sandbox')->first();
+
+                $existingSandboxAccount->type = Account::TYPE_SANDBOX;
+                $existingSandboxAccount->subtype = $resolvedSubtype;
+                $existingSandboxAccount->account_type_id = $resolvedSandboxAccountType?->id ?? $existingSandboxAccount->account_type_id;
+                $existingSandboxAccount->active = (bool) $existingSandboxAccount->active;
+                $existingSandboxAccount->save();
+            }
+
+            $linkedUser->update(['sandbox_type' => $defaultSubtype]);
+
+            // Create collections aligned to default subtype
+            $collectionAccountType = match ($defaultSubtype) {
+                Account::SUBTYPE_REMAJA => CollectionType::ACCOUNT_SANDBOX_REMAJA,
+                Account::SUBTYPE_AWAM => CollectionType::ACCOUNT_SANDBOX_AWAM,
+                default => CollectionType::ACCOUNT_SANDBOX_USAHAWAN,
+            };
+            Collection::createForUser($linkedUser->id, $collectionAccountType);
+
+            // Link back
+            $pewaris->linked_user_id = $linkedUser->id;
+            $pewaris->save();
+
+            // Ensure linked user is placed under current user in referral tree
+            $this->ensurePewarisReferralPlacement($user, $linkedUser, $tree);
         }
 
-        // Create accounts
-        foreach ($accounts as $type => $accountType) {
-            Account::create([
-                'user_id' => $linkedUser->id,
-                'type' => $type,
-                'account_type_id' => $accountType->id,
+        return back()->with('success', 'Pewaris added successfully!');
+    }
+
+    public function assignPewarisSandbox(Request $request, Pewaris $pewaris, ReferralTreeService $tree)
+    {
+        $owner = auth()->user();
+
+        if ($pewaris->user_id !== $owner->id) {
+            return back()->with('error', 'Unauthorized action.');
+        }
+
+        $validated = $request->validate([
+            'sandbox_subtype' => 'required|in:usahawan,remaja,awam',
+        ]);
+
+        $targetSubtype = $validated['sandbox_subtype'];
+
+        if ($targetSubtype === Account::SUBTYPE_REMAJA && !$pewaris->isEligibleForRemaja()) {
+            return back()->with('error', 'Sandbox Remaja is only for ages 11-20.');
+        }
+
+        $linkedUser = $pewaris->linkedUser;
+
+        // If linked user doesn't exist yet, create one from pewaris details
+        if (!$linkedUser) {
+            if (empty($pewaris->email)) {
+                return back()->with('error', 'Please provide an email for this next of kin first.');
+            }
+
+            $linkedUser = User::where('email', $pewaris->email)->first();
+            if (!$linkedUser) {
+                $linkedUser = User::create([
+                    'name' => $pewaris->name ?: 'No Name',
+                    'email' => $pewaris->email,
+                    'password' => Hash::make(Str::random(12)),
+                    'sandbox_type' => $targetSubtype,
+                ]);
+            }
+
+            $role = Role::where('name', 'Entrepreneur')->first();
+            if ($role) {
+                $linkedUser->roles()->syncWithoutDetaching([$role->id]);
+            }
+
+            $pewaris->linked_user_id = $linkedUser->id;
+            $pewaris->save();
+        }
+
+        // Ensure linked user is under owner in referral tree
+        $this->ensurePewarisReferralPlacement($owner, $linkedUser, $tree);
+
+        // Ensure RizqMall account exists
+        $rizqmallAccountType = AccountType::where('name', 'rizqmall')->first();
+        Account::firstOrCreate(
+            ['user_id' => $linkedUser->id, 'type' => Account::TYPE_RIZQMALL],
+            [
+                'account_type_id' => $rizqmallAccountType?->id,
                 'active' => false,
+            ]
+        );
+
+        // Normalize legacy sandbox account rows and ensure one sandbox account exists
+        $legacyTypeToSubtype = [
+            'sandbox remaja' => Account::SUBTYPE_REMAJA,
+            'sandbox awam' => Account::SUBTYPE_AWAM,
+            'sandbox usahawan' => Account::SUBTYPE_USAHAWAN,
+        ];
+
+        $sandboxAccount = $linkedUser->accounts()->where('type', Account::TYPE_SANDBOX)->first();
+        $legacySandboxAccounts = $linkedUser->accounts()
+            ->whereIn('type', array_keys($legacyTypeToSubtype))
+            ->get();
+
+        if (!$sandboxAccount && $legacySandboxAccounts->isNotEmpty()) {
+            $sandboxAccount = $legacySandboxAccounts->first();
+            $sandboxAccount->type = Account::TYPE_SANDBOX;
+            if (!$sandboxAccount->subtype) {
+                $sandboxAccount->subtype = $legacyTypeToSubtype[$sandboxAccount->getOriginal('type')] ?? null;
+            }
+        }
+
+        if ($sandboxAccount && $legacySandboxAccounts->isNotEmpty()) {
+            foreach ($legacySandboxAccounts as $legacySandboxAccount) {
+                if ($sandboxAccount->id === $legacySandboxAccount->id) {
+                    continue;
+                }
+
+                if (!$sandboxAccount->serial_number && $legacySandboxAccount->serial_number) {
+                    $sandboxAccount->serial_number = $legacySandboxAccount->serial_number;
+                }
+
+                if (
+                    !$sandboxAccount->subtype
+                    && isset($legacyTypeToSubtype[$legacySandboxAccount->type])
+                ) {
+                    $sandboxAccount->subtype = $legacyTypeToSubtype[$legacySandboxAccount->type];
+                }
+
+                $legacySandboxAccount->delete();
+            }
+        }
+
+        $sandboxAccountType = AccountType::where('name', 'sandbox_' . $targetSubtype)->first()
+            ?? AccountType::where('name', 'sandbox')->first();
+
+        if (!$sandboxAccount) {
+            $sandboxAccount = new Account([
+                'user_id' => $linkedUser->id,
+                'type' => Account::TYPE_SANDBOX,
             ]);
         }
 
-        // Link back
-        $pewaris->linked_user_id = $linkedUser->id;
-        $pewaris->save();
+        $sandboxAccount->subtype = $targetSubtype;
+        $sandboxAccount->account_type_id = $sandboxAccountType?->id;
+        $sandboxAccount->active = true;
+        if (!$sandboxAccount->serial_number) {
+            $sandboxAccount->serial_number = Account::generateUniqueSerial(Account::TYPE_SANDBOX, $targetSubtype);
+        }
+        $sandboxAccount->save();
 
-        // Attach to referral tree
-        $tree->attach($user, $linkedUser);
+        // Sync linked user subtype for fallback logic
+        $linkedUser->sandbox_type = $targetSubtype;
+        $linkedUser->save();
+
+        // Ensure subtype-specific collections exist
+        $collectionAccountType = match ($targetSubtype) {
+            Account::SUBTYPE_REMAJA => CollectionType::ACCOUNT_SANDBOX_REMAJA,
+            Account::SUBTYPE_AWAM => CollectionType::ACCOUNT_SANDBOX_AWAM,
+            default => CollectionType::ACCOUNT_SANDBOX_USAHAWAN,
+        };
+        Collection::createForUser($linkedUser->id, $collectionAccountType);
+
+        $label = ucfirst($targetSubtype);
+        return back()->with('success', "{$pewaris->name} has been added to Sandbox {$label} under your referral tree.");
     }
-
-    return back()->with('success', 'Pewaris added successfully!');
-}
 
 public function destroyPewaris(Pewaris $pewaris)
 {
@@ -254,6 +435,36 @@ public function destroyPewaris(Pewaris $pewaris)
     $pewaris->delete();
 
     return back()->with('success', 'Pewaris deleted successfully!');
+}
+
+private function ensurePewarisReferralPlacement(User $owner, User $linkedUser, ReferralTreeService $tree): void
+{
+    $ownerReferral = $owner->referral;
+    if (!$ownerReferral) {
+        $ownerReferral = Referral::create([
+            'user_id' => $owner->id,
+            'parent_id' => null,
+            'root_id' => $owner->id,
+            'level' => 1,
+            'direct_children' => 0,
+            'ref_code' => $tree->generateRefCode($owner),
+        ]);
+    }
+
+    $rootId = $ownerReferral->root_id ?: $owner->id;
+    $linkedReferral = $linkedUser->referral;
+
+    if (!$linkedReferral) {
+        $tree->attach($owner, $linkedUser);
+        return;
+    }
+
+    $expectedLevel = ($ownerReferral->level ?? 1) + 1;
+    $linkedReferral->update([
+        'parent_id' => $owner->id,
+        'root_id' => $rootId,
+        'level' => $expectedLevel,
+    ]);
 }
 
 public function redirectToRizqmall(Request $request)
@@ -364,4 +575,3 @@ public function redirectToRizqmall(Request $request)
     }
 
 }
-

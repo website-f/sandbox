@@ -484,10 +484,59 @@
                                 @endif
                             </div>
                             <div class="flex items-center gap-2">
-                                @if($nk->linked_user_id && $nk->isEligibleForRemaja())
-                                    <form action="#">
-                                        <button type="submit" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-xl text-sm font-semibold transition-colors">
-                                            <i class="fas fa-user-plus mr-2"></i> Register Sandbox Remaja
+                                @php
+                                    $sandboxAccount = $nk->linkedUser?->accounts?->first(function ($account) {
+                                        return in_array($account->type, ['sandbox', 'sandbox remaja', 'sandbox awam', 'sandbox usahawan'], true);
+                                    });
+                                    $activeSubtype = $sandboxAccount?->subtype;
+                                    if (!$activeSubtype && $sandboxAccount) {
+                                        $activeSubtype = match ($sandboxAccount->type) {
+                                            'sandbox remaja' => 'remaja',
+                                            'sandbox awam' => 'awam',
+                                            'sandbox usahawan' => 'usahawan',
+                                            default => null,
+                                        };
+                                    }
+                                @endphp
+
+                                @if($nk->linked_user_id)
+                                    @if($nk->isEligibleForRemaja())
+                                        <form method="POST" action="{{ route('profile.pewaris.assignSandbox', $nk) }}">
+                                            @csrf
+                                            <input type="hidden" name="sandbox_subtype" value="remaja">
+                                            <button type="submit" class="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-xl text-xs sm:text-sm font-semibold transition-colors">
+                                                <i class="fas fa-child mr-2"></i> Add to Sandbox Remaja
+                                            </button>
+                                        </form>
+                                    @endif
+
+                                    <form method="POST" action="{{ route('profile.pewaris.assignSandbox', $nk) }}">
+                                        @csrf
+                                        <input type="hidden" name="sandbox_subtype" value="awam">
+                                        <button type="submit" class="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs sm:text-sm font-semibold transition-colors">
+                                            <i class="fas fa-users mr-2"></i> Add to Sandbox Awam
+                                        </button>
+                                    </form>
+
+                                    <form method="POST" action="{{ route('profile.pewaris.assignSandbox', $nk) }}">
+                                        @csrf
+                                        <input type="hidden" name="sandbox_subtype" value="usahawan">
+                                        <button type="submit" class="px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs sm:text-sm font-semibold transition-colors">
+                                            <i class="fas fa-briefcase mr-2"></i> Add to Sandbox Usahawan
+                                        </button>
+                                    </form>
+
+                                    @if($activeSubtype)
+                                        <span class="px-3 py-2 bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-xl text-xs sm:text-sm font-semibold">
+                                            Current: Sandbox {{ ucfirst($activeSubtype) }}
+                                        </span>
+                                    @endif
+                                @elseif($nk->email)
+                                    <form method="POST" action="{{ route('profile.pewaris.assignSandbox', $nk) }}">
+                                        @csrf
+                                        <input type="hidden" name="sandbox_subtype" value="{{ $nk->isEligibleForRemaja() ? 'remaja' : 'awam' }}">
+                                        <button type="submit" class="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs sm:text-sm font-semibold transition-colors">
+                                            <i class="fas fa-user-plus mr-2"></i> Create & Add to Sandbox
                                         </button>
                                     </form>
                                 @endif

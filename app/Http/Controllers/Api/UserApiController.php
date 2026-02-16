@@ -6,6 +6,8 @@ use App\Models\Role;
 use App\Models\User;
 use App\Models\Account;
 use App\Models\AccountType;
+use App\Models\Collection;
+use App\Models\CollectionType;
 use App\Models\Profile;
 use App\Models\Referral;
 use App\Http\Controllers\Controller;
@@ -62,6 +64,7 @@ class UserApiController extends Controller
                 'name' => $request->name,
                 'email' => $request->email,
                 'password' => null, // No password for RizqMall-originated users initially
+                'sandbox_type' => Account::SUBTYPE_AWAM,
             ]);
 
             // Create profile
@@ -81,16 +84,24 @@ class UserApiController extends Controller
             }
 
             // Create inactive accounts for both platforms
-            $accountTypes = AccountType::whereIn('name', ['rizqmall', 'sandbox'])->get()->keyBy('name');
+            $accountTypes = AccountType::whereIn('name', ['rizqmall', 'sandbox', 'sandbox_awam'])->get()->keyBy('name');
 
-            foreach (['rizqmall', 'sandbox'] as $type) {
-                Account::create([
-                    'user_id' => $user->id,
-                    'type' => $type,
-                    'account_type_id' => $accountTypes[$type]->id ?? null,
-                    'active' => false,
-                ]);
-            }
+            Account::create([
+                'user_id' => $user->id,
+                'type' => Account::TYPE_RIZQMALL,
+                'account_type_id' => $accountTypes['rizqmall']->id ?? null,
+                'active' => false,
+            ]);
+
+            Account::create([
+                'user_id' => $user->id,
+                'type' => Account::TYPE_SANDBOX,
+                'subtype' => Account::SUBTYPE_AWAM,
+                'account_type_id' => $accountTypes['sandbox_awam']->id ?? ($accountTypes['sandbox']->id ?? null),
+                'active' => false,
+            ]);
+
+            Collection::createForUser($user->id, CollectionType::ACCOUNT_SANDBOX_AWAM);
 
             // Create referral record (no parent for RizqMall-originated users)
             $tree = app(ReferralTreeService::class);

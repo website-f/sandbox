@@ -153,7 +153,10 @@ class User extends Authenticatable
      */
     public function sandboxAccount()
     {
-        return $this->accounts()->where('type', Account::TYPE_SANDBOX)->first();
+        return $this->accounts()
+            ->whereIn('type', [Account::TYPE_SANDBOX, 'sandbox remaja', 'sandbox awam', 'sandbox usahawan'])
+            ->orderByRaw("CASE WHEN type = 'sandbox' THEN 0 ELSE 1 END")
+            ->first();
     }
 
     /**
@@ -163,8 +166,16 @@ class User extends Authenticatable
     public function getSandboxSubtype(): string
     {
         $sandboxAccount = $this->sandboxAccount();
-        if ($sandboxAccount && $sandboxAccount->subtype) {
-            return $sandboxAccount->subtype;
+        if ($sandboxAccount) {
+            if ($sandboxAccount->subtype) {
+                return $sandboxAccount->subtype;
+            }
+
+            return match ($sandboxAccount->type) {
+                'sandbox remaja' => Account::SUBTYPE_REMAJA,
+                'sandbox awam' => Account::SUBTYPE_AWAM,
+                default => $this->sandbox_type ?? Account::SUBTYPE_USAHAWAN,
+            };
         }
         return $this->sandbox_type ?? Account::SUBTYPE_USAHAWAN;
     }

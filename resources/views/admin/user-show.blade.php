@@ -180,7 +180,7 @@
                     <div class="space-y-4 sm:space-y-6">
                         <div class="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4 sm:p-5">
                             <h3 class="text-base sm:text-lg font-bold text-gray-900 dark:text-white mb-3 sm:mb-4">Next of Kin</h3>
-                            @forelse(($user->nextOfKins ?? collect([])) as $nok)
+                            @forelse(($user->pewaris ?? collect([])) as $nok)
                             <div class="mb-3 pb-3 border-b border-gray-200 dark:border-gray-600 last:border-0 last:mb-0 last:pb-0">
                                 <p class="font-semibold text-gray-900 dark:text-white text-sm">{{ $nok->name }} <span class="text-xs font-normal text-gray-500">({{ $nok->relationship }})</span></p>
                                 <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400">{{ $nok->phone }}</p>
@@ -199,7 +199,10 @@
                 @php
                 $accountTypes = $user->accounts->pluck('type')->map(fn($t) => strtolower(trim($t ?? '')))->toArray();
                 $hasRizqmall = in_array('rizqmall', $accountTypes);
-                $hasSandbox = in_array('sandbox', $accountTypes);
+                $hasSandbox = in_array('sandbox', $accountTypes)
+                    || in_array('sandbox remaja', $accountTypes)
+                    || in_array('sandbox awam', $accountTypes)
+                    || in_array('sandbox usahawan', $accountTypes);
                 @endphp
 
                 <div class="mb-4 sm:mb-6 p-4 sm:p-5 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800 rounded-xl flex flex-col md:flex-row items-center justify-between gap-3 sm:gap-4">
@@ -322,7 +325,7 @@
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
-                            @foreach($user->collections as $collection)
+                            @foreach($displayCollections as $collection)
                             <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                                 <td class="px-3 sm:px-6 py-3 sm:py-4 font-medium text-gray-900 dark:text-white text-xs sm:text-sm">
                                     {{ ucfirst(str_replace('_', ' ', $collection->type)) }}
@@ -380,7 +383,7 @@
                         </thead>
                         <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
                             @php
-                            $colTransactions = $user->collections->flatMap(function($collection) {
+                            $colTransactions = $displayCollections->flatMap(function($collection) {
                             return $collection->transactions ?? collect();
                             })->sortByDesc('created_at');
                             @endphp
@@ -501,13 +504,19 @@
             <div x-show="activeTab === 'referrals'" x-cloak x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0">
                 <div class="flex items-center justify-between mb-4">
                     <h3 class="font-bold text-gray-900 dark:text-white">Referral Tree</h3>
-                    <button class="px-3 py-1.5 bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 rounded-lg text-xs font-semibold hover:bg-indigo-200 dark:hover:bg-indigo-900/50 transition-colors">
-                        Load Full Tree
-                    </button>
+                    <div class="flex items-center gap-2">
+                        <button type="button" onclick="loadReferralTree('sandbox')"
+                            class="px-3 py-1.5 bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 rounded-lg text-xs font-semibold hover:bg-emerald-200 dark:hover:bg-emerald-900/50 transition-colors">
+                            Load Sandbox Tree
+                        </button>
+                        <button type="button" onclick="loadReferralTree('full')"
+                            class="px-3 py-1.5 bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 rounded-lg text-xs font-semibold hover:bg-indigo-200 dark:hover:bg-indigo-900/50 transition-colors">
+                            Load Full Tree
+                        </button>
+                    </div>
                 </div>
                 <div id="referral-tree" class="p-6 bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 h-96 overflow-auto custom-scrollbar">
-                    {{-- Content loaded via JS --}}
-                    <div class="text-center text-gray-500 mt-10">Tree visualization will be loaded here...</div>
+                    <div class="text-center text-gray-500 mt-10">Click "Load Sandbox Tree" to view downline.</div>
                 </div>
             </div>
 
@@ -627,9 +636,9 @@
                         <label class="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Collection Type</label>
                         <select name="collection_type" required class="w-full rounded-xl border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 text-sm">
                             <option value="">Select...</option>
-                            <option value="geran_asas">Geran Asas</option>
-                            <option value="tabung_usahawan">Tabung Usahawan</option>
-                            <option value="had_pembiayaan">Had Pembiayaan</option>
+                            @foreach($availableCollectionTypes as $collectionType)
+                            <option value="{{ $collectionType['code'] }}">{{ $collectionType['name'] }}</option>
+                            @endforeach
                         </select>
                     </div>
                     <div>
@@ -671,8 +680,6 @@
     @push('scripts')
     <script>
         function updateSerial(accountId, newSerial) {
-            // Placeholder for AJAX call to update serial
-            // Implementing basic fetch logic
             fetch(`/admin/users/{{ $user->id }}/account/${accountId}/update-serial`, {
                     method: 'POST',
                     headers: {
@@ -684,18 +691,73 @@
                     })
                 }).then(res => res.json())
                 .then(data => {
-                    if (data.success) {
+                    if (data.ok) {
                         alert('Serial updated!');
                         location.reload();
                     } else {
-                        alert('Error updating serial');
+                        alert(data.error || 'Error updating serial');
                     }
                 });
         }
 
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text ?? '';
+            return div.innerHTML;
+        }
+
+        function buildTreeHtml(node) {
+            if (!node) return '';
+
+            const childrenHtml = (node.children || [])
+                .map(child => buildTreeHtml(child))
+                .join('');
+
+            return `
+                <li class="mb-2">
+                    <div class="inline-flex items-center px-3 py-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-sm">
+                        <span class="font-semibold text-gray-900 dark:text-white">${escapeHtml(node.name)}</span>
+                        <span class="ml-2 text-xs text-gray-500 dark:text-gray-400">#${node.user_id}</span>
+                    </div>
+                    ${childrenHtml ? `<ul class="ml-6 mt-2 border-l border-gray-200 dark:border-gray-700 pl-4">${childrenHtml}</ul>` : ''}
+                </li>
+            `;
+        }
+
+        function loadReferralTree(mode = 'sandbox') {
+            const container = document.getElementById('referral-tree');
+            const endpoint = mode === 'full'
+                ? "{{ route('admin.users.referralTree', $user->id) }}"
+                : "{{ route('admin.users.sandboxReferralTree', $user->id) }}";
+
+            container.innerHTML = '<div class="text-center text-gray-500 mt-10"><i class="fas fa-spinner fa-spin mr-2"></i>Loading tree...</div>';
+
+            fetch(endpoint)
+                .then(res => res.json())
+                .then(data => {
+                    const tree = data.tree ?? null;
+                    if (!tree || (Array.isArray(tree) && tree.length === 0)) {
+                        if (mode === 'sandbox') {
+                            loadReferralTree('full');
+                            return;
+                        }
+                        container.innerHTML = '<div class="text-center text-gray-500 mt-10">No tree data found for this user.</div>';
+                        return;
+                    }
+
+                    container.innerHTML = `<ul class="space-y-2">${buildTreeHtml(tree)}</ul>`;
+                })
+                .catch(() => {
+                    container.innerHTML = '<div class="text-center text-red-500 mt-10">Failed to load referral tree.</div>';
+                });
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadReferralTree('sandbox');
+        });
+
         window.createAccount = function(type) {
             if (!confirm(`Create ${type} account for this user?`)) return;
-            // Place logic to create account via fetch or form submission
             const form = document.createElement('form');
             form.method = 'POST';
             form.action = '{{ route("admin.users.createAccount", $user->id) }}';

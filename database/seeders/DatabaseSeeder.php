@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             AccountTypeSeeder::class,
             CollectionTypeSeeder::class, // populate collection types for all sandbox types
             ModifyAccountSubs::class, // populate account_type_id in accounts & subscriptions
+            TestAccountSeeder::class, // create test accounts for all 3 sandbox types
         ]);
     }
 }

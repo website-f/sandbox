@@ -7,6 +7,7 @@ use App\Models\Referral;
 use App\Models\Collection;
 use App\Models\SandboxReferral;
 use App\Models\Account;
+use Illuminate\Support\Facades\Log;
 
 class ReferralRewardService
 {
@@ -28,6 +29,11 @@ class ReferralRewardService
         ],
     ];
 
+    private const STARTER_REWARD_PER_REFERRAL = 6000; // RM60 in cents
+    private const STARTER_TARGET = 60000; // RM600 in cents (10 referrals)
+    private const SECONDARY_REWARD_TOTAL = 2000; // RM20 in cents, split between 2 collections
+    private const MAX_CHILDREN_PER_PARENT = 10;
+
     /**
      * Process referral rewards for a new sandbox subscription.
      */
@@ -36,16 +42,14 @@ class ReferralRewardService
         $referral = $newUser->referral;
         if (!$referral) return;
 
-        // STEP 1: Find root for BFS
-        $root = $referral->user;
-        while ($root->referral && $root->referral->parent) {
-            $root = $root->referral->parent;
-        }
+        // STEP 1: Find root by walking up the Referral tree
+        $root = $this->findTreeRoot($referral);
+        if (!$root) return;
 
-        // STEP 2: Find available parent under root
+        // STEP 2: Find available parent under root (BFS, max 10 children)
         $parent = $this->findAvailableSandboxParent($root);
 
-        // STEP 3: Determine position (1–10)
+        // STEP 3: Determine position (1-10)
         $position = SandboxReferral::where('parent_id', $parent->id)->count() + 1;
 
         // STEP 4: Insert or update sandbox_referrals table
@@ -67,38 +71,85 @@ class ReferralRewardService
         // Starter Collection - add to pending if still collecting
         $directSubs = SandboxReferral::where('parent_id', $parent->id)->count();
 
-        if ($directSubs <= 10) {
+        if ($directSubs <= self::MAX_CHILDREN_PER_PARENT) {
             $starter = $collections[$starterType];
-            $starter->pending_balance += 6000;
+            $starter->pending_balance += self::STARTER_REWARD_PER_REFERRAL;
             $starter->save();
 
             // When completing the 10th referral, move to balance
-            if ($directSubs == 10) {
-                $starter->balance += $starter->pending_balance; // Should be 60000
+            if ($directSubs == self::MAX_CHILDREN_PER_PARENT) {
+                $expectedPending = self::STARTER_TARGET;
+
+                // Defensive check: log warning if pending doesn't match expected
+                if ($starter->pending_balance != $expectedPending) {
+                    Log::warning('Starter pending_balance mismatch', [
+                        'user_id' => $parent->id,
+                        'expected' => $expectedPending,
+                        'actual' => $starter->pending_balance,
+                        'collection_type' => $starterType,
+                    ]);
+                }
+
+                // Use the actual pending_balance (it should be correct)
+                $transferAmount = $starter->pending_balance;
+                $starter->balance += $transferAmount;
                 $starter->pending_balance = 0;
                 $starter->save();
 
                 $starterName = $this->getCollectionName($starterType);
                 $starter->transactions()->create([
                     'type' => 'credit',
-                    'amount' => 60000,
-                    'description' => "{$starterName} completed (10 referrals)",
+                    'amount' => $transferAmount,
+                    'description' => "{$starterName} completed ({$directSubs} referrals)",
                 ]);
             }
         }
 
         // Secondary collections split
         $secondaryTypes = self::COLLECTION_TYPES[$parentSandboxType]['secondary'];
-        $this->splitReward($collections, $secondaryTypes, 2000, "Sandbox reward from {$newUser->name}");
+        $this->splitReward($collections, $secondaryTypes, self::SECONDARY_REWARD_TOTAL, "Sandbox reward from {$newUser->name}");
 
-        // Reward upline if any
-        $upline = $parent->referrer ?? null;
+        // Reward upline (parent's referrer from the Referral tree)
+        $upline = $this->findUpline($parent);
         if ($upline) {
             $uplineSandboxType = $upline->getSandboxSubtype();
             $uCollections = $this->ensureCollections($upline, $uplineSandboxType);
             $uplineSecondaryTypes = self::COLLECTION_TYPES[$uplineSandboxType]['secondary'];
-            $this->splitReward($uCollections, $uplineSecondaryTypes, 2000, "Upline reward from {$newUser->name}");
+            $this->splitReward($uCollections, $uplineSecondaryTypes, self::SECONDARY_REWARD_TOTAL, "Upline reward from {$newUser->name}");
         }
+    }
+
+    /**
+     * Find the root user by walking up the Referral tree.
+     */
+    private function findTreeRoot(Referral $referral): ?User
+    {
+        // If root_id is set, use it directly
+        if ($referral->root_id) {
+            return User::find($referral->root_id);
+        }
+
+        // Walk up the tree
+        $current = $referral;
+        while ($current->parent_id) {
+            $parentReferral = Referral::where('user_id', $current->parent_id)->first();
+            if (!$parentReferral) break;
+            $current = $parentReferral;
+        }
+
+        return User::find($current->user_id);
+    }
+
+    /**
+     * Find the upline (direct referrer) for a user from the Referral tree.
+     */
+    private function findUpline(User $user): ?User
+    {
+        $referral = Referral::where('user_id', $user->id)->first();
+        if (!$referral || !$referral->parent_id) {
+            return null;
+        }
+        return User::find($referral->parent_id);
     }
 
     /**
@@ -129,7 +180,8 @@ class ReferralRewardService
     }
 
     /**
-     * Find a new parent under the current parent for sandbox overflow
+     * Find a new parent under the current parent for sandbox overflow.
+     * Uses BFS to find the first user with fewer than 10 children.
      */
     private function findAvailableSandboxParent(User $root)
     {
@@ -141,14 +193,17 @@ class ReferralRewardService
             // Count direct sandbox children
             $count = SandboxReferral::where('parent_id', $current->id)->count();
 
-            if ($count < 10) {
+            if ($count < self::MAX_CHILDREN_PER_PARENT) {
                 return $current;
             }
 
             // Add children to queue
             $children = SandboxReferral::where('parent_id', $current->id)->get();
             foreach ($children as $child) {
-                $queue[] = User::find($child->user_id);
+                $childUser = User::find($child->user_id);
+                if ($childUser) {
+                    $queue[] = $childUser;
+                }
             }
         }
 
@@ -168,7 +223,7 @@ class ReferralRewardService
         $starterType = $config['starter'];
         $collections[$starterType] = Collection::firstOrCreate(
             ['user_id' => $u->id, 'type' => $starterType],
-            ['balance' => 0, 'pending_balance' => 0, 'limit' => 60000]
+            ['balance' => 0, 'pending_balance' => 0, 'limit' => self::STARTER_TARGET]
         );
 
         // Secondary collections

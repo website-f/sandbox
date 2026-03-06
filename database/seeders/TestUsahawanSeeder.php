@@ -93,10 +93,10 @@ class TestUsahawanSeeder extends Seeder
 
         // Subscription (active)
         Subscription::updateOrCreate(
-            ['user_id' => $user->id, 'plan' => 'sandbox_usahawan'],
+            ['user_id' => $user->id, 'plan' => 'sandbox'],
             [
                 'amount' => 30000,
-                'status' => 'active',
+                'status' => 'paid',
                 'starts_at' => now(),
                 'ends_at' => now()->addYear(),
                 'account_type_id' => $sandboxAccountType?->id,

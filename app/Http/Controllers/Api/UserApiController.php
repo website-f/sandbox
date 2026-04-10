@@ -271,8 +271,6 @@ class UserApiController extends Controller
                 $existingReferral->level = $vendorReferral->level + 1;
                 $existingReferral->save();
 
-                $vendorReferral->increment('direct_children');
-
                 Log::info('Updated existing referral to link to vendor', [
                     'referral_id' => $existingReferral->id,
                     'member_id' => $member->id,
@@ -295,8 +293,6 @@ class UserApiController extends Controller
                 'direct_children' => 0,
                 'ref_code' => $tree->generateRefCode($member),
             ]);
-
-            $vendorReferral->increment('direct_children');
 
             Log::info('Member linked to vendor in referral system', [
                 'referral_id' => $memberReferral->id,

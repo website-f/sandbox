@@ -16,7 +16,9 @@ return new class extends Migration
             $table->string('dob')->nullable()->after('email');
         });
 
-        DB::statement("ALTER TABLE accounts MODIFY COLUMN type ENUM('rizqmall','sandbox','sandbox remaja') NOT NULL");
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement("ALTER TABLE accounts MODIFY COLUMN type ENUM('rizqmall','sandbox','sandbox remaja') NOT NULL");
+        }
     }
 
     /**

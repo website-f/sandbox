@@ -48,9 +48,6 @@ class ReferralTreeService
             'ref_code'  => $this->generateRefCode($newUser),
         ]);
 
-        // if you still want to track child count, increment
-        $referrerReferral->increment('direct_children');
-
         return $newReferral;
     }
 }

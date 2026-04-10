@@ -765,6 +765,8 @@ class UserRoleController extends Controller
     public function destroy(User $user)
     {
         try {
+            $previousParentId = $user->referral?->parent_id;
+
             // Remove this user from being parent/root in referrals
             DB::table('referrals')
                 ->where('parent_id', $user->id)
@@ -773,6 +775,7 @@ class UserRoleController extends Controller
 
             // Delete the user (cascade will remove profiles, businesses, educations, accounts, subscriptions, payments, etc.)
             $user->delete();
+            Referral::syncDirectChildrenCountForUserId($previousParentId);
 
             return response()->json(['ok' => true]);
         } catch (\Exception $e) {
